@@ -2,106 +2,26 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Drag and Drop Tic Tac Toe</title>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            text-align: center;
-        }
-
-        #game-container {
-            display: flex;
-            justify-content: space-between;
-            margin: 20px auto;
-            max-width: 600px;
-        }
-
-        #board-container {
-            width: 300px;
-            position: relative;
-        }
-
-        #board {
-            display: grid;
-            grid-template-columns: repeat(3, 40px);
-            gap: 5px;
-            position: absolute;
-            top: 0;
-            left: 0;
-        }
-
-        .cell {
-            width: 40px;
-            height: 40px;
-            font-size: 24px;
-            font-weight: bold;
-            cursor: pointer;
-            border: none;  /* Removed the border */
-            border-radius: 10px;
-            background-color: #ccc;  /* Grey background color */
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            transition: background-color 0.3s ease;  /* Added transition for smooth color change */
-        }
-
-        .filled {
-            background-color: beige;
-        }
-
-        .empty-drag-over {
-            background-color: #d9d9d9;  /* Darker color for empty grid spaces when dragging */
-        }
-
-        #blocks {
-            display: flex;
-            flex-direction: row;
-            align-items: center;
-            justify-content: space-around;
-            width: 360px; /* Adjust as needed */
-        }
-
-        .block {
-            width: 40px;
-            height: 40px;
-            font-size: 24px;
-            cursor: pointer;
-            border: none;  /* Removed the border */
-            border-radius: 10px;
-            background-color: beige;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            user-select: none;
-            font-weight: bold;  /* Added bold letters */
-            margin-bottom: 10px;
-        }
-
-        .block:hover {
-            background-color: #f0f0f0;
-        }
-    </style>
+    <title>Crossword Game</title>
+    <link rel="stylesheet" href="style.css">
 </head>
 <body>
-    <h1>Drag and Drop Tic Tac Toe</h1>
-    <div id="game-container">
-        <div id="board-container">
-            <div id="board"></div>
-        </div>
-        <div id="blocks">
-            <div class="block" draggable="true" ondragstart="dragStart(event)">X</div>
-            <div class="block" draggable="true" ondragstart="dragStart(event)">X</div>
-            <div class="block" draggable="true" ondragstart="dragStart(event)">X</div>
-            <div class="block" draggable="true" ondragstart="dragStart(event)">X</div>
-            <div class="block" draggable="true" ondragstart="dragStart(event)">X</div>
-            <div class="block" draggable="true" ondragstart="dragStart(event)">O</div>
-            <div class="block" draggable="true" ondragstart="dragStart(event)">O</div>
-            <div class="block" draggable="true" ondragstart="dragStart(event)">O</div>
-            <div class="block" draggable="true" ondragstart="dragStart(event)">O</div>
-        </div>
+    <div id="letterBlocks">
+        <!-- Draggable letter blocks will go here -->
     </div>
-
+    <div id="crosswordGrid">
+        <!-- 3x3 Grid for the crossword -->
+        <div class="grid-cell" id="cell1"></div>
+        <div class="grid-cell" id="cell2"></div>
+        <div class="grid-cell" id="cell3"></div>
+        <div class="grid-cell" id="cell4"></div>
+        <div class="grid-cell" id="cell5"></div>
+        <div class="grid-cell" id="cell6"></div>
+        <div class="grid-cell" id="cell7"></div>
+        <div class="grid-cell" id="cell8"></div>
+        <div class="grid-cell" id="cell9"></div>
+    </div>
+    <button id="submit">Submit</button>
     <script src="script.js"></script>
 </body>
 </html>
