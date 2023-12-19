@@ -32,7 +32,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // Generate random letters (for simplicity, using a static set)
-    const letters = ['A', 'D', 'O', 'S', 'B', 'I', 'D', 'E', 'E'];
+    const letters = ['G', 'E', 'C', 'N', 'E', 'A', 'T', 'B', 'I'];
     letters.forEach(createLetterBlock);
 
 // Function to handle the beginning of a touch drag
