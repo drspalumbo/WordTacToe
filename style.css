@@ -14,20 +14,44 @@ body {
     min-height: 20vh;
     margin: 0;
     background-color: #DDDAD3;
-}
-body, html {
-    height: 100%; /* Ensure the full height of the window is used */
-    margin: 0; /* Reset default margin */
+    margin: 0;
+    padding: 0;
     display: flex;
-    justify-content: center; /* Center horizontally */
-    align-items: center; /* Center vertically */
+    flex-direction: column; /* Stack children vertically */
+    align-items: center; /* Center-align children horizontally */
+    justify-content: center; /* Center-align children vertically */
+    height: 100vh; /* Full viewport height */
 }
 
-.game-container {
-    /* Set the width of the container if needed, e.g., 90% or 800px */
-    width: 90%;
-    /* Additional styling for the container if needed */
+.header-container {
+    width: 50%; /* Full width */
+    max-width: 800px; /* Or the width of your grid */
+    margin-bottom: 20px; /* Space below the header */
 }
+
+.game-title {
+    text-align: center;
+    font-size: 4em; /* Adjust as needed */
+}
+
+.info-container {
+    display: flex;
+    font-size: 2em; /* Adjust as needed */
+
+    justify-content: space-between;
+    width: 100%; /* Align with the width of the game container */
+}
+
+.date {
+    text-align: left;
+    margin-left: 10px; /* Adjust as needed, should align with the left side of the grid below */
+}
+
+.puzzle-number {
+    text-align: right;
+    margin-right: 10px; /* Adjust as needed, should align with the right side of the grid below */
+}
+
 
 .game-container {
     display: flex;
@@ -63,7 +87,7 @@ body, html {
 }
 
 .grid-cell.selected {
-    background-color: #668899; /* gold background for the selected cell */
+    background-color: #D1BEAC; /* gold background for the selected cell */
 }
 .grid-cell.swapping {
     z-index: 10;
