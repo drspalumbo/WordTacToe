@@ -41,7 +41,7 @@ body {
     width: var(--block-size);
     height: var(--block-size);
     border-radius: 5px;
-    background-color: #ffa500;
+    background-color: #ff00a5;
     color: white;
     box-shadow: 2px 2px 5px rgba(0,0,0,0.2);
     display: flex;
