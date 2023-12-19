@@ -204,7 +204,16 @@ function triggerConfetti() {
         particleSize,
         origin: { x: (gridRect.right / window.innerWidth), y: gridRect.bottom / window.innerHeight }
     });
-}
+    // Show the overlay after the confetti effect
+        setTimeout(() => {
+            document.getElementById('congratsOverlay').classList.replace('hidden', 'visible');
+        }, 1000); // Adjust the timeout as needed
+    }
+
+    document.getElementById('keepPlaying').addEventListener('click', function() {
+        document.getElementById('congratsOverlay').classList.replace('visible', 'hidden');
+    });
+
 
 
     function applyAnimationToCells(cells, animationClass) {

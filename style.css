@@ -144,4 +144,55 @@ body {
 .hop {
     animation: hop 0.18s linear;
 }
+.overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.7); /* Semi-transparent black background */
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    visibility: hidden;
+    opacity: 0;
+    transition: visibility 0s, opacity 0.5s linear;
+}
+
+.overlay-content {
+    text-align: center;
+    background-color: white;
+    padding: 20px;
+    border-radius: 10px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+}
+
+.overlay h2 {
+    font-weight: bold;
+}
+
+.overlay button {
+    margin-top: 15px;
+    padding: 10px 20px;
+    font-size: 1em;
+    border: none;
+    border-radius: 5px;
+    background-color: #228B22;
+    color: white;
+    cursor: pointer;
+}
+
+.overlay button:hover {
+    background-color: #2E8B57;
+}
+
+.hidden {
+    visibility: hidden;
+    opacity: 0;
+}
+
+.visible {
+    visibility: visible;
+    opacity: 1;
+}
 
