@@ -7,14 +7,28 @@
 }
 
 body {
-    font-family: 'Franklin Gothic', sans-serif;
+    font-family: 'DM Sans', sans-serif;
     display: flex;
     justify-content: center;
     align-items: center;
     min-height: 20vh;
     margin: 0;
-    background-color: #f0f0f0;
+    background-color: #DDDAD3;
 }
+body, html {
+    height: 100%; /* Ensure the full height of the window is used */
+    margin: 0; /* Reset default margin */
+    display: flex;
+    justify-content: center; /* Center horizontally */
+    align-items: center; /* Center vertically */
+}
+
+.game-container {
+    /* Set the width of the container if needed, e.g., 90% or 800px */
+    width: 90%;
+    /* Additional styling for the container if needed */
+}
+
 .game-container {
     display: flex;
     flex-direction: column; /* Stack children vertically */
@@ -36,7 +50,7 @@ body {
     width: var(--cell-size);
     height: var(--cell-size);
     border-radius: var(--corner-size);
-    background-color: #D1BEAC;
+    background-color: #D48F65;
     /*box-shadow: 2px 2px 5px rgba(0,0,0,0.2);*/
     display: flex;
     justify-content: center;
@@ -44,6 +58,7 @@ body {
     font-size: 5vmin;
     user-select: none;
     cursor: pointer;
+    color: #415B57;
     transition: transform 0.3s ease-in-out; /* Animate the transform property */
 }
 
@@ -80,16 +95,16 @@ body {
     margin: 0vh auto 0; /* Added margin to the top */
     border: none;
     border-radius: var(--corner-size);
-    background-color: #55a555;
+    background-color: #D1BEAC;
     color: white;
     cursor: pointer;
-    font-family: 'Franklin Gothic', sans-serif;
+    font-family: 'DM Sans', sans-serif;
     font-size: 5vmin; /* Make the font size larger for better visibility */
     text-align: center; /* Center the text */
 }
 
 #submit:hover {
-    background-color: #a53333;
+    background-color: #415B57;
 }
 
 /* Ensure the game area (including the grid and submit button) is centered */
@@ -150,8 +165,8 @@ body {
     position: fixed;
     top: 0;
     left: 0;
-    width: 90%;
-    height: 90%;
+    width: 100%;
+    height: 100%;
     background-color: rgba(0, 0, 0, 0.7); /* Semi-transparent black background */
     display: flex;
     justify-content: center;
@@ -191,7 +206,7 @@ body {
     background-color: #55a555;
     color: white;
     cursor: pointer;
-    font-family: 'Franklin Gothic', sans-serif;
+    font-family: 'DM Sans', sans-serif;
     font-size: 3em; /* Make the font size larger for better visibility */
     text-align: center; /* Center the text */
 }
