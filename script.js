@@ -157,32 +157,61 @@ document.querySelectorAll('.letter-block').forEach(block => {
     });
 });
 
-// Add a touch move event handler on the document to handle dragging
+
+
+// ... existing code ...
+
+// A helper function to reset the style of the dragged element
+function resetDraggedElementStyle(elem) {
+    elem.style.position = '';
+    elem.style.left = '';
+    elem.style.top = '';
+    elem.style.zIndex = '';
+}
+
+// Update the touch move event handler on the document
 document.addEventListener('touchmove', e => {
     if (selectedBlock) {
         e.preventDefault(); // Prevent scrolling and other default touch behaviors
         const touchLocation = e.targetTouches[0];
-        // Move the selected block to follow the touch
-        selectedBlock.style.position = 'absolute';
-        selectedBlock.style.left = `${touchLocation.pageX - selectedBlock.offsetWidth / 2}px`;
-        selectedBlock.style.top = `${touchLocation.pageY - selectedBlock.offsetHeight / 2}px`;
+        // Apply styles to make the block follow the user's finger
+        selectedBlock.style.position = 'fixed';
+        selectedBlock.style.left = `${touchLocation.clientX - selectedBlock.offsetWidth / 2}px`;
+        selectedBlock.style.top = `${touchLocation.clientY - selectedBlock.offsetHeight / 2}px`;
+        selectedBlock.style.zIndex = '1000';
     }
-});
+}, { passive: false }); // Set passive to false to allow preventDefault
 
-// Add a touch end event handler on the document to handle dropping
+// Update the touch end event handler on the document
 document.addEventListener('touchend', e => {
     if (selectedBlock) {
         const droppedOnCell = findCellUnderElement(selectedBlock);
         if (droppedOnCell && droppedOnCell.classList.contains('grid-cell')) {
-            droppedOnCell.textContent = selectedBlock.textContent;
+            if (droppedOnCell.textContent) {
+                // Swap if the cell is already filled
+                let temp = droppedOnCell.textContent;
+                droppedOnCell.textContent = selectedBlock.textContent;
+                selectedBlock.textContent = temp;
+            } else {
+                // Place the letter in the empty cell
+                droppedOnCell.textContent = selectedBlock.textContent;
+            }
+            // Remove the letter block if it was from the list
+            if (!selectedBlock.classList.contains('grid-cell')) {
+                selectedBlock.remove();
+            }
+        } else {
+            // If dropped outside the grid, move the block back to the list
+            if (!selectedBlock.classList.contains('grid-cell')) {
+                selectedBlock.remove();
+                createLetterBlock(selectedBlock.textContent);
+            }
         }
-        // Clean up and reset the selected block
+        // Reset the dragged element style
+        resetDraggedElementStyle(selectedBlock);
         selectedBlock.classList.remove('dragging');
-        selectedBlock.style.position = '';
-        selectedBlock.style.left = '';
-        selectedBlock.style.top = '';
         selectedBlock = null;
     }
-});
+}, { passive: false });
 
 });

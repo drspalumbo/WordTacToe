@@ -27,7 +27,7 @@ body {
     width: var(--cell-size);
     height: var(--cell-size);
     border-radius: 10px;
-    background-color: #f8f8f8;
+    background-color: #D1BEAC;
     box-shadow: 2px 2px 5px rgba(0,0,0,0.2);
     display: flex;
     justify-content: center;
