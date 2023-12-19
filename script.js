@@ -139,4 +139,50 @@ document.querySelectorAll('.letter-block').forEach(block => {
         }
         return true;
     }
+    // Function to find the cell under the dragged element
+function findCellUnderElement(elem) {
+    const elemRect = elem.getBoundingClientRect();
+    return document.elementFromPoint(
+        elemRect.left + elemRect.width / 2,
+        elemRect.top + elemRect.height / 2
+    );
+}
+
+// Update the touch start event handler for the letter blocks
+document.querySelectorAll('.letter-block').forEach(block => {
+    block.addEventListener('touchstart', e => {
+        e.preventDefault();
+        selectedBlock = e.target;
+        selectedBlock.classList.add('dragging');
+    });
+});
+
+// Add a touch move event handler on the document to handle dragging
+document.addEventListener('touchmove', e => {
+    if (selectedBlock) {
+        e.preventDefault(); // Prevent scrolling and other default touch behaviors
+        const touchLocation = e.targetTouches[0];
+        // Move the selected block to follow the touch
+        selectedBlock.style.position = 'absolute';
+        selectedBlock.style.left = `${touchLocation.pageX - selectedBlock.offsetWidth / 2}px`;
+        selectedBlock.style.top = `${touchLocation.pageY - selectedBlock.offsetHeight / 2}px`;
+    }
+});
+
+// Add a touch end event handler on the document to handle dropping
+document.addEventListener('touchend', e => {
+    if (selectedBlock) {
+        const droppedOnCell = findCellUnderElement(selectedBlock);
+        if (droppedOnCell && droppedOnCell.classList.contains('grid-cell')) {
+            droppedOnCell.textContent = selectedBlock.textContent;
+        }
+        // Clean up and reset the selected block
+        selectedBlock.classList.remove('dragging');
+        selectedBlock.style.position = '';
+        selectedBlock.style.left = '';
+        selectedBlock.style.top = '';
+        selectedBlock = null;
+    }
+});
+
 });

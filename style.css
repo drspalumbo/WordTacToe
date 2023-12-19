@@ -6,7 +6,7 @@
 }
 
 body {
-    font-family: 'Arial', sans-serif;
+    font-family: 'Franklin Gothic', sans-serif;
     display: flex;
     justify-content: center;
     align-items: center;
@@ -41,7 +41,7 @@ body {
     width: var(--block-size);
     height: var(--block-size);
     border-radius: 5px;
-    background-color: #ff00a5;
+    background-color: #D48F65;
     color: white;
     box-shadow: 2px 2px 5px rgba(0,0,0,0.2);
     display: flex;
@@ -51,6 +51,10 @@ body {
     cursor: grab;
     touch-action: none; /* Prevent the browser from taking its default action */
 }
+.letter-block.dragging {
+    z-index: 1000;
+}
+
 
 /* Media Queries */
 @media (max-width: 600px) {
