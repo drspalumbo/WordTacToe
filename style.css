@@ -1,7 +1,7 @@
 /* Base styles */
 :root {
     --cell-size: 20vmin; /* 20% of the viewport's smaller dimension */
-    --block-size: 10vmin;
+    --block-size: 20vmin;
     --grid-gap: 2vmin;
 }
 
@@ -10,7 +10,7 @@ body {
     display: flex;
     justify-content: center;
     align-items: center;
-    min-height: 100vh;
+    min-height: 20vh;
     margin: 0;
     background-color: #f0f0f0;
 }
