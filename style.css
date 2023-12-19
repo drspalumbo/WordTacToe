@@ -180,6 +180,8 @@ body {
     background-color: #228B22;
     color: white;
     cursor: pointer;
+    font-family: 'Franklin Gothic', sans-serif;
+
 }
 
 .overlay button:hover {
