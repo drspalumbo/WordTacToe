@@ -20,7 +20,7 @@ body {
     flex-direction: column; /* Stack children vertically */
     align-items: center; /* Center-align children horizontally */
     justify-content: center; /* Center-align children vertically */
-    height: 100vh; /* Full viewport height */
+    height: 80vh; /* Full viewport height */
 }
 
 .header-container {

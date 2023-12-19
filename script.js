@@ -11,7 +11,7 @@ document.addEventListener('DOMContentLoaded', () => {
         dateElement.textContent = today.toLocaleDateString('en-US', options);
 
         // Set the puzzle number (replace [n] with your logic)
-        const startDate = '2023-12-18';
+        const startDate = '2023-12-10';
         const puzzleNumber = getDaysSinceStartDate(startDate); // Replace with dynamic logic if needed
         document.querySelector('.puzzle-number').textContent = `Puzzle No. ${puzzleNumber}`;
 
@@ -109,7 +109,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Pre-populate the grid with randomized letters
     const letters = getLetterSetForDay(0);
-    //shuffleArray(letters); // Randomize the letters array
+    shuffleArray(letters); // Randomize the letters array
     cells.forEach((cell, index) => {
         cell.textContent = letters[index];
         cell.classList.add('grid-cell'); // Ensure this is the correct class for your cells
