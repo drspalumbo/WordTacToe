@@ -33,26 +33,30 @@ document.addEventListener('DOMContentLoaded', () => {
     // Pre-populate the grid with randomized letters
     const letters = ['C', 'E', 'G', 'N', 'E', 'A', 'T', 'B', 'I'];
     shuffleArray(letters); // Randomize the letters array
-    cells.forEach((cell, index) => {
-        cell.textContent = letters[index];
-        cell.classList.add('grid-cell'); // Ensure this is the correct class for your cells
-    });
-
-    // Click event for selecting and swapping letters
     cells.forEach(cell => {
-        cell.addEventListener('click', () => {
-            if (firstSelectedCell === null) {
-                firstSelectedCell = cell; // Select the first cell
-                cell.classList.add('selected');
-            } else {
-                if (cell !== firstSelectedCell) {
-                    animateSwap(firstSelectedCell, cell);
-                }
-                firstSelectedCell.classList.remove('selected');
-                firstSelectedCell = null; // Reset the selection
-            }
+        // Existing click event listener
+        cell.addEventListener('click', handleCellInteraction);
+
+        // Add touch event listener
+        cell.addEventListener('touchstart', function(event) {
+            event.preventDefault(); // Prevents the 300ms delay
+            handleCellInteraction.call(this, event);
         });
     });
+
+    function handleCellInteraction(event) {
+        // Your existing logic for handling cell interaction
+        if (firstSelectedCell === null) {
+            firstSelectedCell = this; // 'this' refers to the cell
+            this.classList.add('selected');
+        } else {
+            if (this !== firstSelectedCell) {
+                animateSwap(firstSelectedCell, this);
+            }
+            firstSelectedCell.classList.remove('selected');
+            firstSelectedCell = null; // Reset the selection
+        }
+    }
 
     // Function to shuffle an array
     function shuffleArray(array) {
