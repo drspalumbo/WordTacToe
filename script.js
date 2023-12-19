@@ -35,6 +35,45 @@ document.addEventListener('DOMContentLoaded', () => {
     const letters = ['A', 'D', 'O', 'S', 'B', 'I', 'D', 'E', 'E'];
     letters.forEach(createLetterBlock);
 
+// Function to handle the beginning of a touch drag
+function handleTouchStart(e) {
+    // Find the letter block being touched
+    const target = e.target.closest('.letter-block');
+    if (target) {
+        selectedBlock = target;
+        // Optionally, you might want to set some state to indicate that dragging has started
+        // e.g., add a class to the element, store its initial position, etc.
+    }
+}
+
+// Function to handle touch movement
+function handleTouchMove(e) {
+    if (selectedBlock) {
+        e.preventDefault(); // Prevent scrolling when dragging
+        // Update the position of the selected block based on the touch coordinates
+        // You might need to translate the touch position to your grid coordinate system
+    }
+}
+
+// Function to handle the end of a touch drag
+function handleTouchEnd(e) {
+    // Find the grid cell where the touch ended
+    const targetCell = document.elementFromPoint(e.changedTouches[0].clientX, e.changedTouches[0].clientY);
+    if (selectedBlock && targetCell && targetCell.classList.contains('grid-cell')) {
+        // Perform the drop action here, similar to your existing drop event handler logic
+        // Place the letter in the target cell, clear the original cell, etc.
+        // Make sure to check if the target cell is part of the grid and not some other element
+    }
+    // Reset any state indicating that dragging has ended
+    selectedBlock = null;
+}
+
+// Add touch event listeners to the draggable elements
+document.querySelectorAll('.letter-block').forEach(block => {
+    block.addEventListener('touchstart', handleTouchStart);
+    block.addEventListener('touchmove', handleTouchMove);
+    block.addEventListener('touchend', handleTouchEnd);
+});
     // Drag and Drop Logic for cells
     cells.forEach(cell => {
         cell.addEventListener('dragover', e => e.preventDefault());

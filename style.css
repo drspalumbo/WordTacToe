@@ -49,6 +49,7 @@ body {
     align-items: center;
     margin: 1vmin;
     cursor: grab;
+    touch-action: none; /* Prevent the browser from taking its default action */
 }
 
 /* Media Queries */
