@@ -33,6 +33,12 @@ document.addEventListener('DOMContentLoaded', () => {
     // Pre-populate the grid with randomized letters
     const letters = ['C', 'E', 'G', 'N', 'E', 'A', 'T', 'B', 'I'];
     shuffleArray(letters); // Randomize the letters array
+    cells.forEach((cell, index) => {
+        cell.textContent = letters[index];
+        cell.classList.add('grid-cell'); // Ensure this is the correct class for your cells
+    });
+
+    // Click event for selecting and swapping letters
     cells.forEach(cell => {
         // Existing click event listener
         cell.addEventListener('click', handleCellInteraction);
@@ -57,6 +63,7 @@ document.addEventListener('DOMContentLoaded', () => {
             firstSelectedCell = null; // Reset the selection
         }
     }
+
 
     // Function to shuffle an array
     function shuffleArray(array) {

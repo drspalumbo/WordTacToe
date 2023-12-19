@@ -79,7 +79,7 @@ body {
     margin: 0vh auto 0; /* Added margin to the top */
     border: none;
     border-radius: var(--corner-size);
-    background-color: #5555a5;
+    background-color: #55a555;
     color: white;
     cursor: pointer;
     font-family: 'Franklin Gothic', sans-serif;
