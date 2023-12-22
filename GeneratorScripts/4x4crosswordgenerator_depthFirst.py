@@ -1,5 +1,5 @@
 import sys
-sys.setrecursionlimit(50000000) 
+sys.setrecursionlimit(500000000) 
 
 def read_word_list(file_path):
     with open(file_path, 'r') as file:
@@ -12,7 +12,7 @@ def generate_crosswords(input_word, word_list):
     valid_crosswords = []
     crossword = [' '] * 16
     crossword[:4] = list(input_word)
-    print(f"Starting with input word: {input_word}",flush=True)
+    #print(f"Starting with input word: {input_word}",flush=True)
 
     for first_vertical_word in valid_word_in_list(crossword[0], word_list):
         # Fill in first vertical word
@@ -101,8 +101,8 @@ def generate_crosswords(input_word, word_list):
 
                             # Now check if the last horizontal word is valid
                             if column_four_word_candidate in word_list:
-                                print(f"Found valid crossword: {''.join(crossword)}", flush=True)
-                                print_crossword_so_far(crossword)
+                                #print(f"Found valid crossword: {''.join(crossword)}", flush=True)
+                                #print_crossword_so_far(crossword)
 
                                 valid_crosswords.append(''.join(crossword))
                             #else:
@@ -114,11 +114,21 @@ def print_crossword_so_far(xword):
 # Main execution
 if __name__ == "__main__":
     word_list = read_word_list('4letterDictionary.txt')
+    counter = 0
+    total_items = len(word_list)
+
+    # Open the file once to clear existing contents or create it if it doesn't exist
+    with open('valid_crosswords.txt', 'w') as file:
+        pass  # This will clear the file contents
+
     for inputword in word_list:
-        #input_word = "ABET"  # Replace with your actual input word
+        counter += 1
+        percentage = (counter / total_items) * 100
+        print(f"Word #{counter}/{total_items}, {percentage:.2f}% complete", flush=True)
+
         valid_crosswords = generate_crosswords(inputword, word_list)
 
-    # Save the valid crosswords to a file
-    with open('valid_crosswords.txt', 'w') as file:
-        for crossword in valid_crosswords:
-            file.write(crossword + '\n')
+        # Append the valid crosswords to a file after processing each word
+        with open('valid_crosswords.txt', 'a') as file:  # 'a' opens the file in append mode
+            for crossword in valid_crosswords:
+                file.write(f"{crossword}\n")  # Optionally prefix with input word for reference
