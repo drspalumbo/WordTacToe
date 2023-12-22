@@ -64,7 +64,7 @@ body {
 
 #crosswordGrid {
     display: grid;
-    grid-template-columns: repeat(4, var(--cell-size));
+    grid-template-columns: repeat(3, var(--cell-size));
     gap: var(--grid-gap);
     justify-content: center;
     padding: var(--grid-gap);
