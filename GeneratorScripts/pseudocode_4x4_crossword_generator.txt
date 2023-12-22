@@ -1,0 +1,81 @@
+Given 4_letter_words_list.txt
+make a list of words from the document called word_list
+
+use input_word as input //input word is a four letter word
+
+crossword = list of letters called 
+vaid_crosswords = list of crosswords
+
+break input_word into 4 letters
+crossword[0] =  letter 1 of input word
+crossword[1] =  letter 2 of input word
+crossword[2] =  letter 3 of input word
+crossword[3] =  letter 4 of input word
+
+0_words = list of words from word_list for words that start with crossword[0];
+foreach word 0_word in 0_words{
+	break 0_word into 4 letters
+	crossword[4] =  letter 2 of input word
+	crossword[8] =  letter 3 of input word
+	crossword[12] =  letter 4 of input word
+	4_words = list of words from word_list for words that start with crossword[4];
+	foreach 4_word in 4_words{
+		break 4_word into 4 letters
+		crossword[5] =  letter 2 of input word
+		crossword[6] =  letter 3 of input word
+		crossword[7] =  letter 4 of input word
+
+		1_5_words = list of words from word_list that start with crossword[1] and whose second letter is crossword[5]
+		if 1_5_words is empty, "continue" (meaning: stop the current iteration of the loop early)
+		2_6_words = list of words from word_list that start with crossword[2] and whose second letter is crossword[6]
+		if 2_6_words is empty, "continue"
+		3_7_words = list of words from word_list that start with crossword[3] and whose second letter is crossword[7]
+		if 3_7_words is empty, "continue"
+		foreach 1_5_word in 1_5_words{
+			break 1_5_word into 4 letters
+			crossword[9] =  letter 3 of 1_5_word word
+			crossword[13] =  letter 4 of 1_5_word word
+
+			8_9_words = list of words from word_list that start with crossword[8] and whose second letter is crossword[9]
+			if 8_9_words is empty, "continue"
+			12_13_words = list of words from word_list that start with crossword[12] and whose second letter is crossword[13]
+			if 3_7_words is empty, "continue"
+
+			foreach 8_9_word in 8_9_words{
+				break 8_9_word into 4 letters
+				crossword[10] =  letter 3 of 8_9_word word
+				crossword[11] =  letter 4 of 8_9_word word
+
+				2_6_10_words = subset of 2_6_words whose third letter is crossword[10]
+				if 2_6_10_words is empty, "continue"
+				3_7_11_words = subset of 3_7_words whose third letter is crossword[11]
+				if 3_7_11_words is empty, "continue"
+
+				foreach 2_6_10_word in 2_6_10_words{
+					break 2_6_10_word into 4 letters
+					crossword[14] =  letter 4 of 2_6_10_word word
+
+					12_13_14_words = ubset of 3_7_words whose third letter is crossword[14]
+					if 12_13_14_words is empty, "continue"
+					foreach 12_13_14_word in 12_13_14_words{
+						break 12_13_14_word into 4 letters
+						crossword[15] = letter 4 of 12_13_14_word
+
+						if(crossword[3]+crossword[7]+crossword[11]+crossword[15] exists in word_list){
+							add crossword to valid_crosswords
+							print(crossword)
+						}
+					}
+
+				}
+
+
+
+			}
+
+
+		}
+
+	}
+}
+make .txt file of valid_crosswords, one per line

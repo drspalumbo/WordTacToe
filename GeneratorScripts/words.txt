@@ -1,5 +1,0 @@
-cat
-bat
-rat
-sat
-fat
