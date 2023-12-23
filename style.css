@@ -203,7 +203,7 @@ body {
 /* Base styles for the overlay */
 .overlay-content {
     text-align: center;
-    background-color: white;
+    background-color: #DDDAD3;
     padding: 20px;
     border-radius: 2em;
     box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
@@ -226,7 +226,7 @@ body {
     padding: 10px 20px;
     border: none;
     border-radius: .5em;
-    background-color: #55a555;
+    background-color: #D1BEAC;
     color: white;
     cursor: pointer;
     font-family: 'DM Sans', sans-serif;
@@ -238,7 +238,7 @@ body {
 }
 
 .overlay button:hover {
-    background-color: #2E8B57;
+    background-color: #415B57;
 }
 
 .hidden {
