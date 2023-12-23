@@ -21,6 +21,7 @@ def generate_crosswords(words):
     for combination in itertools.product(words, repeat=4):
         if is_valid_crossword(combination, word_set):
             valid_crosswords.append(combination)
+            print(combination)
 
     return valid_crosswords
 
