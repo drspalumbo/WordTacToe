@@ -7,14 +7,27 @@ document.addEventListener('DOMContentLoaded', () => {
     
 
     const dateElement = document.querySelector('.date');
-        const today = new Date();
-        const options = { weekday: 'short', year: 'numeric', month: 'short', day: 'numeric' };
-        dateElement.textContent = today.toLocaleDateString('en-US', options);
+    const today = new Date();
+    console.log("date is ", today);
+    const options = { weekday: 'short', year: 'numeric', month: 'short', day: 'numeric' };
+    dateElement.textContent = today.toLocaleDateString('en-US', options);
 
-        // Set the puzzle number (replace [n] with your logic)
-        const startDate = '2023-12-22';
-        const puzzleNumber = getDaysSinceStartDate(startDate); // Replace with dynamic logic if needed
-        document.querySelector('.puzzle-number').textContent = `Puzzle No. ${puzzleNumber}`;
+    // Function to calculate days between start date and current date
+    function getDaysSinceStartDate(startDate) {
+        const start = new Date(startDate);
+        const now = new Date();
+        // Convert both dates to midnight (to ignore hour differences)
+        const startMidnight = new Date(start.getFullYear(), start.getMonth(), start.getDate());
+        const nowMidnight = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+        const msPerDay = 24 * 60 * 60 * 1000;
+        // Calculate the difference in days
+        return Math.round((nowMidnight - startMidnight) / msPerDay);
+    }
+
+    // Set the puzzle number (replace [n] with your logic)
+    const startDate = '2023-12-22';
+    const puzzleNumber = getDaysSinceStartDate(startDate); // Replace with dynamic logic if needed
+    document.querySelector('.puzzle-number').textContent = `Puzzle No. ${puzzleNumber}`;
 
     let jsonData; // Your JSON data
     
@@ -57,7 +70,6 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function getLetterSetForDay(dayOffset) {
-        const startDate = '2023-01-01'; // Replace with your chosen start date
         const index = puzzleNumber + dayOffset;
 
         if (index < jsonData.length) {
