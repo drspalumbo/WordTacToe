@@ -25,7 +25,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // Set the puzzle number (replace [n] with your logic)
-    const startDate = '2023-12-22';
+    const startDate = '2023-12-21';
     const puzzleNumber = getDaysSinceStartDate(startDate); // Replace with dynamic logic if needed
     document.querySelector('.puzzle-number').textContent = `Puzzle No. ${puzzleNumber}`;
 
