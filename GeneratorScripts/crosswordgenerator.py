@@ -33,8 +33,8 @@ def save_crosswords_to_csv(crosswords, file_path):
 
 # Main execution
 if __name__ == "__main__":
-    words = read_words('dictionary.txt')  # Path to your dictionary file
+    words = read_words('three_letter_words_for_generation.txt')  # Path to your dictionary file
     valid_crosswords = generate_crosswords(words)
-    output_csv_path = 'crosswords.csv'  # Path for the output CSV file
+    output_csv_path = '3x3crosswords.csv'  # Path for the output CSV file
     save_crosswords_to_csv(valid_crosswords, output_csv_path)
     print(f"Crosswords saved to: {output_csv_path}")
