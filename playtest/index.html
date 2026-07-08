@@ -1,0 +1,1042 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>Daily Danagram — 4×4 Omino Prototype</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,500;0,9..144,620;1,9..144,500&family=Archivo:wght@500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#EDF1F4; --ink:#22303F; --ink-soft:#5B6B7B;
+    --well:#D8E0E7; --well-outer:#CBD5DD; --zone:#E6ECF1;
+    --tile:#FCFDFC; --tile-line:#B9C6D0;
+    --accent:#2B59C3; --accent-soft:#DFE7F9;
+    --good:#2E9E6B; --bad:#D9455C; --gold:#E9C31C;
+    --o1:#F5C48C; --o2:#A9D9BE; --o3:#B5C7F0; --o4:#DDBEE8; --o5:#EFDE9C; --o6:#E8B3A6;
+    --radius:14px;
+  }
+  *{box-sizing:border-box; -webkit-tap-highlight-color:transparent;}
+  html,body{margin:0; padding:0;}
+  body{
+    background:var(--bg); color:var(--ink);
+    font-family:'Archivo',system-ui,sans-serif;
+    display:flex; flex-direction:column; align-items:center;
+    min-height:100vh; padding:18px 14px 40px;
+  }
+  header{text-align:center; margin-bottom:10px;}
+  .eyebrow{
+    font-size:11px; font-weight:700; letter-spacing:.18em; text-transform:uppercase;
+    color:var(--ink-soft); margin-bottom:6px;
+  }
+  h1{
+    font-family:'Fraunces',serif; font-weight:620; font-size:clamp(30px,7vw,42px);
+    margin:0; letter-spacing:-.01em;
+  }
+  h1 .dana{font-style:italic; font-weight:500;}
+  .tagline{color:var(--ink-soft); font-size:13.5px; max-width:340px; margin:8px auto 0; line-height:1.45;}
+
+  .modes{display:none;}
+
+  #boardWrap{width:100%; max-width:560px; display:flex; justify-content:center; margin-top:12px;}
+  #board{
+    position:relative; border-radius:18px; background:var(--well);
+    box-shadow:inset 0 2px 6px rgba(25,40,55,.16);
+    touch-action:none;
+  }
+  #board.free{background:var(--well-outer);}
+  #zone{
+    position:absolute; background:var(--zone);
+    box-shadow:inset 0 0 0 1px var(--tile-line);
+    display:block; pointer-events:none;
+  }
+
+  .tile{
+    position:absolute; left:0; top:0;
+    background:var(--tile);
+    display:flex; align-items:center; justify-content:center;
+    cursor:pointer; user-select:none;
+    transition:transform .18s cubic-bezier(.3,.9,.4,1.1);
+    will-change:transform;
+  }
+  .tile .letter{
+    font-weight:800; color:var(--ink); text-transform:uppercase;
+    display:inline-block; line-height:1;
+  }
+  .tile.sel{z-index:6; filter:brightness(1.04);}
+  .tile.anchorsel{z-index:7;}
+  .tile.anchorsel .letter{position:relative; z-index:2;}
+  .tile.anchorsel::after{
+    content:''; position:absolute;
+    left:var(--sqoff); top:var(--sqoff);
+    width:var(--sq); height:var(--sq);
+    border-radius:8px;
+    background:color-mix(in srgb, var(--ink) 15%, transparent);
+    pointer-events:none; z-index:1;
+  }
+  .seam{position:absolute; background:rgba(34,48,63,.14); pointer-events:none; border-radius:2px;}
+
+  @keyframes nod{
+    0%,100%{transform:translateY(0)} 30%{transform:translateY(-9px)} 60%{transform:translateY(2px)}
+  }
+  @keyframes shake{
+    0%,100%{transform:translateX(0)} 20%{transform:translateX(-6px)} 40%{transform:translateX(6px)}
+    60%{transform:translateX(-4px)} 80%{transform:translateX(4px)}
+  }
+  .letter.nod{animation:nod .37s both;}
+  .letter.shake{animation:shake .33s both;}
+  @keyframes tileshake{
+    0%,100%{margin-left:0} 25%{margin-left:-4px} 75%{margin-left:4px}
+  }
+  .tile.jolt{animation:tileshake .3s 2;}
+
+  #msg{
+    min-height:22px; margin-top:14px; font-size:14px; font-weight:600;
+    color:var(--ink-soft); text-align:center; padding:0 10px; transition:color .2s;
+  }
+  #msg.bad{color:var(--bad);} #msg.good{color:var(--good);}
+
+  .actions{display:flex; gap:10px; margin-top:12px; align-items:center;}
+  .btn{
+    font:inherit; font-weight:800; font-size:15px; border:0; cursor:pointer;
+    border-radius:12px; padding:12px 26px;
+  }
+  .btn:focus-visible{outline:2px solid var(--ink); outline-offset:2px;}
+  .btn.primary{background:var(--accent); color:#fff; box-shadow:0 3px 0 #1D3F92;}
+  .btn.primary:active{transform:translateY(2px); box-shadow:0 1px 0 #1D3F92;}
+  .btn.ghost{background:transparent; color:var(--ink-soft); font-weight:700; padding:12px 10px;}
+  .btn.ghost:hover{color:var(--ink);}
+  .btn:disabled{opacity:.35; cursor:default;}
+  .btn.icon{
+    background:#fff; color:var(--ink); border:1px solid var(--tile-line);
+    padding:0; width:44px; height:44px; font-size:20px; line-height:1;
+    display:flex; align-items:center; justify-content:center;
+  }
+  .btn.icon:not(:disabled):hover{border-color:var(--accent); color:var(--accent);}
+
+  .tile{cursor:grab; touch-action:none;}
+  .tile.dragging{cursor:grabbing; z-index:20; transition:none; filter:brightness(1.03);}
+  #board.dragging .tile:not(.dragging){transition:transform .16s cubic-bezier(.3,.9,.4,1.1);}
+
+  /* ghost landing preview (contiguous silhouette drawn in JS) */
+  .ghost{
+    position:absolute; left:0; top:0; pointer-events:none; z-index:2;
+    box-sizing:border-box;
+    transition:transform .09s linear, opacity .12s;
+  }
+
+  .meta{
+    display:flex; gap:18px; align-items:center; margin-top:18px;
+    font-size:13px; font-weight:600; color:var(--ink-soft); flex-wrap:wrap; justify-content:center;
+  }
+  .nav{display:flex; align-items:center; gap:6px;}
+  .nav button{
+    border:1px solid var(--tile-line); background:#fff; border-radius:8px;
+    width:28px; height:28px; cursor:pointer; font-weight:800; color:var(--ink);
+  }
+  #foundLabel b{color:var(--accent);}
+  .solved{color:var(--good); font-weight:800; margin-left:2px;}
+  #reveal{background:none; border:0; font:inherit; font-size:12.5px; color:var(--ink-soft);
+    text-decoration:underline; cursor:pointer; margin-top:14px;}
+
+  #overlay{
+    position:fixed; inset:0; background:rgba(28,40,54,.45); display:none;
+    align-items:center; justify-content:center; z-index:50; padding:20px;
+  }
+  #overlay.show{display:flex;}
+  .card{
+    background:#fff; border-radius:20px; padding:30px 34px; text-align:center; max-width:330px;
+    animation:pop .35s cubic-bezier(.2,1.4,.4,1) both;
+    box-shadow:0 18px 50px rgba(20,32,45,.35);
+  }
+  @keyframes pop{from{transform:scale(.7); opacity:0}}
+  .card h2{font-family:'Fraunces',serif; font-weight:620; margin:0 0 8px; font-size:26px;}
+  .card p{margin:0 0 18px; color:var(--ink-soft); font-size:14.5px; line-height:1.5;}
+  .card .words{font-weight:800; letter-spacing:.14em; color:var(--ink); font-size:13px; margin-bottom:16px;}
+
+  @media (prefers-reduced-motion: reduce){
+    .tile{transition:none;}
+    .letter.nod,.letter.shake,.tile.jolt,.card{animation:none !important;}
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="eyebrow">Prototype · 4×4 Omino Edition</div>
+  <h1>Daily <span class="dana">Dana</span>gram</h1>
+</header>
+
+<div id="boardWrap"><div id="board"><div id="zone"></div></div></div>
+
+<div id="msg">Drag a piece, or tap it then tap a destination. Double-tap empty space to undo, triple-tap to redo.</div>
+
+<div class="actions">
+  <button class="btn icon" id="spreadBtn" aria-label="Spread singles to the edges" title="Spread singles out">
+    <svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <rect x="10" y="10" width="4" height="4" rx="0.5"/>
+      <polyline points="7 3 3 3 3 7"/><line x1="3" y1="3" x2="8.5" y2="8.5"/>
+      <polyline points="17 3 21 3 21 7"/><line x1="21" y1="3" x2="15.5" y2="8.5"/>
+      <polyline points="21 17 21 21 17 21"/><line x1="21" y1="21" x2="15.5" y2="15.5"/>
+      <polyline points="7 21 3 21 3 17"/><line x1="3" y1="21" x2="8.5" y2="15.5"/>
+    </svg>
+  </button>
+  <button class="btn icon" id="shuffleBtn" aria-label="Shuffle" title="Shuffle">
+    <svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <polyline points="16 3 21 3 21 8"/><line x1="4" y1="20" x2="21" y2="3"/>
+      <polyline points="21 16 21 21 16 21"/><line x1="15" y1="15" x2="21" y2="21"/>
+      <line x1="4" y1="4" x2="9" y2="9"/>
+    </svg>
+  </button>
+  <button class="btn icon" id="undoBtn" aria-label="Undo" title="Undo" disabled>↶</button>
+  <button class="btn icon" id="redoBtn" aria-label="Redo" title="Redo" disabled>↷</button>
+  <button class="btn primary" id="submitBtn">Check</button>
+</div>
+
+<div class="meta">
+  <div class="nav">
+    <button id="prevBtn" aria-label="Previous puzzle">‹</button>
+    <span id="puzzleLabel">Puzzle 1 of 8</span>
+    <button id="nextBtn" aria-label="Next puzzle">›</button>
+  </div>
+  <span id="foundLabel">Solutions found: <b>0</b> of 1</span>
+</div>
+<button id="reveal">Reveal solution</button>
+
+<div id="overlay"><div class="card">
+  <h2 id="cardTitle">Solution!</h2>
+  <div class="words" id="cardWords"></div>
+  <p id="cardBody"></p>
+  <button class="btn primary" id="closeCard">Keep playing</button>
+</div></div>
+
+<script>
+const WORDS = `able aced aces ache achy acid acne acre acts adds aged ages aide aids aims airs airy ajar akin alas ales ally alms aloe also alto amen amid ammo amps anew ante ants apes apex apps aqua arch arcs area aria arid arks arms army arts asks atom atop aunt aura auto avid away awed axed axes axis axle babe baby back bade bags bail bait bake bald bale balk ball balm band bane bang bank bans barb bard bare bark barn bars base bash bask bass bath bats bawl bays bead beak beam bean bear beat beau beck beds beef been beep beer bees beet begs bell belt bend bent best bets bevy bias bibs bide bids bike bile bill bind bins bird bite bits blab blah bled blew blip blob bloc blog blot blow blue blur boar boas boat bobs bode body bogs boil bold bolt bomb bond bone bonk bony book boom boon boos boot bore born boss both bout bowl bows boys brag bran bras brat bray bred brew brie brig brim brow buck buds buff bugs bulb bulk bull bump bums bunk buns bunt buoy burn burp burr bury bush bust busy buts butt buys buzz byte cabs cafe cage cake calf call calm came camp cane cans cape caps card care carp cars cart case cash cask cast cats cave cede cell cent chap char chat chef chew chic chin chip chop chow chug cite city clad clam clan clap claw clay clef clip clod clog clop clot club clue coal coat coax cobs coda code cods cogs coil coin coke cola cold colt coma comb come cone cons cook cool coop coos cope cops copy cord core cork corn cost cosy cots coup cove cows cozy crab crag cram crew crib crop crow crux cube cubs cued cues cuff cull cult cups curb curd cure curl curt cusp cute cuts cyan cyst dabs dads daft dais dale dame damp dams dank dare dark darn dart dash data date daub dawn days daze dead deaf deal dean dear debt deck deed deem deep deer deft defy dell demo dens dent deny desk dews dial dice died dies diet digs dill dime dims dine ding dins dips dire dirt disc dish disk diva dive dock docs dodo does dogs dole doll dolt dome done dons doom door dope dorm dose dote dots dour dove down doze drab drag draw drew drip drop drug drum dual dubs duck duct dude duds duel dues duet duke dull duly dumb dump dune dung dunk duos dusk dust duty dyed dyes each earl earn ears ease east easy eats ebbs echo eddy edge edgy edit eels eggs egos eked elks elms else emit ends envy eons epic eras etch euro even ever eves evil ewes exam exec exit expo eyed eyes face fact fade fads fail fair fake fall fame fang fans fare farm fast fate fats faun faux fawn fear feat feed feel fees feet fell felt fend fern feta feud fibs fife figs file fill film find fine fins fire firm firs fish fist fits five fizz flag flak flan flap flat flaw flea fled flee flew flex flip flit floe flog flop flow flub flue flux foal foam fobs foes fogs foil fold folk fond font food fool foot ford fore fork form fort foul four fowl foxy frat fray free fret frog from fuel full fume fund funk furl furs fury fuse fuss fuzz gabs gags gain gait gala gale gall game gang gaps garb gash gasp gate gave gawk gaze gear geek gels gems gene gent germ gets gift gigs gild gill gilt gins gird girl gist give glad glee glen glib glob glow glue glum glut gnat gnaw goad goal goat gobs gods goes gold golf gone gong good goof goon goop gore gory gosh gout gown grab gram gray grew grey grid grim grin grip grit grog grow grub gulf gull gulp gums gunk guns guru gush gust guts guys gyms hack hail hair hale half hall halo halt hams hand hang hard hare harm harp hash hate hats haul have hawk hays haze hazy head heal heap hear heat heck heed heel heft heir held helm help hemp hens herb herd here hero hers hewn hick hide high hike hill hilt hind hint hips hire hiss hits hive hoax hobo hoes hogs hold hole holy home hone honk hood hoof hook hoop hoot hope hops horn hose host hour howl hubs hues huff huge hugs hula hulk hull hums hung hunk hunt hurl hurt hush husk huts hymn hype iced ices icky icon idea idle idly idol iffy inch info inks inky inns into ions iota iris irks iron isle itch item jabs jack jade jail jams jars jaws jazz jean jeep jeer jerk jest jets jibe jigs jilt jinx jive jobs jock jogs join joke jolt josh jots jowl joys judo jugs jump junk jury just jute juts kale keel keen keep kegs kelp kept keys kick kids kill kiln kilo kilt kind king kink kiss kite kits kiwi knee knew knit knob knot know labs lace lack lacy lads lady lags laid lair lake lamb lame lamp land lane laps lard lark lash lass last late laud lava lawn laws lays laze lazy lead leaf leak lean leap left legs lend lens lent less lest lets levy liar lice lick lids lied lien lies lieu life lift like lilt lily limb lime limo limp line link lint lion lips lisp list live load loaf loan lobe lobs loch lock loft logo logs loin lone long look loom loon loop loot lope lops lord lore lose loss lost lots loud lout love lows lube luck luge lull lump lung lure lurk lush lust lute lynx mace made magi maid mail maim main make male mall malt mama mane many maps mare mark mars mart mash mask mass mast mate math mats maul mayo maze mead meal mean meat meek meet meld melt memo mend menu meow mere mesa mesh mess mice mics mild mile milk mill mime mind mine mini mink mint minx mire miss mist mite mitt moan moat mobs mock mode mold mole molt moms monk mood moon moor moot mope mops more morn moss most moth move mows much muck mugs mule mums murk muse mush musk must mute mutt myth nabs nags nail name nape naps navy near neat neck need neon nerd nest nets news newt next nice nick nigh nine nips node nods none nook noon nope norm nose nosy note noun nova nude nuke null numb nuns nuts oaks oars oath oats obey oboe odds odes odor ogle ogre oils oily oink okay okra omen omit once ones only onto onus onyx ooze oozy opal open opts opus oral orbs orca ores ouch ours oust outs oval oven over owed owes owls owns oxen pace pack pact pads page paid pail pain pair pale palm pals pane pang pans pant papa pare park part pass past path pats pave pawn paws pays peak peal pear peas peat peck pecs peek peel peer pegs pelt pens pent perk perm pert peso pest pets pews pick pier pies pigs pike pile pill pine ping pink pins pint pipe pita pith pits pity plan play plea pled plod plop plot plow ploy plug plum plus pods poem poet poke pole poll polo pomp pond pony poof pool poop poor pope pops pore pork port pose posh post posy pots pour pout pray prep prey prim prod prom prop pros prow pubs puck puff pugs puke pull pulp puma pump punk puns punt puny pupa pups pure purr push puts putt quad quip quit quiz race rack racy raft rage rags raid rail rain rake ramp rams rang rank rant rapt rare rash rasp rate rats rave rays raze read real ream reap rear redo reds reed reef reek reel refs rein rely rend rent rest ribs rice rich ride rife riff rift rigs rile rims rind ring rink riot ripe rips rise risk rite road roam roar robe robs rock rode rods role roll romp roof rook room root rope rose rosy rote rots rout rove rows rubs ruby rude rugs ruin rule rums rune rung runs runt ruse rush rust ruts sack safe saga sage sags said sail sake sale salt same sand sane sang sank saps sash sass save saws says scab scam scan scar scat scum seal seam sear seas seat sect seed seek seem seen seep seer sees self sell semi send sent sets sewn sews shed shin ship shod shoe shoo shop shot show shun shut sick side sift sigh sign silk sill silo silt sing sink sins sips sire sirs site sits size skew skid skim skin skip skis skit slab slam slap slat slaw sled slew slid slim slip slit slob slog slop slot slow slug slum slur smog smug snag snap snip snob snot snow snub snug soak soap soar sobs sock soda sofa soft soil sold sole solo some song sons soon soot sore sort soul soup sour sows spam span spar spas spat sped spew spin spit spot spry spud spun spur stab stag star stay stem step stew stir stop stow stub stud stun subs such suck suds sued sues suet suit sulk sumo sums sung sunk suns sure surf swab swam swan swap swat sway swig swim sync tabs tack taco tact tags tail take tale talk tall tame tang tank tans tape taps tarp tart task taut taxi teak teal team tear teas tech teem teen tell temp tend tens tent term tern test text than that thaw thee them then they thin this thou thud thug thus tick tide tidy tied tier ties tiff tile till tilt time tins tint tiny tips tire toad toes tofu toga toil told toll tomb tome tone tons took tool toot tops tore torn tort toss tote tots tour tout town tows toys tram trap tray tree trek trim trio trip trod trot true tuba tube tubs tuck tuft tugs tuna tune turf turn tusk tutu twig twin twit twos type typo ugly undo unit unto upon urge urns used user uses vain vane vans vary vase vast vats veal veer veil vein vend vent verb very vest veto vets vial vibe vice view vile vine visa vise void volt vote vows wade wads waft wage wags waif wail wait wake walk wall wand wane want ward ware warm warn warp wars wart wary wash wasp watt wave wavy waxy ways weak wean wear webs weds weed week weep weld well welt went wept were west wets wham what when whet whey whim whip whir whiz whoa whom whys wick wide wife wigs wild will wilt wimp wind wine wing wink wins wipe wire wiry wise wish wisp with wits woes woke wolf womb wood wool word wore work worm worn wove wows wrap wren writ yaks yams yank yaps yard yarn yawn yeah year yell yelp yeti yoga yogi yoke yolk your yuck zaps zeal zero zest zinc zing zips zits zone zoom zoos`.trim().split(/\s+/);
+const WORDSET = new Set(WORDS);
+const PUZZLES = [{"solution":["step","time","edit","wets"],"pieces":[{"cells":[[0,0],[0,1],[1,0],[1,1]],"letters":"stti"},{"cells":[[0,2],[1,2],[1,3]],"letters":"eme"},{"cells":[[2,3],[3,3]],"letters":"ts"},{"cells":[[2,2]],"letters":"i"},{"cells":[[2,0]],"letters":"e"},{"cells":[[2,1]],"letters":"d"},{"cells":[[0,3]],"letters":"p"},{"cells":[[3,2]],"letters":"t"},{"cells":[[3,1]],"letters":"e"},{"cells":[[3,0]],"letters":"w"}],"numSolutions":2},{"solution":["atop","lake","acre","soak"],"pieces":[{"cells":[[2,2],[3,1],[3,2]],"letters":"roa"},{"cells":[[1,2],[1,3],[2,3]],"letters":"kee"},{"cells":[[0,0],[0,1]],"letters":"at"},{"cells":[[1,1],[2,1]],"letters":"ac"},{"cells":[[2,0]],"letters":"a"},{"cells":[[0,3]],"letters":"p"},{"cells":[[1,0]],"letters":"l"},{"cells":[[0,2]],"letters":"o"},{"cells":[[3,0]],"letters":"s"},{"cells":[[3,3]],"letters":"k"}],"numSolutions":1},{"solution":["star","lame","open","bent"],"pieces":[{"cells":[[0,1],[0,2],[1,1],[1,2]],"letters":"taam"},{"cells":[[2,1],[3,1]],"letters":"pe"},{"cells":[[2,2],[2,3]],"letters":"en"},{"cells":[[3,2],[3,3]],"letters":"nt"},{"cells":[[3,0]],"letters":"b"},{"cells":[[1,3]],"letters":"e"},{"cells":[[0,3]],"letters":"r"},{"cells":[[1,0]],"letters":"l"},{"cells":[[0,0]],"letters":"s"},{"cells":[[2,0]],"letters":"o"}],"numSolutions":1},{"solution":["wads","area","sing","hate"],"pieces":[{"cells":[[0,0],[1,0]],"letters":"wa"},{"cells":[[1,1],[1,2]],"letters":"re"},{"cells":[[2,0],[3,0]],"letters":"sh"},{"cells":[[2,1],[3,1]],"letters":"ia"},{"cells":[[2,2]],"letters":"n"},{"cells":[[0,2]],"letters":"d"},{"cells":[[3,2]],"letters":"t"},{"cells":[[2,3]],"letters":"g"},{"cells":[[3,3]],"letters":"e"},{"cells":[[0,3]],"letters":"s"},{"cells":[[0,1]],"letters":"a"},{"cells":[[1,3]],"letters":"a"}],"numSolutions":1},{"solution":["stab","pale","exec","disk"],"pieces":[{"cells":[[2,2],[3,1],[3,2],[3,3]],"letters":"eisk"},{"cells":[[0,1],[0,2],[0,3],[1,1]],"letters":"taba"},{"cells":[[2,0],[2,1],[3,0]],"letters":"exd"},{"cells":[[1,2],[1,3]],"letters":"le"},{"cells":[[0,0]],"letters":"s"},{"cells":[[1,0]],"letters":"p"},{"cells":[[2,3]],"letters":"c"}],"numSolutions":1},{"solution":["slob","pike","acre","teas"],"pieces":[{"cells":[[2,1],[3,1],[3,2]],"letters":"cea"},{"cells":[[1,0],[2,0]],"letters":"pa"},{"cells":[[0,3],[1,3]],"letters":"be"},{"cells":[[2,2]],"letters":"r"},{"cells":[[3,3]],"letters":"s"},{"cells":[[1,2]],"letters":"k"},{"cells":[[1,1]],"letters":"i"},{"cells":[[0,2]],"letters":"o"},{"cells":[[0,1]],"letters":"l"},{"cells":[[3,0]],"letters":"t"},{"cells":[[0,0]],"letters":"s"},{"cells":[[2,3]],"letters":"e"}],"numSolutions":2},{"solution":["scar","cage","amen","nest"],"pieces":[{"cells":[[0,0],[0,1],[0,2],[1,2]],"letters":"scag"},{"cells":[[2,1],[3,1],[3,2]],"letters":"mes"},{"cells":[[0,3],[1,3]],"letters":"re"},{"cells":[[2,3]],"letters":"n"},{"cells":[[1,1]],"letters":"a"},{"cells":[[2,0]],"letters":"a"},{"cells":[[1,0]],"letters":"c"},{"cells":[[3,3]],"letters":"t"},{"cells":[[2,2]],"letters":"e"},{"cells":[[3,0]],"letters":"n"}],"numSolutions":1},{"solution":["lads","area","dies","yams"],"pieces":[{"cells":[[1,0],[2,0],[2,1]],"letters":"adi"},{"cells":[[0,0],[0,1],[1,1]],"letters":"lar"},{"cells":[[0,3],[1,3]],"letters":"sa"},{"cells":[[3,0],[3,1]],"letters":"ya"},{"cells":[[3,2]],"letters":"m"},{"cells":[[3,3]],"letters":"s"},{"cells":[[2,3]],"letters":"s"},{"cells":[[2,2]],"letters":"e"},{"cells":[[1,2]],"letters":"e"},{"cells":[[0,2]],"letters":"d"}],"numSolutions":1}];
+
+const OCOLORS = ['var(--o1)','var(--o2)','var(--o3)','var(--o4)','var(--o5)','var(--o6)'];
+
+const S_MAX = 84;
+let state = {
+  idx: 0,
+  mode: 'free',              // 'strict' | 'free'
+  pieces: [],                // {letters, cells:[[r,c],...], color, tiles:[el], shape info}
+  sel: null,                 // {pi, anchor}
+  busy: false,
+  revealed: false,
+  found: PUZZLES.map(() => new Set()),
+  drag: null,                // {pi, anchor, startX, startY, moved}
+  tap: { count: 0, timer: null },
+  undo: [],
+  redo: [],
+  sessions: {},              // per-puzzle saved state (cells + undo/redo)
+};
+let S = 72, GAP = 3;
+
+const board = document.getElementById('board');
+const zone = document.getElementById('zone');
+const msg = document.getElementById('msg');
+
+// ---------------------------------------------------------------- helpers
+const cols = () => state.mode === 'free' ? 6 : 4;
+const innerOff = () => state.mode === 'free' ? 1 : 0;
+const key = (r, c) => r * 8 + c;
+
+function occupancy() {
+  const map = new Map();
+  state.pieces.forEach((p, pi) =>
+    p.cells.forEach(([r, c], ci) => map.set(key(r, c), { pi, ci })));
+  return map;
+}
+
+function normShape(cells) {
+  const r0 = Math.min(...cells.map(c => c[0]));
+  const c0 = Math.min(...cells.map(c => c[1]));
+  return cells.map(([r, c]) => [r - r0, c - c0])
+              .sort((a, b) => a[0] - b[0] || a[1] - b[1])
+              .map(c => c.join(',')).join(';');
+}
+
+function setMsg(text, tone) {
+  msg.textContent = text;
+  msg.className = tone || '';
+}
+
+// ------------------------------------------------------- the move engine
+// Plans a translation of piece `pi` so its `anchor` cell lands on (tr,tc).
+// Displaced pieces are gently nudged to their nearest open, shape-preserving
+// spot. A congruent piece sitting exactly on the target is a clean swap.
+// Returns {ok:true, moves:{pi:[cells]}, kind, apply} or {ok:false, reason, blockers}.
+function planMove(pi, anchor, tr, tc, mode) {
+  const P = state.pieces[pi];
+  const [ar, ac] = P.cells[anchor];
+  const dr = tr - ar, dc = tc - ac;
+  if (dr === 0 && dc === 0) return { ok: false, reason: null };
+
+  const n = mode === 'free' ? 6 : 4;
+  const nc = P.cells.map(([r, c]) => [r + dr, c + dc]);
+  if (nc.some(([r, c]) => r < 0 || c < 0 || r >= n || c >= n))
+    return { ok: false, blockers: [], reason: 'That would leave the board.' };
+
+  const occ = occupancy();
+  const newSet = new Set(nc.map(([r, c]) => key(r, c)));
+  const displaced = new Set();
+  nc.forEach(([r, c]) => {
+    const hit = occ.get(key(r, c));
+    if (hit && hit.pi !== pi) displaced.add(hit.pi);
+  });
+
+  const moves = { [pi]: nc };
+  if (displaced.size === 0)
+    return { ok: true, moves, kind: 'move', apply: applier(moves) };
+
+  // clean congruent swap: one displaced piece sitting exactly on the target
+  if (displaced.size === 1) {
+    const qi = [...displaced][0], Q = state.pieces[qi];
+    const exact = Q.cells.length === nc.length &&
+                  Q.cells.every(([r, c]) => newSet.has(key(r, c)));
+    if (exact) {
+      const qNew = Q.cells.map(([r, c]) => [r - dr, c - dc]);
+      if (qNew.every(([r, c]) => r >= 0 && c >= 0 && r < n && c < n)) {
+        moves[qi] = qNew;
+        return { ok: true, moves, kind: 'swap', apply: applier(moves) };
+      }
+    }
+  }
+
+  // nudge: relocate displaced pieces, preferring the cells the mover vacated
+  // (so the whole thing reads like a swap even when several tiles shift).
+  const oldSet = new Set(P.cells.map(([r, c]) => key(r, c)));
+  const hole = new Set([...oldSet].filter(k => !newSet.has(k)));   // cells P left behind
+
+  const used = new Set();
+  state.pieces.forEach((p, idx) => {
+    if (idx === pi || displaced.has(idx)) return;
+    p.cells.forEach(([r, c]) => used.add(key(r, c)));
+  });
+  nc.forEach(([r, c]) => used.add(key(r, c)));
+
+  // harder (larger) pieces first
+  const order = [...displaced].sort((a, b) =>
+    state.pieces[b].cells.length - state.pieces[a].cells.length);
+  for (const qi of order) {
+    const spot = bestPlacement(state.pieces[qi], used, hole, n);
+    if (!spot) return { ok: false, blockers: [...displaced],
+                        reason: 'No room to shift that piece.' };
+    spot.forEach(([r, c]) => { used.add(key(r, c)); hole.delete(key(r, c)); });
+    moves[qi] = spot;
+  }
+  return { ok: true, moves, kind: 'nudge', apply: applier(moves) };
+}
+
+// Best shape-preserving translation of `piece` into free cells, preferring
+// placements that fill the vacated `hole` (swap-like), then least movement.
+function bestPlacement(piece, used, hole, n) {
+  const base = piece.cells;
+  const r0 = Math.min(...base.map(c => c[0])), c0 = Math.min(...base.map(c => c[1]));
+  const h = Math.max(...base.map(c => c[0])) - r0;
+  const w = Math.max(...base.map(c => c[1])) - c0;
+  let best = null, bestFill = -1, bestDist = Infinity;
+  for (let R = 0; R <= n - 1 - h; R++) {
+    for (let C = 0; C <= n - 1 - w; C++) {
+      const cells = base.map(([r, c]) => [r - r0 + R, c - c0 + C]);
+      if (cells.some(([r, c]) => used.has(key(r, c)))) continue;
+      const fill = cells.reduce((a, [r, c]) => a + (hole.has(key(r, c)) ? 1 : 0), 0);
+      const dist = Math.abs(R - r0) + Math.abs(C - c0);
+      // maximize overlap with the vacated hole, then minimize distance moved
+      if (fill > bestFill || (fill === bestFill && dist < bestDist)) {
+        bestFill = fill; bestDist = dist; best = cells;
+      }
+    }
+  }
+  return best;
+}
+
+function applier(moves) {
+  return () => {
+    for (const idx in moves) state.pieces[idx].cells = moves[idx].map(c => c.slice());
+  };
+}
+
+// back-compat shim for scramble/tests
+function tryMove(pi, anchor, tr, tc, mode) {
+  return planMove(pi, anchor, tr, tc, mode);
+}
+
+// -------------------------------------------------------------- scramble
+function scramble() {
+  const P = PUZZLES[state.idx];
+  state.pieces.forEach((p, i) => {
+    p.cells = P.pieces[i].cells.map(c => c.slice());
+  });
+  // validity check in the 0-indexed frame the scramble works in (before the
+  // free-board shift), so the "not already solved" guard actually fires
+  const solvedAt0 = () => {
+    const occ = occupancy();
+    const g = [];
+    for (let r = 0; r < 4; r++) {
+      let row = '';
+      for (let c = 0; c < 4; c++) {
+        const h = occ.get(key(r, c));
+        if (!h) return false;
+        row += state.pieces[h.pi].letters[h.ci];
+      }
+      g.push(row);
+    }
+    for (let i = 0; i < 4; i++) {
+      if (!WORDSET.has(g[i])) return false;
+      if (!WORDSET.has(g[0][i] + g[1][i] + g[2][i] + g[3][i])) return false;
+    }
+    return true;
+  };
+  let applied = 0, guard = 0;
+  while ((applied < 45 || solvedAt0()) && guard < 6000) {
+    guard++;
+    const pi = Math.floor(Math.random() * state.pieces.length);
+    const anchor = Math.floor(Math.random() * state.pieces[pi].cells.length);
+    const tr = Math.floor(Math.random() * 4), tc = Math.floor(Math.random() * 4);
+    const res = tryMove(pi, anchor, tr, tc, 'strict');
+    if (res.ok) { res.apply(); applied++; }
+  }
+  if (state.mode === 'free') shiftAll(1);
+  state.revealed = false;
+}
+
+function shiftAll(d) {
+  state.pieces.forEach(p => { p.cells = p.cells.map(([r, c]) => [r + d, c + d]); });
+}
+
+// ------------------------------------------------------------ validation
+function currentGrid() {
+  // returns 4x4 letter grid (from inner zone in free mode) or null if incomplete
+  const off = innerOff();
+  const occ = occupancy();
+  const g = [];
+  for (let r = 0; r < 4; r++) {
+    let row = '';
+    for (let c = 0; c < 4; c++) {
+      const hit = occ.get(key(r + off, c + off));
+      if (!hit) return null;
+      row += state.pieces[hit.pi].letters[hit.ci];
+    }
+    g.push(row);
+  }
+  return g;
+}
+
+function gridIsValidCrossword() {
+  const g = currentGrid();
+  if (!g) return false;
+  for (let i = 0; i < 4; i++) {
+    if (!WORDSET.has(g[i])) return false;
+    const col = g[0][i] + g[1][i] + g[2][i] + g[3][i];
+    if (!WORDSET.has(col)) return false;
+  }
+  return true;
+}
+
+// ------------------------------------------------------------- rendering
+function metrics() {
+  const avail = Math.min(560, document.getElementById('boardWrap').clientWidth);
+  S = Math.min(S_MAX, Math.floor((avail - 8) / cols()));
+  GAP = Math.max(2, Math.round(S * 0.045));
+  const size = S * cols();
+  board.style.width = size + 'px';
+  board.style.height = size + 'px';
+  board.style.backgroundImage = 'none';        // outer scratch area is plain
+  // grid lines live only in the inner 4×4 target zone
+  zone.style.left = S + 'px'; zone.style.top = S + 'px';
+  zone.style.width = (S * 4) + 'px'; zone.style.height = (S * 4) + 'px';
+  zone.style.backgroundImage =
+    'linear-gradient(rgba(90,110,130,.16) 1px, transparent 1px),' +
+    'linear-gradient(90deg, rgba(90,110,130,.16) 1px, transparent 1px)';
+  zone.style.backgroundSize = S + 'px ' + S + 'px';
+  // nest the zone's corner concentrically inside the corner tiles (inset by GAP)
+  zone.style.borderRadius = (Math.round(S * 0.17) + GAP) + 'px';
+  board.classList.add('free');
+  state.pieces.forEach(styleTiles);
+}
+
+function buildTiles() {
+  board.querySelectorAll('.tile').forEach(t => t.remove());
+  state.pieces.forEach((p, pi) => {
+    p.tiles = p.cells.map((cell, ci) => {
+      const t = document.createElement('div');
+      t.className = 'tile';
+      t.dataset.pi = pi; t.dataset.ci = ci;
+      t.setAttribute('role', 'button');
+      t.tabIndex = 0;
+      const span = document.createElement('span');
+      span.className = 'letter';
+      span.textContent = p.letters[ci];
+      t.appendChild(span);
+      board.appendChild(t);
+      return t;
+    });
+    styleTiles(p);
+  });
+  positionTiles();
+}
+
+// Static chrome per tile: fused-neighbor bridging, corner radii, seams, edges.
+function styleTiles(p) {
+  if (!p.tiles) return;
+  const rel = normShape2(p.cells);        // relative shape cells as [r,c]
+  const has = (r, c) => rel.some(([rr, cc]) => rr === r && cc === c);
+  const pi = state.pieces.indexOf(p);
+  p.cells.forEach((cell, ci) => {
+    const [R, C] = rel[ci];
+    const t = p.tiles[ci];
+    const up = has(R - 1, C), dn = has(R + 1, C), lf = has(R, C - 1), rt = has(R, C + 1);
+    let w = S - 2 * GAP, h = S - 2 * GAP;
+    if (rt) w += 2 * GAP;
+    if (dn) h += 2 * GAP;
+    t.style.width = w + 'px'; t.style.height = h + 'px';
+    const rad = Math.round(S * 0.17);
+    t.style.borderRadius = [
+      (!up && !lf) ? rad : 0, (!up && !rt) ? rad : 0,
+      (!dn && !rt) ? rad : 0, (!dn && !lf) ? rad : 0,
+    ].map(v => v + 'px').join(' ');
+    t.style.background = p.cells.length > 1 ? p.color : 'var(--tile)';
+    // a fused tile is stretched toward its neighbor; re-center the glyph over
+    // the true cell center with a compensating margin (leaves seams untouched)
+    const letter = t.querySelector('.letter');
+    letter.style.fontSize = Math.round(S * 0.42) + 'px';
+    letter.style.marginRight = rt ? (2 * GAP) + 'px' : '0';
+    letter.style.marginBottom = dn ? (2 * GAP) + 'px' : '0';
+    t.dataset.edges = [!up, !rt, !dn, !lf].map(v => v ? 1 : 0).join('');
+    chrome(t, false);
+    // anchor-highlight geometry: a true square centered on the cell center,
+    // which sits at (S/2 - GAP) from the tile origin on both axes regardless
+    // of how the tile is stretched to fuse with neighbors.
+    const sq = Math.round((S - 2 * GAP) * 0.82);
+    t.style.setProperty('--sq', sq + 'px');
+    t.style.setProperty('--sqoff', ((S / 2 - GAP) - sq / 2) + 'px');
+    // seams between fused cells, centered exactly on the shared boundary
+    t.querySelectorAll('.seam').forEach(s => s.remove());
+    const bnd = (S - GAP - 0.75);           // boundary offset from tile origin, minus half seam
+    if (rt) { const s = document.createElement('i'); s.className = 'seam';
+      s.style.cssText = `top:16%;bottom:16%;width:1.5px;left:${bnd}px`; t.appendChild(s); }
+    if (dn) { const s = document.createElement('i'); s.className = 'seam';
+      s.style.cssText = `left:16%;right:16%;height:1.5px;top:${bnd}px`; t.appendChild(s); }
+  });
+}
+
+function normShape2(cells) {
+  const r0 = Math.min(...cells.map(c => c[0]));
+  const c0 = Math.min(...cells.map(c => c[1]));
+  return cells.map(([r, c]) => [r - r0, c - c0]);
+}
+
+// edge-only borders via inset shadows (so fused pieces read as one silhouette)
+function chrome(t, selected) {
+  const [up, rt, dn, lf] = t.dataset.edges.split('').map(Number);
+  const w = selected ? 2 : 1.25;
+  const col = selected
+    ? 'color-mix(in srgb, var(--ink) 45%, transparent)'
+    : 'var(--tile-line)';
+  const sh = [];
+  if (up) sh.push(`inset 0 ${w}px 0 ${col}`);
+  if (dn) sh.push(`inset 0 -${w}px 0 ${col}`);
+  if (lf) sh.push(`inset ${w}px 0 0 ${col}`);
+  if (rt) sh.push(`inset -${w}px 0 0 ${col}`);
+  t.style.boxShadow = sh.join(',');
+}
+
+function positionTiles() {
+  state.pieces.forEach(p => {
+    p.cells.forEach(([r, c], ci) => {
+      p.tiles[ci].style.transform =
+        `translate(${c * S + GAP}px, ${r * S + GAP}px)`;
+    });
+  });
+}
+
+function setSelected(sel) {
+  state.pieces.forEach((p, pi) => p.tiles && p.tiles.forEach((t, ci) => {
+    const on = sel && sel.pi === pi;
+    t.classList.toggle('sel', !!on);
+    // flag the anchor cell (the one that lands on your tap), including singles
+    t.classList.toggle('anchorsel', !!on && sel.anchor === ci);
+    chrome(t, !!on);
+  }));
+  state.sel = sel;
+}
+
+// --------------------------------------------------------- undo / redo
+function snapshot() {
+  return state.pieces.map(p => p.cells.map(c => c.slice()));
+}
+function restore(snap) {
+  state.pieces.forEach((p, i) => { p.cells = snap[i].map(c => c.slice()); });
+}
+function commit(moves) {          // push history, apply a planned move
+  state.undo.push(snapshot());
+  if (state.undo.length > 100) state.undo.shift();
+  state.redo.length = 0;
+  for (const idx in moves) state.pieces[idx].cells = moves[idx].map(c => c.slice());
+  positionTiles();
+  updateUndoButtons();
+}
+function clearHistory() { state.undo.length = 0; state.redo.length = 0; updateUndoButtons(); }
+function updateUndoButtons() {
+  document.getElementById('undoBtn').disabled = state.undo.length === 0;
+  document.getElementById('redoBtn').disabled = state.redo.length === 0;
+}
+function doUndo() {
+  if (!state.undo.length || state.busy) return;
+  state.redo.push(snapshot());
+  restore(state.undo.pop());
+  setSelected(null); clearGhost(); positionTiles(); updateUndoButtons();
+  setMsg('');
+}
+function doRedo() {
+  if (!state.redo.length || state.busy) return;
+  state.undo.push(snapshot());
+  restore(state.redo.pop());
+  setSelected(null); clearGhost(); positionTiles(); updateUndoButtons();
+  setMsg('');
+}
+document.getElementById('undoBtn').addEventListener('click', doUndo);
+document.getElementById('redoBtn').addEventListener('click', doRedo);
+window.addEventListener('keydown', e => {
+  if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'z') {
+    e.preventDefault();
+    e.shiftKey ? doRedo() : doUndo();
+  }
+});
+
+// ------------------------------------------------------------- ghost layer
+let ghostPool = [];
+function clearGhost() { ghostPool.forEach(g => g.style.opacity = '0'); }
+function drawGhost(moves, movedPi, ok) {
+  const PAL = {
+    ok:    { fill: 'color-mix(in srgb, var(--accent) 17%, transparent)',    edge: 'color-mix(in srgb, var(--accent) 68%, transparent)' },
+    nudge: { fill: 'color-mix(in srgb, var(--ink-soft) 15%, transparent)',  edge: 'color-mix(in srgb, var(--ink-soft) 52%, transparent)' },
+    bad:   { fill: 'color-mix(in srgb, var(--bad) 16%, transparent)',       edge: 'color-mix(in srgb, var(--bad) 68%, transparent)' },
+  };
+  let gi = 0;
+  const paint = (cells, kind) => {
+    const set = new Set(cells.map(([r, c]) => r + ',' + c));
+    const has = (r, c) => set.has(r + ',' + c);
+    const { fill, edge } = PAL[kind];
+    const rad = Math.round(S * 0.17);
+    cells.forEach(([r, c]) => {
+      let g = ghostPool[gi];
+      if (!g) { g = document.createElement('div'); board.appendChild(g); ghostPool.push(g); }
+      g.className = 'ghost';
+      const up = has(r - 1, c), dn = has(r + 1, c), lf = has(r, c - 1), rt = has(r, c + 1);
+      // full-cell size so adjacent cells touch → contiguous silhouette
+      g.style.width = S + 'px'; g.style.height = S + 'px';
+      g.style.transform = `translate(${c * S}px, ${r * S}px)`;
+      g.style.background = fill;
+      g.style.borderRadius = [
+        (!up && !lf) ? rad : 0, (!up && !rt) ? rad : 0,
+        (!dn && !rt) ? rad : 0, (!dn && !lf) ? rad : 0,
+      ].map(v => v + 'px').join(' ');
+      // draw a 2px border only on outer edges (interior seams stay open)
+      const w = 2, sh = [];
+      if (!up) sh.push(`inset 0 ${w}px 0 ${edge}`);
+      if (!dn) sh.push(`inset 0 -${w}px 0 ${edge}`);
+      if (!lf) sh.push(`inset ${w}px 0 0 ${edge}`);
+      if (!rt) sh.push(`inset -${w}px 0 0 ${edge}`);
+      g.style.boxShadow = sh.join(',');
+      g.style.opacity = '1';
+      gi++;
+    });
+  };
+  if (ok) {
+    for (const idx in moves) paint(moves[idx], +idx === movedPi ? 'ok' : 'nudge');
+  } else {
+    paint(moves[movedPi] || [], 'bad');
+  }
+  for (; gi < ghostPool.length; gi++) ghostPool[gi].style.opacity = '0';
+}
+
+// ------------------------------------------------------------ interaction
+// Shared: convert a client point to a board cell (may be outside the grid).
+function pointToCell(clientX, clientY) {
+  const rect = board.getBoundingClientRect();
+  return [Math.floor((clientY - rect.top) / S), Math.floor((clientX - rect.left) / S)];
+}
+
+// preview a move for the currently-selected/dragged piece landing at (tr,tc)
+function preview(pi, anchor, tr, tc) {
+  const res = planMove(pi, anchor, tr, tc, state.mode);
+  if (res.reason === null && !res.ok) { clearGhost(); return; }  // no-op (same spot)
+  drawGhost(res.moves || {}, pi, res.ok);
+}
+
+const DRAG_THRESHOLD = 4;
+
+board.addEventListener('pointerdown', e => {
+  if (state.busy) return;
+  e.preventDefault();
+  board.setPointerCapture(e.pointerId);
+  const [r, c] = pointToCell(e.clientX, e.clientY);
+  const inside = r >= 0 && c >= 0 && r < cols() && c < cols();
+  const hit = inside ? occupancy().get(key(r, c)) : null;
+  // remember the gesture; DON'T change selection yet (a tap may be a move)
+  state.drag = {
+    pi: hit ? hit.pi : null,
+    anchor: hit ? hit.ci : null,
+    downR: r, downC: c,
+    startX: e.clientX, startY: e.clientY,
+    moved: false, dragging: false,
+  };
+});
+
+board.addEventListener('pointermove', e => {
+  const d = state.drag;
+  if (!d) {                                   // hover preview when something's selected
+    if (state.sel && !state.busy) {
+      const [r, c] = pointToCell(e.clientX, e.clientY);
+      if (r >= 0 && c >= 0 && r < cols() && c < cols())
+        preview(state.sel.pi, state.sel.anchor, r, c);
+      else clearGhost();
+    }
+    return;
+  }
+  if (d.pi === null) return;                   // press began on empty space: no drag
+  const dx = e.clientX - d.startX, dy = e.clientY - d.startY;
+  if (!d.dragging && Math.hypot(dx, dy) < DRAG_THRESHOLD) return;
+  if (!d.dragging) {                            // drag begins → now select the grabbed piece
+    d.dragging = true;
+    setSelected({ pi: d.pi, anchor: d.anchor });
+    board.classList.add('dragging');
+  }
+  const P = state.pieces[d.pi];
+  P.tiles.forEach((tile, ci) => {
+    const [r, c] = P.cells[ci];
+    tile.classList.add('dragging');
+    tile.style.transform = `translate(${c * S + GAP + dx}px, ${r * S + GAP + dy}px)`;
+  });
+  const [ar, ac] = P.cells[d.anchor];
+  const tr = Math.floor((ar * S + S / 2 + dy) / S);
+  const tc = Math.floor((ac * S + S / 2 + dx) / S);
+  preview(d.pi, d.anchor, tr, tc);
+});
+
+function endDrag(e) {
+  const d = state.drag;
+  if (!d) return;
+  state.drag = null;
+
+  if (d.dragging) {                             // a real drag → commit or snap back
+    board.classList.remove('dragging');
+    const P = state.pieces[d.pi];
+    P.tiles.forEach(t => t.classList.remove('dragging'));
+    const dx = e.clientX - d.startX, dy = e.clientY - d.startY;
+    const [ar, ac] = P.cells[d.anchor];
+    const tr = Math.floor((ar * S + S / 2 + dy) / S);
+    const tc = Math.floor((ac * S + S / 2 + dx) / S);
+    clearGhost();
+    const res = planMove(d.pi, d.anchor, tr, tc, state.mode);
+    if (res.ok) { commit(res.moves); setSelected(null); setMsg(''); }
+    else { positionTiles(); if (res.reason) setMsg(res.reason, 'bad'); setSelected(null); }
+    return;
+  }
+  tapAt(d.downR, d.downC);                       // it was a tap
+}
+board.addEventListener('pointerup', endDrag);
+board.addEventListener('pointercancel', () => {
+  if (!state.drag) return;
+  if (state.drag.dragging) { positionTiles(); setSelected(null); clearGhost(); board.classList.remove('dragging'); }
+  state.drag = null;
+});
+
+board.addEventListener('keydown', e => {
+  if (e.key !== 'Enter' && e.key !== ' ') return;
+  const t = e.target.closest('.tile');
+  if (!t) return;
+  e.preventDefault();
+  const [r, c] = state.pieces[+t.dataset.pi].cells[+t.dataset.ci];
+  tapAt(r, c);
+});
+
+// One tap resolves against the current selection:
+//  • no selection  → select the piece under the tap
+//  • tapping the selected piece again → deselect
+//  • otherwise      → move the selected piece so its anchor lands on this cell
+//                     (works for empty cells and for swapping onto another piece)
+function resetTap() {
+  if (state.tap.timer) { clearTimeout(state.tap.timer); state.tap.timer = null; }
+  state.tap.count = 0;
+}
+// Double-tap empty space → undo, triple-tap → redo. Only fires on empty cells
+// with nothing selected, so it never interferes with selecting or moving pieces.
+function registerEmptyTap() {
+  state.tap.count++;
+  if (state.tap.timer) clearTimeout(state.tap.timer);
+  const n = state.tap.count;
+  state.tap.timer = setTimeout(() => {
+    state.tap.timer = null; state.tap.count = 0;
+    if (n === 2) { doUndo(); setMsg('Undo', ''); }
+    else if (n >= 3) { doRedo(); setMsg('Redo', ''); }
+  }, 300);
+}
+
+function tapAt(r, c) {
+  const hit = occupancy().get(key(r, c));
+
+  if (state.sel) {
+    resetTap();
+    if (hit && hit.pi === state.sel.pi) {       // tapped selected piece → toggle off
+      setSelected(null); clearGhost(); setMsg('');
+      return;
+    }
+    const res = planMove(state.sel.pi, state.sel.anchor, r, c, state.mode);
+    clearGhost();
+    if (res.ok) { commit(res.moves); setSelected(null); setMsg(''); }
+    else { if (res.reason) setMsg(res.reason, 'bad'); setSelected(null); }
+    return;
+  }
+
+  if (hit) {
+    resetTap();
+    setSelected({ pi: hit.pi, anchor: hit.ci });
+    setMsg(state.pieces[hit.pi].cells.length > 1
+      ? 'Piece selected — drag it, or tap where it should go.'
+      : 'Tile selected — drag it, or tap where it should go.');
+    return;
+  }
+
+  registerEmptyTap();                            // empty space, nothing selected
+}
+
+// ---------------------------------------------------------------- submit
+document.getElementById('submitBtn').addEventListener('click', () => {
+  if (state.busy) return;
+  setSelected(null); clearGhost();
+
+  if (state.mode === 'free') {
+    const off = innerOff();
+    const stray = [];
+    state.pieces.forEach(p => p.cells.forEach(([r, c], ci) => {
+      if (r < off || c < off || r >= off + 4 || c >= off + 4) stray.push(p.tiles[ci]);
+    }));
+    if (stray.length) {
+      stray.forEach(t => {
+        t.classList.remove('jolt'); void t.offsetWidth; t.classList.add('jolt');
+        const old = t.style.boxShadow;
+        t.style.boxShadow = 'inset 0 0 0 3px color-mix(in srgb, var(--ink) 55%, transparent)';
+        setTimeout(() => { t.style.boxShadow = old; }, 900);
+      });
+      setMsg(stray.length + (stray.length === 1 ? ' letter is' : ' letters are') +
+             ' outside the grid.', '');
+      return;
+    }
+  }
+
+  const g = currentGrid();
+  const off = innerOff();
+  const occ = occupancy();
+  const lineLetters = i => {
+    const cells = [];
+    for (let j = 0; j < 4; j++)
+      cells.push(i < 4 ? [i + off, j + off] : [j + off, (i - 4) + off]);
+    return cells.map(([r, c]) => {
+      const h = occ.get(key(r, c));
+      return state.pieces[h.pi].tiles[h.ci].querySelector('.letter');
+    });
+  };
+
+  state.busy = true;
+  let good = 0;
+  const ANIM = 385, PAUSE = 150, STEP = ANIM + PAUSE;   // 35% faster, half the pause
+  for (let i = 0; i < 8; i++) {
+    const word = i < 4 ? g[i] : g[0][i-4] + g[1][i-4] + g[2][i-4] + g[3][i-4];
+    const ok = WORDSET.has(word);
+    if (ok) good++;
+    setTimeout(() => {
+      const letters = lineLetters(i);
+      // whole row/column bounces (valid) or shakes (invalid) in unison
+      letters.forEach(el => {
+        el.classList.remove('nod', 'shake'); void el.offsetWidth;
+        el.classList.add(ok ? 'nod' : 'shake');
+      });
+      setMsg((i < 4 ? 'Row ' + (i + 1) : 'Column ' + (i - 3)) + ': ' +
+             word.toUpperCase() + (ok ? ' ✓' : ''), '');
+    }, i * STEP);
+  }
+
+  setTimeout(() => {
+    state.busy = false;
+    document.querySelectorAll('.letter').forEach(el => {
+      el.classList.remove('nod', 'shake');
+    });
+    if (good === 8) onWin(g);
+    else setMsg(good + ' of 8 words check out. Keep going!', '');
+  }, 8 * STEP + 400);
+});
+
+function onWin(g) {
+  const P = PUZZLES[state.idx];
+  const gs = g.join('');
+  const found = state.found[state.idx];
+  const cardT = document.getElementById('cardTitle');
+  const cardB = document.getElementById('cardBody');
+  document.getElementById('cardWords').textContent =
+    g.map(w => w.toUpperCase()).join(' · ');
+
+  if (state.revealed) {
+    cardT.textContent = 'Revealed';
+    cardB.textContent = 'That’s the intended solution — solve one on your own to count it.';
+  } else if (found.has(gs)) {
+    cardT.textContent = 'Déjà vu!';
+    cardB.textContent = `You already found this one. ${found.size} of ${P.numSolutions} solutions so far.`;
+  } else {
+    found.add(gs);
+    cardT.textContent = 'Solution!';
+    cardB.textContent = found.size >= P.numSolutions
+      ? `That’s every solution — you found all ${P.numSolutions} of today’s Danagram. 🏆`
+      : `You found ${found.size} of ${P.numSolutions} solutions to today’s Danagram.`;
+  }
+  updateMeta();
+  document.getElementById('overlay').classList.add('show');
+}
+
+document.getElementById('closeCard').addEventListener('click', () =>
+  document.getElementById('overlay').classList.remove('show'));
+
+// --------------------------------------------------------------- controls
+function updateMeta() {
+  const solved = state.found[state.idx].size > 0;
+  document.getElementById('puzzleLabel').innerHTML =
+    `Puzzle ${state.idx + 1} of ${PUZZLES.length}` + (solved ? ' <span class="solved">✓</span>' : '');
+  const P = PUZZLES[state.idx];
+  document.getElementById('foundLabel').innerHTML =
+    `Solutions found: <b>${state.found[state.idx].size}</b> of ${P.numSolutions}`;
+}
+
+function deepCells(cellsPerPiece) {
+  return cellsPerPiece.map(pc => pc.map(c => c.slice()));
+}
+function saveSession() {
+  if (!state.pieces.length) return;
+  state.sessions[state.idx] = {
+    cells: state.pieces.map(p => p.cells.map(c => c.slice())),
+    undo: state.undo.map(deepCells),
+    redo: state.redo.map(deepCells),
+  };
+}
+
+function loadPuzzle(idx) {
+  saveSession();                                 // preserve the puzzle we're leaving
+  state.idx = (idx + PUZZLES.length) % PUZZLES.length;
+  state.mode = 'free';
+  const P = PUZZLES[state.idx];
+  state.pieces = P.pieces.map((p, i) => ({
+    letters: p.letters,
+    cells: p.cells.map(c => c.slice()),
+    color: OCOLORS[
+      P.pieces.filter((q, j) => j < i && q.letters.length > 1).length % OCOLORS.length],
+  }));
+  setSelected(null); clearGhost();
+
+  const sess = state.sessions[state.idx];
+  if (sess && sess.cells.length === state.pieces.length) {   // returning → restore progress
+    state.pieces.forEach((p, i) => { p.cells = sess.cells[i].map(c => c.slice()); });
+    state.undo = sess.undo.map(deepCells);
+    state.redo = sess.redo.map(deepCells);
+  } else {                                       // first visit → fresh scramble
+    state.undo = []; state.redo = [];
+    scramble();
+  }
+
+  buildTiles();
+  metrics();
+  positionTiles();
+  updateUndoButtons();
+  updateMeta();
+  setMsg('Drag a piece, or tap it then tap a destination. Double-tap empty space to undo.');
+}
+
+document.getElementById('prevBtn').addEventListener('click', () => !state.busy && loadPuzzle(state.idx - 1));
+document.getElementById('nextBtn').addEventListener('click', () => !state.busy && loadPuzzle(state.idx + 1));
+// Shuffle the current arrangement with random legal moves — one undo reverts it.
+function doShuffle() {
+  if (state.busy) return;
+  setSelected(null); clearGhost();
+  const orig = snapshot();
+  scramble();                                    // same packed-into-the-4×4 randomization
+                                                   // used to set up a fresh puzzle
+  const moves = {};
+  state.pieces.forEach((p, i) => { moves[i] = p.cells.map(c => c.slice()); });
+  restore(orig);                                 // rewind, then commit as a single undo step
+  commit(moves);
+  setMsg('Shuffled.');
+}
+document.getElementById('shuffleBtn').addEventListener('click', doShuffle);
+
+// Spread single tiles out to the perimeter, leaving the ominos in the middle.
+function doSpread() {
+  if (state.busy) return;
+  setSelected(null); clearGhost();
+  const N = 6;
+  const isPerim = (r, c) => r === 0 || c === 0 || r === N - 1 || c === N - 1;
+  const perim = [];
+  for (let r = 0; r < N; r++) for (let c = 0; c < N; c++) if (isPerim(r, c)) perim.push([r, c]);
+
+  const used = new Set();
+  state.pieces.forEach(p => { if (p.cells.length > 1) p.cells.forEach(([r, c]) => used.add(key(r, c))); });
+
+  const moves = {};
+  // singles already on the perimeter claim their spot first (they tend to stay),
+  // then inner singles fill the nearest remaining edge cells
+  const order = state.pieces
+    .map((p, i) => ({ p, i }))
+    .filter(o => o.p.cells.length === 1)
+    .sort((a, b) => (isPerim(b.p.cells[0][0], b.p.cells[0][1]) ? 1 : 0) -
+                    (isPerim(a.p.cells[0][0], a.p.cells[0][1]) ? 1 : 0));
+  order.forEach(({ p, i }) => {
+    const [sr, sc] = p.cells[0];
+    let best = null, bd = Infinity;
+    for (const [r, c] of perim) {
+      if (used.has(key(r, c))) continue;
+      const d = Math.abs(r - sr) + Math.abs(c - sc);
+      if (d < bd) { bd = d; best = [r, c]; }
+    }
+    if (!best) best = [sr, sc];
+    used.add(key(best[0], best[1]));
+    moves[i] = [best.slice()];
+  });
+  state.pieces.forEach((p, i) => { if (!(i in moves)) moves[i] = p.cells.map(c => c.slice()); });
+  commit(moves);                                 // current state unchanged → single undo reverts
+  setMsg('Singles pushed to the edges — try placing the ominos first.');
+}
+document.getElementById('spreadBtn').addEventListener('click', doSpread);
+document.getElementById('reveal').addEventListener('click', () => {
+  if (state.busy) return;
+  const P = PUZZLES[state.idx];
+  state.pieces.forEach((p, i) => { p.cells = P.pieces[i].cells.map(c => c.slice()); });
+  if (state.mode === 'free') shiftAll(1);
+  state.revealed = true;
+  setSelected(null); clearGhost(); clearHistory(); positionTiles();
+  setMsg('Solution revealed — shuffle to play it for real.', 'good');
+});
+
+// Internal only (no UI): kept so tooling/tests can view the packed 4×4 window.
+function setMode(mode) {
+  if (state.busy || mode === state.mode) return;
+  if (mode === 'strict') {
+    const off = 1;
+    const outside = state.pieces.some(p =>
+      p.cells.some(([r, c]) => r < off || c < off || r >= off + 4 || c >= off + 4));
+    if (outside) return;
+    shiftAll(-1);
+  } else {
+    shiftAll(1);
+  }
+  state.mode = mode;
+  setSelected(null); clearGhost(); clearHistory();
+  metrics(); positionTiles();
+}
+
+window.addEventListener('resize', () => { metrics(); positionTiles(); });
+
+loadPuzzle(0);
+</script>
+</body>
+</html>
