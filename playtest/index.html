@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-<title>Daily Danagram — 4×4 Omino Prototype</title>
+<title>Daily Danagram — 4×4 Prototype</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,500;0,9..144,620;1,9..144,500&family=Archivo:wght@500;600;700;800&display=swap" rel="stylesheet">
 <style>
@@ -119,7 +119,7 @@
   #board.dragging .tile:not(.dragging){transition:transform .16s cubic-bezier(.3,.9,.4,1.1);}
 
   /* ghost landing preview (contiguous silhouette drawn in JS) */
-  .ghost{
+  .move-ghost{
     position:absolute; left:0; top:0; pointer-events:none; z-index:2;
     box-sizing:border-box;
     transition:transform .09s linear, opacity .12s;
@@ -138,6 +138,30 @@
   .solved{color:var(--good); font-weight:800; margin-left:2px;}
   #reveal{background:none; border:0; font:inherit; font-size:12.5px; color:var(--ink-soft);
     text-decoration:underline; cursor:pointer; margin-top:14px;}
+  .footlinks{display:flex; gap:18px; justify-content:center; margin-top:14px;}
+  .footlinks button{background:none; border:0; font:inherit; font-size:12.5px;
+    color:var(--ink-soft); text-decoration:underline; cursor:pointer;}
+  .footlinks button:hover{color:var(--ink);}
+  #reveal{margin-top:0;}
+
+  /* rating widget */
+  #rateBlock, #revealBlock{margin:6px 0 4px;}
+  #revealBlock{display:none;}
+  .rate-row{display:flex; align-items:center; justify-content:space-between;
+    gap:12px; margin:10px 2px;}
+  .rate-label{font-size:14px; font-weight:600; color:var(--ink);}
+  .stars-input{display:inline-flex; position:relative; cursor:pointer; user-select:none;}
+  .stars-input .star{
+    position:relative; width:26px; height:26px; font-size:24px; line-height:26px;
+    text-align:center; color:var(--tile-line);
+  }
+  .stars-input .star .fill{
+    position:absolute; left:0; top:0; height:100%; overflow:hidden; width:0;
+    color:var(--gold); white-space:nowrap;
+  }
+  .calc{font-weight:800; font-size:15px; color:var(--ink); margin:6px 0 4px;}
+  .calc b{color:var(--accent);}
+  .yours{font-size:13px; color:var(--ink-soft); margin-bottom:6px;}
 
   #overlay{
     position:fixed; inset:0; background:rgba(28,40,54,.45); display:none;
@@ -149,6 +173,8 @@
     animation:pop .35s cubic-bezier(.2,1.4,.4,1) both;
     box-shadow:0 18px 50px rgba(20,32,45,.35);
   }
+  .card-actions{display:flex; flex-direction:column; gap:9px; margin-top:16px;}
+  .card-actions .btn{width:100%; box-sizing:border-box; margin:0;}
   @keyframes pop{from{transform:scale(.7); opacity:0}}
   .card h2{font-family:'Fraunces',serif; font-weight:620; margin:0 0 8px; font-size:26px;}
   .card p{margin:0 0 18px; color:var(--ink-soft); font-size:14.5px; line-height:1.5;}
@@ -201,19 +227,43 @@
   </div>
   <span id="foundLabel">Solutions found: <b>0</b> of 1</span>
 </div>
-<button id="reveal">Reveal solution</button>
+<div class="footlinks">
+  <button id="rateBtn">Rate this puzzle</button>
+  <button id="reveal">Reveal solution</button>
+</div>
 
 <div id="overlay"><div class="card">
   <h2 id="cardTitle">Solution!</h2>
   <div class="words" id="cardWords"></div>
   <p id="cardBody"></p>
-  <button class="btn primary" id="closeCard">Keep playing</button>
+
+  <div id="rateBlock">
+    <div class="rate-row">
+      <span class="rate-label">How hard was it?</span>
+      <div class="stars-input" id="starsDifficulty" data-value="0"></div>
+    </div>
+    <div class="rate-row">
+      <span class="rate-label">How fun was it?</span>
+      <div class="stars-input" id="starsEnjoy" data-value="0"></div>
+    </div>
+  </div>
+
+  <div id="revealBlock">
+    <div class="calc" id="calcDifficulty"></div>
+    <div class="yours" id="yourRating"></div>
+  </div>
+
+  <div class="card-actions">
+    <button class="btn primary" id="rateSubmit" disabled>Submit</button>
+    <button class="btn ghost" id="copyData">Copy playtest data</button>
+    <button class="btn ghost" id="closeCard">Keep playing</button>
+  </div>
 </div></div>
 
 <script>
 const WORDS = `able aced aces ache achy acid acne acre acts adds aged ages aide aids aims airs airy ajar akin alas ales ally alms aloe also alto amen amid ammo amps anew ante ants apes apex apps aqua arch arcs area aria arid arks arms army arts asks atom atop aunt aura auto avid away awed axed axes axis axle babe baby back bade bags bail bait bake bald bale balk ball balm band bane bang bank bans barb bard bare bark barn bars base bash bask bass bath bats bawl bays bead beak beam bean bear beat beau beck beds beef been beep beer bees beet begs bell belt bend bent best bets bevy bias bibs bide bids bike bile bill bind bins bird bite bits blab blah bled blew blip blob bloc blog blot blow blue blur boar boas boat bobs bode body bogs boil bold bolt bomb bond bone bonk bony book boom boon boos boot bore born boss both bout bowl bows boys brag bran bras brat bray bred brew brie brig brim brow buck buds buff bugs bulb bulk bull bump bums bunk buns bunt buoy burn burp burr bury bush bust busy buts butt buys buzz byte cabs cafe cage cake calf call calm came camp cane cans cape caps card care carp cars cart case cash cask cast cats cave cede cell cent chap char chat chef chew chic chin chip chop chow chug cite city clad clam clan clap claw clay clef clip clod clog clop clot club clue coal coat coax cobs coda code cods cogs coil coin coke cola cold colt coma comb come cone cons cook cool coop coos cope cops copy cord core cork corn cost cosy cots coup cove cows cozy crab crag cram crew crib crop crow crux cube cubs cued cues cuff cull cult cups curb curd cure curl curt cusp cute cuts cyan cyst dabs dads daft dais dale dame damp dams dank dare dark darn dart dash data date daub dawn days daze dead deaf deal dean dear debt deck deed deem deep deer deft defy dell demo dens dent deny desk dews dial dice died dies diet digs dill dime dims dine ding dins dips dire dirt disc dish disk diva dive dock docs dodo does dogs dole doll dolt dome done dons doom door dope dorm dose dote dots dour dove down doze drab drag draw drew drip drop drug drum dual dubs duck duct dude duds duel dues duet duke dull duly dumb dump dune dung dunk duos dusk dust duty dyed dyes each earl earn ears ease east easy eats ebbs echo eddy edge edgy edit eels eggs egos eked elks elms else emit ends envy eons epic eras etch euro even ever eves evil ewes exam exec exit expo eyed eyes face fact fade fads fail fair fake fall fame fang fans fare farm fast fate fats faun faux fawn fear feat feed feel fees feet fell felt fend fern feta feud fibs fife figs file fill film find fine fins fire firm firs fish fist fits five fizz flag flak flan flap flat flaw flea fled flee flew flex flip flit floe flog flop flow flub flue flux foal foam fobs foes fogs foil fold folk fond font food fool foot ford fore fork form fort foul four fowl foxy frat fray free fret frog from fuel full fume fund funk furl furs fury fuse fuss fuzz gabs gags gain gait gala gale gall game gang gaps garb gash gasp gate gave gawk gaze gear geek gels gems gene gent germ gets gift gigs gild gill gilt gins gird girl gist give glad glee glen glib glob glow glue glum glut gnat gnaw goad goal goat gobs gods goes gold golf gone gong good goof goon goop gore gory gosh gout gown grab gram gray grew grey grid grim grin grip grit grog grow grub gulf gull gulp gums gunk guns guru gush gust guts guys gyms hack hail hair hale half hall halo halt hams hand hang hard hare harm harp hash hate hats haul have hawk hays haze hazy head heal heap hear heat heck heed heel heft heir held helm help hemp hens herb herd here hero hers hewn hick hide high hike hill hilt hind hint hips hire hiss hits hive hoax hobo hoes hogs hold hole holy home hone honk hood hoof hook hoop hoot hope hops horn hose host hour howl hubs hues huff huge hugs hula hulk hull hums hung hunk hunt hurl hurt hush husk huts hymn hype iced ices icky icon idea idle idly idol iffy inch info inks inky inns into ions iota iris irks iron isle itch item jabs jack jade jail jams jars jaws jazz jean jeep jeer jerk jest jets jibe jigs jilt jinx jive jobs jock jogs join joke jolt josh jots jowl joys judo jugs jump junk jury just jute juts kale keel keen keep kegs kelp kept keys kick kids kill kiln kilo kilt kind king kink kiss kite kits kiwi knee knew knit knob knot know labs lace lack lacy lads lady lags laid lair lake lamb lame lamp land lane laps lard lark lash lass last late laud lava lawn laws lays laze lazy lead leaf leak lean leap left legs lend lens lent less lest lets levy liar lice lick lids lied lien lies lieu life lift like lilt lily limb lime limo limp line link lint lion lips lisp list live load loaf loan lobe lobs loch lock loft logo logs loin lone long look loom loon loop loot lope lops lord lore lose loss lost lots loud lout love lows lube luck luge lull lump lung lure lurk lush lust lute lynx mace made magi maid mail maim main make male mall malt mama mane many maps mare mark mars mart mash mask mass mast mate math mats maul mayo maze mead meal mean meat meek meet meld melt memo mend menu meow mere mesa mesh mess mice mics mild mile milk mill mime mind mine mini mink mint minx mire miss mist mite mitt moan moat mobs mock mode mold mole molt moms monk mood moon moor moot mope mops more morn moss most moth move mows much muck mugs mule mums murk muse mush musk must mute mutt myth nabs nags nail name nape naps navy near neat neck need neon nerd nest nets news newt next nice nick nigh nine nips node nods none nook noon nope norm nose nosy note noun nova nude nuke null numb nuns nuts oaks oars oath oats obey oboe odds odes odor ogle ogre oils oily oink okay okra omen omit once ones only onto onus onyx ooze oozy opal open opts opus oral orbs orca ores ouch ours oust outs oval oven over owed owes owls owns oxen pace pack pact pads page paid pail pain pair pale palm pals pane pang pans pant papa pare park part pass past path pats pave pawn paws pays peak peal pear peas peat peck pecs peek peel peer pegs pelt pens pent perk perm pert peso pest pets pews pick pier pies pigs pike pile pill pine ping pink pins pint pipe pita pith pits pity plan play plea pled plod plop plot plow ploy plug plum plus pods poem poet poke pole poll polo pomp pond pony poof pool poop poor pope pops pore pork port pose posh post posy pots pour pout pray prep prey prim prod prom prop pros prow pubs puck puff pugs puke pull pulp puma pump punk puns punt puny pupa pups pure purr push puts putt quad quip quit quiz race rack racy raft rage rags raid rail rain rake ramp rams rang rank rant rapt rare rash rasp rate rats rave rays raze read real ream reap rear redo reds reed reef reek reel refs rein rely rend rent rest ribs rice rich ride rife riff rift rigs rile rims rind ring rink riot ripe rips rise risk rite road roam roar robe robs rock rode rods role roll romp roof rook room root rope rose rosy rote rots rout rove rows rubs ruby rude rugs ruin rule rums rune rung runs runt ruse rush rust ruts sack safe saga sage sags said sail sake sale salt same sand sane sang sank saps sash sass save saws says scab scam scan scar scat scum seal seam sear seas seat sect seed seek seem seen seep seer sees self sell semi send sent sets sewn sews shed shin ship shod shoe shoo shop shot show shun shut sick side sift sigh sign silk sill silo silt sing sink sins sips sire sirs site sits size skew skid skim skin skip skis skit slab slam slap slat slaw sled slew slid slim slip slit slob slog slop slot slow slug slum slur smog smug snag snap snip snob snot snow snub snug soak soap soar sobs sock soda sofa soft soil sold sole solo some song sons soon soot sore sort soul soup sour sows spam span spar spas spat sped spew spin spit spot spry spud spun spur stab stag star stay stem step stew stir stop stow stub stud stun subs such suck suds sued sues suet suit sulk sumo sums sung sunk suns sure surf swab swam swan swap swat sway swig swim sync tabs tack taco tact tags tail take tale talk tall tame tang tank tans tape taps tarp tart task taut taxi teak teal team tear teas tech teem teen tell temp tend tens tent term tern test text than that thaw thee them then they thin this thou thud thug thus tick tide tidy tied tier ties tiff tile till tilt time tins tint tiny tips tire toad toes tofu toga toil told toll tomb tome tone tons took tool toot tops tore torn tort toss tote tots tour tout town tows toys tram trap tray tree trek trim trio trip trod trot true tuba tube tubs tuck tuft tugs tuna tune turf turn tusk tutu twig twin twit twos type typo ugly undo unit unto upon urge urns used user uses vain vane vans vary vase vast vats veal veer veil vein vend vent verb very vest veto vets vial vibe vice view vile vine visa vise void volt vote vows wade wads waft wage wags waif wail wait wake walk wall wand wane want ward ware warm warn warp wars wart wary wash wasp watt wave wavy waxy ways weak wean wear webs weds weed week weep weld well welt went wept were west wets wham what when whet whey whim whip whir whiz whoa whom whys wick wide wife wigs wild will wilt wimp wind wine wing wink wins wipe wire wiry wise wish wisp with wits woes woke wolf womb wood wool word wore work worm worn wove wows wrap wren writ yaks yams yank yaps yard yarn yawn yeah year yell yelp yeti yoga yogi yoke yolk your yuck zaps zeal zero zest zinc zing zips zits zone zoom zoos`.trim().split(/\s+/);
 const WORDSET = new Set(WORDS);
-const PUZZLES = [{"solution":["step","time","edit","wets"],"pieces":[{"cells":[[0,0],[0,1],[1,0],[1,1]],"letters":"stti"},{"cells":[[0,2],[1,2],[1,3]],"letters":"eme"},{"cells":[[2,3],[3,3]],"letters":"ts"},{"cells":[[2,2]],"letters":"i"},{"cells":[[2,0]],"letters":"e"},{"cells":[[2,1]],"letters":"d"},{"cells":[[0,3]],"letters":"p"},{"cells":[[3,2]],"letters":"t"},{"cells":[[3,1]],"letters":"e"},{"cells":[[3,0]],"letters":"w"}],"numSolutions":2},{"solution":["atop","lake","acre","soak"],"pieces":[{"cells":[[2,2],[3,1],[3,2]],"letters":"roa"},{"cells":[[1,2],[1,3],[2,3]],"letters":"kee"},{"cells":[[0,0],[0,1]],"letters":"at"},{"cells":[[1,1],[2,1]],"letters":"ac"},{"cells":[[2,0]],"letters":"a"},{"cells":[[0,3]],"letters":"p"},{"cells":[[1,0]],"letters":"l"},{"cells":[[0,2]],"letters":"o"},{"cells":[[3,0]],"letters":"s"},{"cells":[[3,3]],"letters":"k"}],"numSolutions":1},{"solution":["star","lame","open","bent"],"pieces":[{"cells":[[0,1],[0,2],[1,1],[1,2]],"letters":"taam"},{"cells":[[2,1],[3,1]],"letters":"pe"},{"cells":[[2,2],[2,3]],"letters":"en"},{"cells":[[3,2],[3,3]],"letters":"nt"},{"cells":[[3,0]],"letters":"b"},{"cells":[[1,3]],"letters":"e"},{"cells":[[0,3]],"letters":"r"},{"cells":[[1,0]],"letters":"l"},{"cells":[[0,0]],"letters":"s"},{"cells":[[2,0]],"letters":"o"}],"numSolutions":1},{"solution":["wads","area","sing","hate"],"pieces":[{"cells":[[0,0],[1,0]],"letters":"wa"},{"cells":[[1,1],[1,2]],"letters":"re"},{"cells":[[2,0],[3,0]],"letters":"sh"},{"cells":[[2,1],[3,1]],"letters":"ia"},{"cells":[[2,2]],"letters":"n"},{"cells":[[0,2]],"letters":"d"},{"cells":[[3,2]],"letters":"t"},{"cells":[[2,3]],"letters":"g"},{"cells":[[3,3]],"letters":"e"},{"cells":[[0,3]],"letters":"s"},{"cells":[[0,1]],"letters":"a"},{"cells":[[1,3]],"letters":"a"}],"numSolutions":1},{"solution":["stab","pale","exec","disk"],"pieces":[{"cells":[[2,2],[3,1],[3,2],[3,3]],"letters":"eisk"},{"cells":[[0,1],[0,2],[0,3],[1,1]],"letters":"taba"},{"cells":[[2,0],[2,1],[3,0]],"letters":"exd"},{"cells":[[1,2],[1,3]],"letters":"le"},{"cells":[[0,0]],"letters":"s"},{"cells":[[1,0]],"letters":"p"},{"cells":[[2,3]],"letters":"c"}],"numSolutions":1},{"solution":["slob","pike","acre","teas"],"pieces":[{"cells":[[2,1],[3,1],[3,2]],"letters":"cea"},{"cells":[[1,0],[2,0]],"letters":"pa"},{"cells":[[0,3],[1,3]],"letters":"be"},{"cells":[[2,2]],"letters":"r"},{"cells":[[3,3]],"letters":"s"},{"cells":[[1,2]],"letters":"k"},{"cells":[[1,1]],"letters":"i"},{"cells":[[0,2]],"letters":"o"},{"cells":[[0,1]],"letters":"l"},{"cells":[[3,0]],"letters":"t"},{"cells":[[0,0]],"letters":"s"},{"cells":[[2,3]],"letters":"e"}],"numSolutions":2},{"solution":["scar","cage","amen","nest"],"pieces":[{"cells":[[0,0],[0,1],[0,2],[1,2]],"letters":"scag"},{"cells":[[2,1],[3,1],[3,2]],"letters":"mes"},{"cells":[[0,3],[1,3]],"letters":"re"},{"cells":[[2,3]],"letters":"n"},{"cells":[[1,1]],"letters":"a"},{"cells":[[2,0]],"letters":"a"},{"cells":[[1,0]],"letters":"c"},{"cells":[[3,3]],"letters":"t"},{"cells":[[2,2]],"letters":"e"},{"cells":[[3,0]],"letters":"n"}],"numSolutions":1},{"solution":["lads","area","dies","yams"],"pieces":[{"cells":[[1,0],[2,0],[2,1]],"letters":"adi"},{"cells":[[0,0],[0,1],[1,1]],"letters":"lar"},{"cells":[[0,3],[1,3]],"letters":"sa"},{"cells":[[3,0],[3,1]],"letters":"ya"},{"cells":[[3,2]],"letters":"m"},{"cells":[[3,3]],"letters":"s"},{"cells":[[2,3]],"letters":"s"},{"cells":[[2,2]],"letters":"e"},{"cells":[[1,2]],"letters":"e"},{"cells":[[0,2]],"letters":"d"}],"numSolutions":1}];
+const PUZZLES = [{"solution":["step","time","edit","wets"],"pieces":[{"cells":[[0,0],[0,1],[1,0],[1,1]],"letters":"stti"},{"cells":[[0,2],[1,2],[1,3]],"letters":"eme"},{"cells":[[2,3],[3,3]],"letters":"ts"},{"cells":[[2,2]],"letters":"i"},{"cells":[[2,0]],"letters":"e"},{"cells":[[2,1]],"letters":"d"},{"cells":[[0,3]],"letters":"p"},{"cells":[[3,2]],"letters":"t"},{"cells":[[3,1]],"letters":"e"},{"cells":[[3,0]],"letters":"w"}],"numSolutions":2,"difficulty":57,"stars":3,"difficulty_raw":{"search_info":4.778,"p_sol":1.6666666666666667e-05,"space":388080,"branching":8.599,"formable":62,"search_norm":0.468,"lex_norm":0.717,"exact":false}},{"solution":["atop","lake","acre","soak"],"pieces":[{"cells":[[2,2],[3,1],[3,2]],"letters":"roa"},{"cells":[[1,2],[1,3],[2,3]],"letters":"kee"},{"cells":[[0,0],[0,1]],"letters":"at"},{"cells":[[1,1],[2,1]],"letters":"ac"},{"cells":[[2,0]],"letters":"a"},{"cells":[[0,3]],"letters":"p"},{"cells":[[1,0]],"letters":"l"},{"cells":[[0,2]],"letters":"o"},{"cells":[[3,0]],"letters":"s"},{"cells":[[3,3]],"letters":"k"}],"numSolutions":1,"difficulty":52,"stars":3,"difficulty_raw":{"search_info":5.596,"p_sol":2.5344687753446877e-06,"space":394560,"branching":6.06,"formable":202,"search_norm":0.585,"lex_norm":0.419,"exact":false}},{"solution":["star","lame","open","bent"],"pieces":[{"cells":[[0,1],[0,2],[1,1],[1,2]],"letters":"taam"},{"cells":[[2,1],[3,1]],"letters":"pe"},{"cells":[[2,2],[2,3]],"letters":"en"},{"cells":[[3,2],[3,3]],"letters":"nt"},{"cells":[[3,0]],"letters":"b"},{"cells":[[1,3]],"letters":"e"},{"cells":[[0,3]],"letters":"r"},{"cells":[[1,0]],"letters":"l"},{"cells":[[0,0]],"letters":"s"},{"cells":[[2,0]],"letters":"o"}],"numSolutions":1,"difficulty":52,"stars":3,"difficulty_raw":{"search_info":4.778,"p_sol":1.6666666666666667e-05,"space":843840,"branching":7.589,"formable":269,"search_norm":0.468,"lex_norm":0.599,"exact":false}},{"solution":["wads","area","sing","hate"],"pieces":[{"cells":[[0,0],[1,0]],"letters":"wa"},{"cells":[[1,1],[1,2]],"letters":"re"},{"cells":[[2,0],[3,0]],"letters":"sh"},{"cells":[[2,1],[3,1]],"letters":"ia"},{"cells":[[2,2]],"letters":"n"},{"cells":[[0,2]],"letters":"d"},{"cells":[[3,2]],"letters":"t"},{"cells":[[2,3]],"letters":"g"},{"cells":[[3,3]],"letters":"e"},{"cells":[[0,3]],"letters":"s"},{"cells":[[0,1]],"letters":"a"},{"cells":[[1,3]],"letters":"a"}],"numSolutions":1,"difficulty":91,"stars":5,"difficulty_raw":{"search_info":7.894,"p_sol":1.2758018159252727e-08,"space":78382080,"branching":10.281,"formable":225,"search_norm":0.913,"lex_norm":0.915,"exact":false}},{"solution":["stab","pale","exec","disk"],"pieces":[{"cells":[[2,2],[3,1],[3,2],[3,3]],"letters":"eisk"},{"cells":[[0,1],[0,2],[0,3],[1,1]],"letters":"taba"},{"cells":[[2,0],[2,1],[3,0]],"letters":"exd"},{"cells":[[1,2],[1,3]],"letters":"le"},{"cells":[[0,0]],"letters":"s"},{"cells":[[1,0]],"letters":"p"},{"cells":[[2,3]],"letters":"c"}],"numSolutions":1,"difficulty":2,"stars":1,"difficulty_raw":{"search_info":1.623,"p_sol":0.023809523809523808,"space":42,"branching":2.718,"formable":220,"search_norm":0.018,"lex_norm":0.026,"exact":true}},{"solution":["slob","pike","acre","teas"],"pieces":[{"cells":[[2,1],[3,1],[3,2]],"letters":"cea"},{"cells":[[1,0],[2,0]],"letters":"pa"},{"cells":[[0,3],[1,3]],"letters":"be"},{"cells":[[2,2]],"letters":"r"},{"cells":[[3,3]],"letters":"s"},{"cells":[[1,2]],"letters":"k"},{"cells":[[1,1]],"letters":"i"},{"cells":[[0,2]],"letters":"o"},{"cells":[[0,1]],"letters":"l"},{"cells":[[3,0]],"letters":"t"},{"cells":[[0,0]],"letters":"s"},{"cells":[[2,3]],"letters":"e"}],"numSolutions":2,"difficulty":89,"stars":5,"difficulty_raw":{"search_info":7.593,"p_sol":2.5516036318505455e-08,"space":78382080,"branching":10.212,"formable":328,"search_norm":0.87,"lex_norm":0.907,"exact":false}},{"solution":["scar","cage","amen","nest"],"pieces":[{"cells":[[0,0],[0,1],[0,2],[1,2]],"letters":"scag"},{"cells":[[2,1],[3,1],[3,2]],"letters":"mes"},{"cells":[[0,3],[1,3]],"letters":"re"},{"cells":[[2,3]],"letters":"n"},{"cells":[[1,1]],"letters":"a"},{"cells":[[2,0]],"letters":"a"},{"cells":[[1,0]],"letters":"c"},{"cells":[[3,3]],"letters":"t"},{"cells":[[2,2]],"letters":"e"},{"cells":[[3,0]],"letters":"n"}],"numSolutions":1,"difficulty":52,"stars":3,"difficulty_raw":{"search_info":5.1,"p_sol":7.936507936507936e-06,"space":126000,"branching":6.918,"formable":112,"search_norm":0.514,"lex_norm":0.52,"exact":true}},{"solution":["lads","area","dies","yams"],"pieces":[{"cells":[[1,0],[2,0],[2,1]],"letters":"adi"},{"cells":[[0,0],[0,1],[1,1]],"letters":"lar"},{"cells":[[0,3],[1,3]],"letters":"sa"},{"cells":[[3,0],[3,1]],"letters":"ya"},{"cells":[[3,2]],"letters":"m"},{"cells":[[3,3]],"letters":"s"},{"cells":[[2,3]],"letters":"s"},{"cells":[[2,2]],"letters":"e"},{"cells":[[1,2]],"letters":"e"},{"cells":[[0,2]],"letters":"d"}],"numSolutions":1,"difficulty":56,"stars":3,"difficulty_raw":{"search_info":5.109,"p_sol":7.78089013383131e-06,"space":128520,"branching":7.884,"formable":123,"search_norm":0.516,"lex_norm":0.633,"exact":true}}];
 
 const OCOLORS = ['var(--o1)','var(--o2)','var(--o3)','var(--o4)','var(--o5)','var(--o6)'];
 
@@ -625,7 +675,7 @@ function drawGhost(moves, movedPi, ok) {
     cells.forEach(([r, c]) => {
       let g = ghostPool[gi];
       if (!g) { g = document.createElement('div'); board.appendChild(g); ghostPool.push(g); }
-      g.className = 'ghost';
+      g.className = 'move-ghost';
       const up = has(r - 1, c), dn = has(r + 1, c), lf = has(r, c - 1), rt = has(r, c + 1);
       // full-cell size so adjacent cells touch → contiguous silhouette
       g.style.width = S + 'px'; g.style.height = S + 'px';
@@ -722,6 +772,7 @@ function endDrag(e) {
   const d = state.drag;
   if (!d) return;
   state.drag = null;
+  try { board.releasePointerCapture(e.pointerId); } catch (err) {}
 
   if (d.dragging) {                             // a real drag → commit or snap back
     board.classList.remove('dragging');
@@ -740,10 +791,11 @@ function endDrag(e) {
   tapAt(d.downR, d.downC);                       // it was a tap
 }
 board.addEventListener('pointerup', endDrag);
-board.addEventListener('pointercancel', () => {
+board.addEventListener('pointercancel', e => {
   if (!state.drag) return;
   if (state.drag.dragging) { positionTiles(); setSelected(null); clearGhost(); board.classList.remove('dragging'); }
   state.drag = null;
+  try { board.releasePointerCapture(e.pointerId); } catch (err) {}
 });
 
 board.addEventListener('keydown', e => {
@@ -894,8 +946,117 @@ function onWin(g) {
       : `You found ${found.size} of ${P.numSolutions} solutions to today’s Danagram.`;
   }
   updateMeta();
+  openRating(true);
+}
+
+// -------------------------------------------------------- playtest ratings
+const store = {
+  mem: {},
+  get(k) { try { const v = localStorage.getItem(k); return v ? JSON.parse(v) : null; }
+           catch (e) { return this.mem[k] || null; } },
+  set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); }
+              catch (e) { this.mem[k] = v; } },
+};
+state.ratings = store.get('danagram_ratings') || {};
+
+// build a clickable half-star input (values 0.5 .. 5 in 0.5 steps)
+function buildStars(el) {
+  el.innerHTML = '';
+  for (let i = 0; i < 5; i++) {
+    const s = document.createElement('span');
+    s.className = 'star';
+    s.textContent = '★';
+    const fill = document.createElement('span');
+    fill.className = 'fill'; fill.textContent = '★';
+    s.appendChild(fill);
+    el.appendChild(s);
+  }
+  const paint = v => el.querySelectorAll('.star').forEach((s, i) => {
+    const f = Math.max(0, Math.min(1, v - i));   // 0, .5, or 1 of this star
+    s.querySelector('.fill').style.width = (f * 100) + '%';
+  });
+  paint(+el.dataset.value || 0);
+  el.onpointermove = e => {
+    const r = el.getBoundingClientRect();
+    const v = Math.min(5, Math.ceil(((e.clientX - r.left) / r.width) * 10) / 2);
+    paint(Math.max(0.5, v));
+  };
+  el.onpointerleave = () => paint(+el.dataset.value || 0);
+  el.onclick = e => {
+    const r = el.getBoundingClientRect();
+    const v = Math.max(0.5, Math.min(5, Math.ceil(((e.clientX - r.left) / r.width) * 10) / 2));
+    el.dataset.value = v; paint(v);
+    if (typeof el._onset === 'function') el._onset();
+  };
+  el.set = v => { el.dataset.value = v || 0; paint(v || 0); };
+  return el;
+}
+const diffStars = buildStars(document.getElementById('starsDifficulty'));
+const enjoyStars = buildStars(document.getElementById('starsEnjoy'));
+function ratingReady() {
+  const ok = +diffStars.dataset.value > 0 && +enjoyStars.dataset.value > 0;
+  document.getElementById('rateSubmit').disabled = !ok;
+}
+diffStars._onset = ratingReady;
+enjoyStars._onset = ratingReady;
+
+function showReveal() {
+  const P = PUZZLES[state.idx];
+  const r = state.ratings[state.idx];
+  document.getElementById('rateBlock').style.display = 'none';
+  document.getElementById('revealBlock').style.display = 'block';
+  document.getElementById('rateSubmit').disabled = true;
+  document.getElementById('calcDifficulty').innerHTML =
+    `Our difficulty rating: <b>${'★'.repeat(P.stars)}</b> &nbsp;(${P.difficulty}/100)`;
+  document.getElementById('yourRating').textContent = r
+    ? `You said: difficulty ${r.difficulty}★ · fun ${r.enjoyment}★`
+    : '';
+}
+
+// open the panel: if this puzzle is already rated, jump straight to the reveal
+function openRating(won) {
+  state.drag = null;
+  try { board.releasePointerCapture && board.releasePointerCapture(); } catch (err) {}
+  const rated = state.ratings[state.idx];
+  if (!won) {
+    document.getElementById('cardTitle').textContent = 'Rate this puzzle';
+    document.getElementById('cardWords').textContent = '';
+    document.getElementById('cardBody').textContent = rated
+      ? '' : 'Give it a difficulty and fun score to see how it compares.';
+  }
+  if (rated) {
+    showReveal();
+  } else {
+    document.getElementById('revealBlock').style.display = 'none';
+    document.getElementById('rateBlock').style.display = 'block';
+    diffStars.set(0); enjoyStars.set(0); ratingReady();
+  }
   document.getElementById('overlay').classList.add('show');
 }
+
+document.getElementById('rateSubmit').addEventListener('click', () => {
+  state.ratings[state.idx] = {
+    difficulty: +diffStars.dataset.value,
+    enjoyment: +enjoyStars.dataset.value,
+    calc: PUZZLES[state.idx].difficulty,
+    calcStars: PUZZLES[state.idx].stars,
+    words: PUZZLES[state.idx].solution.join('/'),
+    ts: Date.now(),
+  };
+  store.set('danagram_ratings', state.ratings);
+  showReveal();
+});
+
+document.getElementById('copyData').addEventListener('click', () => {
+  const blob = JSON.stringify(state.ratings, null, 1);
+  const done = () => setMsg('Playtest data copied to clipboard.');
+  try { navigator.clipboard.writeText(blob).then(done, done); } catch (e) { done(); }
+});
+
+document.getElementById('rateBtn').addEventListener('click', () => {
+  if (state.busy) return;
+  openRating(false);
+});
 
 document.getElementById('closeCard').addEventListener('click', () =>
   document.getElementById('overlay').classList.remove('show'));
