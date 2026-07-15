@@ -275,6 +275,14 @@
     transform:translate(-50%,-50%); will-change:transform, opacity;
   }
 
+  #shareFallback{
+    display:none; width:100%; box-sizing:border-box; margin:8px 0 2px;
+    font-family:inherit; font-size:16px; line-height:1.5; text-align:center;
+    border:1px solid var(--tile-line); border-radius:10px; padding:8px;
+    background:#F7F9FB; color:var(--ink); resize:none;
+  }
+  #shareFallback.show{display:block;}
+
   /* win summary / share grid */
   #shareBlock{display:none; margin:2px 0 6px;}
   #shareBlock.show{display:block;}
@@ -377,6 +385,7 @@
   <div class="words" id="cardWords"></div>
   <p id="cardBody"></p>
   <div id="shareBlock"></div>
+  <textarea id="shareFallback" readonly rows="5"></textarea>
 
   <div id="rateBlock">
     <div class="rate-row">
@@ -1536,11 +1545,14 @@ async function copyText(text) {
   try {
     const ta = document.createElement('textarea');
     ta.value = text;
-    ta.style.cssText = 'position:fixed;top:0;left:0;width:1px;height:1px;opacity:0;border:0;padding:0;';
+    // iOS refuses to copy from elements that are hidden/zero-sized, so keep it
+    // real but visually out of the way, and use a 16px font to avoid focus zoom.
+    ta.style.cssText = 'position:fixed;left:-9999px;top:50%;width:200px;height:60px;' +
+                       'font-size:16px;opacity:0.01;border:0;padding:0;';
+    ta.contentEditable = 'true';
+    ta.readOnly = false;
     document.body.appendChild(ta);
     if (/iPad|iPhone|iPod/.test(navigator.userAgent)) {
-      ta.contentEditable = 'true';
-      ta.readOnly = false;
       const range = document.createRange();
       range.selectNodeContents(ta);
       const sel = window.getSelection();
@@ -1548,6 +1560,7 @@ async function copyText(text) {
       sel.addRange(range);
       ta.setSelectionRange(0, 999999);
     } else {
+      ta.focus();
       ta.select();
     }
     const ok = document.execCommand('copy');
@@ -1563,10 +1576,38 @@ function flashBtn(btn, msg) {
   setTimeout(() => { btn.textContent = btn.dataset.label; }, 1500);
 }
 
-document.getElementById('shareBtn').addEventListener('click', async () => {
-  const btn = document.getElementById('shareBtn');
-  const ok = await copyText(shareText());
-  flashBtn(btn, ok ? 'Copied!' : 'Copy blocked — select manually');
+const IS_MOBILE = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent || '');
+
+// Last resort when both the share sheet and clipboard are unavailable (common in
+// embedded webviews): show the text selected, so it can be copied by hand.
+function revealForManualCopy(text) {
+  const ta = document.getElementById('shareFallback');
+  ta.value = text;
+  ta.classList.add('show');
+  ta.focus();
+  ta.setSelectionRange(0, text.length);
+}
+
+async function shareOrCopy(text, btn) {
+  // 1. Native share sheet — the reliable path on phones
+  if (IS_MOBILE && navigator.share) {
+    try {
+      await navigator.share({ text });
+      return;
+    } catch (e) {
+      if (e && e.name === 'AbortError') return;      // user dismissed; don't nag
+      /* otherwise fall through */
+    }
+  }
+  // 2. Clipboard
+  if (await copyText(text)) { flashBtn(btn, 'Copied!'); return; }
+  // 3. Show it so it can be copied manually
+  revealForManualCopy(text);
+  flashBtn(btn, 'Select the text above');
+}
+
+document.getElementById('shareBtn').addEventListener('click', () => {
+  shareOrCopy(shareText(), document.getElementById('shareBtn'));
 });
 
 // a burst of confetti on a genuine solve
@@ -1705,6 +1746,8 @@ function showReveal() {
 function openRating(won) {
   state.drag = null;
   try { board.releasePointerCapture && board.releasePointerCapture(); } catch (err) {}
+  const fb = document.getElementById('shareFallback');
+  fb.classList.remove('show'); fb.value = '';
   const rated = state.ratings[state.idx];
   if (won) {
     renderShare();
@@ -1739,11 +1782,9 @@ document.getElementById('rateSubmit').addEventListener('click', () => {
   showReveal();
 });
 
-document.getElementById('copyData').addEventListener('click', async () => {
+document.getElementById('copyData').addEventListener('click', () => {
   const blob = JSON.stringify(state.ratings, null, 1);
-  const ok = await copyText(blob);
-  flashBtn(document.getElementById('copyData'),
-           ok ? 'Copied!' : 'Copy blocked — select manually');
+  shareOrCopy(blob, document.getElementById('copyData'));
 });
 
 document.getElementById('rateBtn').addEventListener('click', () => {
