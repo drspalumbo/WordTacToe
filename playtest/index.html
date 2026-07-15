@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-<title>Daily Danagram — 4×4 Prototype</title>
+<title>Daily Danagram — 4×4 Omino Prototype</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,500;0,9..144,620;1,9..144,500&family=Archivo:wght@500;600;700;800&display=swap" rel="stylesheet">
 <style>
@@ -22,9 +22,10 @@
     background:var(--bg); color:var(--ink);
     font-family:'Archivo',system-ui,sans-serif;
     display:flex; flex-direction:column; align-items:center;
-    min-height:100vh; padding:18px 14px 40px;
+    min-height:100vh; padding:14px 14px 26px;
   }
-  header{text-align:center; margin-bottom:10px;}
+  body.has-drawer{padding-bottom:46px; transition:padding-bottom .2s;}
+  header{text-align:center; margin-bottom:6px;}
   .eyebrow{
     font-size:11px; font-weight:700; letter-spacing:.18em; text-transform:uppercase;
     color:var(--ink-soft); margin-bottom:6px;
@@ -33,7 +34,7 @@
     font-family:'Fraunces',serif; font-weight:620; font-size:clamp(30px,7vw,42px);
     margin:0; letter-spacing:-.01em;
   }
-  h1 .dana{font-style:italic; font-weight:500;}
+  h1 .dana{font-weight:500;}
   .tagline{color:var(--ink-soft); font-size:13.5px; max-width:340px; margin:8px auto 0; line-height:1.45;}
 
   .modes{display:none;}
@@ -76,6 +77,79 @@
   }
   .seam{position:absolute; background:rgba(34,48,63,.14); pointer-events:none; border-radius:2px;}
 
+  .verdict-badge{
+    position:absolute; left:0; top:0; display:flex; align-items:center; justify-content:center;
+    border-radius:50%; color:#fff; font-weight:900; line-height:1;
+    pointer-events:none; z-index:8; opacity:0;
+  }
+  .verdict-badge.good{background:var(--good);}
+  .verdict-badge.bad{background:var(--ink-soft);}
+  .verdict-badge.star{background:var(--gold); color:var(--ink);}
+  .verdict-badge.good.unique{background:var(--accent);}
+
+  /* flying word clone (board → meter, or board → word list) */
+  .fly-dot{
+    position:fixed; z-index:60; pointer-events:none; border-radius:50%;
+    width:9px; height:9px; background:var(--accent);
+    transform:translate(-50%,-50%); box-shadow:0 2px 6px rgba(20,32,45,.25);
+  }
+
+  /* Super Check: compact ring-progress icon button */
+  #superBtn{position:relative; overflow:visible;}
+  #superBtn .ring{position:absolute; top:0; left:0; transform:rotate(-90deg);}
+  #superBtn .ring-track{stroke:#DCE3E9;}
+  #superBtn .ring-fill{
+    stroke:var(--tile-line); stroke-dasharray:113.1; stroke-dashoffset:113.1;
+    transition:stroke-dashoffset .4s cubic-bezier(.3,.9,.4,1), stroke .2s;
+  }
+  #superBtn:not(:disabled){background:var(--accent); border-color:var(--accent);}
+  #superBtn:not(:disabled) .ring-track{stroke:color-mix(in srgb, #fff 35%, transparent);}
+  #superBtn:not(:disabled) .ring-fill{stroke:#fff;}
+  .super-star{position:relative; z-index:2; color:var(--ink-soft); pointer-events:none;}
+  #superBtn:not(:disabled) .super-star{color:#fff;}
+  .super-badge{
+    position:absolute; top:-4px; right:-4px; z-index:3; min-width:16px; height:16px;
+    padding:0 3px; border-radius:8px; background:var(--gold); color:var(--ink);
+    font-size:10px; font-weight:800; display:none; align-items:center; justify-content:center;
+    line-height:1; box-shadow:0 0 0 2px #fff;
+  }
+  .super-badge.show{display:flex;}
+
+  /* Word bank: fixed drawer that folds up from the bottom, never pushes page content */
+  #drawer{
+    position:fixed; left:0; right:0; bottom:0; z-index:40; display:none;
+    max-width:600px; margin:0 auto; flex-direction:column; align-items:stretch;
+  }
+  #drawer.has-words{display:flex;}
+  #drawerPanel{
+    background:#fff; border-top:1px solid var(--tile-line); max-height:0;
+    overflow:hidden; transition:max-height .3s ease;
+  }
+  #drawer.open #drawerPanel{max-height:46vh; overflow-y:auto;}
+  #drawerTab{
+    background:#fff; border:0; border-top:1px solid var(--tile-line);
+    padding:9px 18px calc(9px + env(safe-area-inset-bottom, 0px));
+    font:inherit; font-weight:800; font-size:12px; color:var(--ink-soft);
+    display:flex; align-items:center; justify-content:center; gap:7px; cursor:pointer;
+    touch-action:manipulation; box-shadow:0 -4px 14px rgba(20,32,45,.07);
+  }
+  #drawer.open #drawerTab{color:var(--ink);}
+  #drawerTab .chevron{transition:transform .25s;}
+  #drawer.open #drawerTab .chevron{transform:rotate(180deg);}
+  #wordLists{display:flex; gap:14px; justify-content:center; text-align:left; padding:6px 18px 18px;}
+  .wl{flex:1; max-width:150px;}
+  .wl h4{
+    margin:0 0 5px; font-size:10.5px; letter-spacing:.1em; text-transform:uppercase;
+    color:var(--ink-soft); font-weight:800;
+  }
+  .wl ul{margin:0; padding:0; list-style:none;}
+  .wl li{
+    font-size:12.5px; font-weight:700; letter-spacing:.06em; padding:2px 0;
+    color:var(--ink); border-radius:4px;
+  }
+  .wl.out li{color:var(--ink-soft); text-decoration:line-through;}
+  .wl.in h4{color:var(--good);}
+
   @keyframes nod{
     0%,100%{transform:translateY(0)} 30%{transform:translateY(-9px)} 60%{transform:translateY(2px)}
   }
@@ -91,15 +165,15 @@
   .tile.jolt{animation:tileshake .3s 2;}
 
   #msg{
-    min-height:22px; margin-top:14px; font-size:14px; font-weight:600;
+    min-height:20px; margin-top:10px; font-size:14px; font-weight:600;
     color:var(--ink-soft); text-align:center; padding:0 10px; transition:color .2s;
   }
   #msg.bad{color:var(--bad);} #msg.good{color:var(--good);}
 
-  .actions{display:flex; gap:10px; margin-top:12px; align-items:center;}
+  .actions{display:flex; gap:9px; margin-top:9px; align-items:center;}
   .btn{
     font:inherit; font-weight:800; font-size:15px; border:0; cursor:pointer;
-    border-radius:12px; padding:12px 26px;
+    border-radius:12px; padding:12px 26px; touch-action:manipulation;
   }
   .btn:focus-visible{outline:2px solid var(--ink); outline-offset:2px;}
   .btn.primary{background:var(--accent); color:#fff; box-shadow:0 3px 0 #1D3F92;}
@@ -133,6 +207,7 @@
   .nav button{
     border:1px solid var(--tile-line); background:#fff; border-radius:8px;
     width:28px; height:28px; cursor:pointer; font-weight:800; color:var(--ink);
+    touch-action:manipulation;
   }
   #foundLabel b{color:var(--accent);}
   .solved{color:var(--good); font-weight:800; margin-left:2px;}
@@ -140,7 +215,7 @@
     text-decoration:underline; cursor:pointer; margin-top:14px;}
   .footlinks{display:flex; gap:18px; justify-content:center; margin-top:14px;}
   .footlinks button{background:none; border:0; font:inherit; font-size:12.5px;
-    color:var(--ink-soft); text-decoration:underline; cursor:pointer;}
+    color:var(--ink-soft); text-decoration:underline; cursor:pointer; touch-action:manipulation;}
   .footlinks button:hover{color:var(--ink);}
   #reveal{margin-top:0;}
 
@@ -150,7 +225,7 @@
   .rate-row{display:flex; align-items:center; justify-content:space-between;
     gap:12px; margin:10px 2px;}
   .rate-label{font-size:14px; font-weight:600; color:var(--ink);}
-  .stars-input{display:inline-flex; position:relative; cursor:pointer; user-select:none;}
+  .stars-input{display:inline-flex; position:relative; cursor:pointer; user-select:none; touch-action:manipulation;}
   .stars-input .star{
     position:relative; width:26px; height:26px; font-size:24px; line-height:26px;
     text-align:center; color:var(--tile-line);
@@ -190,7 +265,7 @@
 
 <header>
   <div class="eyebrow">Prototype · 4×4 Omino Edition</div>
-  <h1>Daily Danagram</h1>
+  <h1>Daily <span class="dana">Dana</span>gram</h1>
 </header>
 
 <div id="boardWrap"><div id="board"><div id="zone"></div></div></div>
@@ -216,7 +291,25 @@
   </button>
   <button class="btn icon" id="undoBtn" aria-label="Undo" title="Undo" disabled>↶</button>
   <button class="btn icon" id="redoBtn" aria-label="Redo" title="Redo" disabled>↷</button>
+  <button class="btn icon" id="superBtn" disabled aria-label="Super Check" title="Super Check">
+    <svg class="ring" viewBox="0 0 44 44" width="44" height="44">
+      <circle class="ring-track" cx="22" cy="22" r="18" fill="none" stroke-width="3"/>
+      <circle class="ring-fill" id="superRingFill" cx="22" cy="22" r="18" fill="none" stroke-width="3" stroke-linecap="round"/>
+    </svg>
+    <svg class="super-star" viewBox="0 0 24 24" width="18" height="18" fill="currentColor">
+      <path d="M12 2.4l2.9 6.7 7.2.8-5.4 4.9 1.5 7.2-6.2-3.7-6.2 3.7 1.5-7.2-5.4-4.9 7.2-.8z"/>
+    </svg>
+    <span class="super-badge" id="superBadge"></span>
+  </button>
   <button class="btn primary" id="submitBtn">Check</button>
+</div>
+
+<div id="drawer">
+  <div id="drawerPanel"><div id="wordLists"></div></div>
+  <button id="drawerTab" aria-expanded="false">
+    <span id="drawerTabLabel">Word bank</span>
+    <svg class="chevron" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+  </button>
 </div>
 
 <div class="meta">
@@ -263,7 +356,7 @@
 <script>
 const WORDS = `able aced aces ache achy acid acne acre acts adds aged ages aide aids aims airs airy ajar akin alas ales ally alms aloe also alto amen amid ammo amps anew ante ants apes apex apps aqua arch arcs area aria arid arks arms army arts asks atom atop aunt aura auto avid away awed axed axes axis axle babe baby back bade bags bail bait bake bald bale balk ball balm band bane bang bank bans barb bard bare bark barn bars base bash bask bass bath bats bawl bays bead beak beam bean bear beat beau beck beds beef been beep beer bees beet begs bell belt bend bent best bets bevy bias bibs bide bids bike bile bill bind bins bird bite bits blab blah bled blew blip blob bloc blog blot blow blue blur boar boas boat bobs bode body bogs boil bold bolt bomb bond bone bonk bony book boom boon boos boot bore born boss both bout bowl bows boys brag bran bras brat bray bred brew brie brig brim brow buck buds buff bugs bulb bulk bull bump bums bunk buns bunt buoy burn burp burr bury bush bust busy buts butt buys buzz byte cabs cafe cage cake calf call calm came camp cane cans cape caps card care carp cars cart case cash cask cast cats cave cede cell cent chap char chat chef chew chic chin chip chop chow chug cite city clad clam clan clap claw clay clef clip clod clog clop clot club clue coal coat coax cobs coda code cods cogs coil coin coke cola cold colt coma comb come cone cons cook cool coop coos cope cops copy cord core cork corn cost cosy cots coup cove cows cozy crab crag cram crew crib crop crow crux cube cubs cued cues cuff cull cult cups curb curd cure curl curt cusp cute cuts cyan cyst dabs dads daft dais dale dame damp dams dank dare dark darn dart dash data date daub dawn days daze dead deaf deal dean dear debt deck deed deem deep deer deft defy dell demo dens dent deny desk dews dial dice died dies diet digs dill dime dims dine ding dins dips dire dirt disc dish disk diva dive dock docs dodo does dogs dole doll dolt dome done dons doom door dope dorm dose dote dots dour dove down doze drab drag draw drew drip drop drug drum dual dubs duck duct dude duds duel dues duet duke dull duly dumb dump dune dung dunk duos dusk dust duty dyed dyes each earl earn ears ease east easy eats ebbs echo eddy edge edgy edit eels eggs egos eked elks elms else emit ends envy eons epic eras etch euro even ever eves evil ewes exam exec exit expo eyed eyes face fact fade fads fail fair fake fall fame fang fans fare farm fast fate fats faun faux fawn fear feat feed feel fees feet fell felt fend fern feta feud fibs fife figs file fill film find fine fins fire firm firs fish fist fits five fizz flag flak flan flap flat flaw flea fled flee flew flex flip flit floe flog flop flow flub flue flux foal foam fobs foes fogs foil fold folk fond font food fool foot ford fore fork form fort foul four fowl foxy frat fray free fret frog from fuel full fume fund funk furl furs fury fuse fuss fuzz gabs gags gain gait gala gale gall game gang gaps garb gash gasp gate gave gawk gaze gear geek gels gems gene gent germ gets gift gigs gild gill gilt gins gird girl gist give glad glee glen glib glob glow glue glum glut gnat gnaw goad goal goat gobs gods goes gold golf gone gong good goof goon goop gore gory gosh gout gown grab gram gray grew grey grid grim grin grip grit grog grow grub gulf gull gulp gums gunk guns guru gush gust guts guys gyms hack hail hair hale half hall halo halt hams hand hang hard hare harm harp hash hate hats haul have hawk hays haze hazy head heal heap hear heat heck heed heel heft heir held helm help hemp hens herb herd here hero hers hewn hick hide high hike hill hilt hind hint hips hire hiss hits hive hoax hobo hoes hogs hold hole holy home hone honk hood hoof hook hoop hoot hope hops horn hose host hour howl hubs hues huff huge hugs hula hulk hull hums hung hunk hunt hurl hurt hush husk huts hymn hype iced ices icky icon idea idle idly idol iffy inch info inks inky inns into ions iota iris irks iron isle itch item jabs jack jade jail jams jars jaws jazz jean jeep jeer jerk jest jets jibe jigs jilt jinx jive jobs jock jogs join joke jolt josh jots jowl joys judo jugs jump junk jury just jute juts kale keel keen keep kegs kelp kept keys kick kids kill kiln kilo kilt kind king kink kiss kite kits kiwi knee knew knit knob knot know labs lace lack lacy lads lady lags laid lair lake lamb lame lamp land lane laps lard lark lash lass last late laud lava lawn laws lays laze lazy lead leaf leak lean leap left legs lend lens lent less lest lets levy liar lice lick lids lied lien lies lieu life lift like lilt lily limb lime limo limp line link lint lion lips lisp list live load loaf loan lobe lobs loch lock loft logo logs loin lone long look loom loon loop loot lope lops lord lore lose loss lost lots loud lout love lows lube luck luge lull lump lung lure lurk lush lust lute lynx mace made magi maid mail maim main make male mall malt mama mane many maps mare mark mars mart mash mask mass mast mate math mats maul mayo maze mead meal mean meat meek meet meld melt memo mend menu meow mere mesa mesh mess mice mics mild mile milk mill mime mind mine mini mink mint minx mire miss mist mite mitt moan moat mobs mock mode mold mole molt moms monk mood moon moor moot mope mops more morn moss most moth move mows much muck mugs mule mums murk muse mush musk must mute mutt myth nabs nags nail name nape naps navy near neat neck need neon nerd nest nets news newt next nice nick nigh nine nips node nods none nook noon nope norm nose nosy note noun nova nude nuke null numb nuns nuts oaks oars oath oats obey oboe odds odes odor ogle ogre oils oily oink okay okra omen omit once ones only onto onus onyx ooze oozy opal open opts opus oral orbs orca ores ouch ours oust outs oval oven over owed owes owls owns oxen pace pack pact pads page paid pail pain pair pale palm pals pane pang pans pant papa pare park part pass past path pats pave pawn paws pays peak peal pear peas peat peck pecs peek peel peer pegs pelt pens pent perk perm pert peso pest pets pews pick pier pies pigs pike pile pill pine ping pink pins pint pipe pita pith pits pity plan play plea pled plod plop plot plow ploy plug plum plus pods poem poet poke pole poll polo pomp pond pony poof pool poop poor pope pops pore pork port pose posh post posy pots pour pout pray prep prey prim prod prom prop pros prow pubs puck puff pugs puke pull pulp puma pump punk puns punt puny pupa pups pure purr push puts putt quad quip quit quiz race rack racy raft rage rags raid rail rain rake ramp rams rang rank rant rapt rare rash rasp rate rats rave rays raze read real ream reap rear redo reds reed reef reek reel refs rein rely rend rent rest ribs rice rich ride rife riff rift rigs rile rims rind ring rink riot ripe rips rise risk rite road roam roar robe robs rock rode rods role roll romp roof rook room root rope rose rosy rote rots rout rove rows rubs ruby rude rugs ruin rule rums rune rung runs runt ruse rush rust ruts sack safe saga sage sags said sail sake sale salt same sand sane sang sank saps sash sass save saws says scab scam scan scar scat scum seal seam sear seas seat sect seed seek seem seen seep seer sees self sell semi send sent sets sewn sews shed shin ship shod shoe shoo shop shot show shun shut sick side sift sigh sign silk sill silo silt sing sink sins sips sire sirs site sits size skew skid skim skin skip skis skit slab slam slap slat slaw sled slew slid slim slip slit slob slog slop slot slow slug slum slur smog smug snag snap snip snob snot snow snub snug soak soap soar sobs sock soda sofa soft soil sold sole solo some song sons soon soot sore sort soul soup sour sows spam span spar spas spat sped spew spin spit spot spry spud spun spur stab stag star stay stem step stew stir stop stow stub stud stun subs such suck suds sued sues suet suit sulk sumo sums sung sunk suns sure surf swab swam swan swap swat sway swig swim sync tabs tack taco tact tags tail take tale talk tall tame tang tank tans tape taps tarp tart task taut taxi teak teal team tear teas tech teem teen tell temp tend tens tent term tern test text than that thaw thee them then they thin this thou thud thug thus tick tide tidy tied tier ties tiff tile till tilt time tins tint tiny tips tire toad toes tofu toga toil told toll tomb tome tone tons took tool toot tops tore torn tort toss tote tots tour tout town tows toys tram trap tray tree trek trim trio trip trod trot true tuba tube tubs tuck tuft tugs tuna tune turf turn tusk tutu twig twin twit twos type typo ugly undo unit unto upon urge urns used user uses vain vane vans vary vase vast vats veal veer veil vein vend vent verb very vest veto vets vial vibe vice view vile vine visa vise void volt vote vows wade wads waft wage wags waif wail wait wake walk wall wand wane want ward ware warm warn warp wars wart wary wash wasp watt wave wavy waxy ways weak wean wear webs weds weed week weep weld well welt went wept were west wets wham what when whet whey whim whip whir whiz whoa whom whys wick wide wife wigs wild will wilt wimp wind wine wing wink wins wipe wire wiry wise wish wisp with wits woes woke wolf womb wood wool word wore work worm worn wove wows wrap wren writ yaks yams yank yaps yard yarn yawn yeah year yell yelp yeti yoga yogi yoke yolk your yuck zaps zeal zero zest zinc zing zips zits zone zoom zoos`.trim().split(/\s+/);
 const WORDSET = new Set(WORDS);
-const PUZZLES = [{"solution":["step","time","edit","wets"],"pieces":[{"cells":[[0,0],[0,1],[1,0],[1,1]],"letters":"stti"},{"cells":[[0,2],[1,2],[1,3]],"letters":"eme"},{"cells":[[2,3],[3,3]],"letters":"ts"},{"cells":[[2,2]],"letters":"i"},{"cells":[[2,0]],"letters":"e"},{"cells":[[2,1]],"letters":"d"},{"cells":[[0,3]],"letters":"p"},{"cells":[[3,2]],"letters":"t"},{"cells":[[3,1]],"letters":"e"},{"cells":[[3,0]],"letters":"w"}],"numSolutions":2,"difficulty":57,"stars":3,"difficulty_raw":{"search_info":4.778,"p_sol":1.6666666666666667e-05,"space":388080,"branching":8.599,"formable":62,"search_norm":0.468,"lex_norm":0.717,"exact":false}},{"solution":["atop","lake","acre","soak"],"pieces":[{"cells":[[2,2],[3,1],[3,2]],"letters":"roa"},{"cells":[[1,2],[1,3],[2,3]],"letters":"kee"},{"cells":[[0,0],[0,1]],"letters":"at"},{"cells":[[1,1],[2,1]],"letters":"ac"},{"cells":[[2,0]],"letters":"a"},{"cells":[[0,3]],"letters":"p"},{"cells":[[1,0]],"letters":"l"},{"cells":[[0,2]],"letters":"o"},{"cells":[[3,0]],"letters":"s"},{"cells":[[3,3]],"letters":"k"}],"numSolutions":1,"difficulty":52,"stars":3,"difficulty_raw":{"search_info":5.596,"p_sol":2.5344687753446877e-06,"space":394560,"branching":6.06,"formable":202,"search_norm":0.585,"lex_norm":0.419,"exact":false}},{"solution":["star","lame","open","bent"],"pieces":[{"cells":[[0,1],[0,2],[1,1],[1,2]],"letters":"taam"},{"cells":[[2,1],[3,1]],"letters":"pe"},{"cells":[[2,2],[2,3]],"letters":"en"},{"cells":[[3,2],[3,3]],"letters":"nt"},{"cells":[[3,0]],"letters":"b"},{"cells":[[1,3]],"letters":"e"},{"cells":[[0,3]],"letters":"r"},{"cells":[[1,0]],"letters":"l"},{"cells":[[0,0]],"letters":"s"},{"cells":[[2,0]],"letters":"o"}],"numSolutions":1,"difficulty":52,"stars":3,"difficulty_raw":{"search_info":4.778,"p_sol":1.6666666666666667e-05,"space":843840,"branching":7.589,"formable":269,"search_norm":0.468,"lex_norm":0.599,"exact":false}},{"solution":["wads","area","sing","hate"],"pieces":[{"cells":[[0,0],[1,0]],"letters":"wa"},{"cells":[[1,1],[1,2]],"letters":"re"},{"cells":[[2,0],[3,0]],"letters":"sh"},{"cells":[[2,1],[3,1]],"letters":"ia"},{"cells":[[2,2]],"letters":"n"},{"cells":[[0,2]],"letters":"d"},{"cells":[[3,2]],"letters":"t"},{"cells":[[2,3]],"letters":"g"},{"cells":[[3,3]],"letters":"e"},{"cells":[[0,3]],"letters":"s"},{"cells":[[0,1]],"letters":"a"},{"cells":[[1,3]],"letters":"a"}],"numSolutions":1,"difficulty":91,"stars":5,"difficulty_raw":{"search_info":7.894,"p_sol":1.2758018159252727e-08,"space":78382080,"branching":10.281,"formable":225,"search_norm":0.913,"lex_norm":0.915,"exact":false}},{"solution":["stab","pale","exec","disk"],"pieces":[{"cells":[[2,2],[3,1],[3,2],[3,3]],"letters":"eisk"},{"cells":[[0,1],[0,2],[0,3],[1,1]],"letters":"taba"},{"cells":[[2,0],[2,1],[3,0]],"letters":"exd"},{"cells":[[1,2],[1,3]],"letters":"le"},{"cells":[[0,0]],"letters":"s"},{"cells":[[1,0]],"letters":"p"},{"cells":[[2,3]],"letters":"c"}],"numSolutions":1,"difficulty":2,"stars":1,"difficulty_raw":{"search_info":1.623,"p_sol":0.023809523809523808,"space":42,"branching":2.718,"formable":220,"search_norm":0.018,"lex_norm":0.026,"exact":true}},{"solution":["slob","pike","acre","teas"],"pieces":[{"cells":[[2,1],[3,1],[3,2]],"letters":"cea"},{"cells":[[1,0],[2,0]],"letters":"pa"},{"cells":[[0,3],[1,3]],"letters":"be"},{"cells":[[2,2]],"letters":"r"},{"cells":[[3,3]],"letters":"s"},{"cells":[[1,2]],"letters":"k"},{"cells":[[1,1]],"letters":"i"},{"cells":[[0,2]],"letters":"o"},{"cells":[[0,1]],"letters":"l"},{"cells":[[3,0]],"letters":"t"},{"cells":[[0,0]],"letters":"s"},{"cells":[[2,3]],"letters":"e"}],"numSolutions":2,"difficulty":89,"stars":5,"difficulty_raw":{"search_info":7.593,"p_sol":2.5516036318505455e-08,"space":78382080,"branching":10.212,"formable":328,"search_norm":0.87,"lex_norm":0.907,"exact":false}},{"solution":["scar","cage","amen","nest"],"pieces":[{"cells":[[0,0],[0,1],[0,2],[1,2]],"letters":"scag"},{"cells":[[2,1],[3,1],[3,2]],"letters":"mes"},{"cells":[[0,3],[1,3]],"letters":"re"},{"cells":[[2,3]],"letters":"n"},{"cells":[[1,1]],"letters":"a"},{"cells":[[2,0]],"letters":"a"},{"cells":[[1,0]],"letters":"c"},{"cells":[[3,3]],"letters":"t"},{"cells":[[2,2]],"letters":"e"},{"cells":[[3,0]],"letters":"n"}],"numSolutions":1,"difficulty":52,"stars":3,"difficulty_raw":{"search_info":5.1,"p_sol":7.936507936507936e-06,"space":126000,"branching":6.918,"formable":112,"search_norm":0.514,"lex_norm":0.52,"exact":true}},{"solution":["lads","area","dies","yams"],"pieces":[{"cells":[[1,0],[2,0],[2,1]],"letters":"adi"},{"cells":[[0,0],[0,1],[1,1]],"letters":"lar"},{"cells":[[0,3],[1,3]],"letters":"sa"},{"cells":[[3,0],[3,1]],"letters":"ya"},{"cells":[[3,2]],"letters":"m"},{"cells":[[3,3]],"letters":"s"},{"cells":[[2,3]],"letters":"s"},{"cells":[[2,2]],"letters":"e"},{"cells":[[1,2]],"letters":"e"},{"cells":[[0,2]],"letters":"d"}],"numSolutions":1,"difficulty":56,"stars":3,"difficulty_raw":{"search_info":5.109,"p_sol":7.78089013383131e-06,"space":128520,"branching":7.884,"formable":123,"search_norm":0.516,"lex_norm":0.633,"exact":true}}];
+const PUZZLES = [{"solution":["step","time","edit","wets"],"pieces":[{"cells":[[0,0],[0,1],[1,0],[1,1]],"letters":"stti"},{"cells":[[0,2],[1,2],[1,3]],"letters":"eme"},{"cells":[[2,3],[3,3]],"letters":"ts"},{"cells":[[2,2]],"letters":"i"},{"cells":[[2,0]],"letters":"e"},{"cells":[[2,1]],"letters":"d"},{"cells":[[0,3]],"letters":"p"},{"cells":[[3,2]],"letters":"t"},{"cells":[[3,1]],"letters":"e"},{"cells":[[3,0]],"letters":"w"}],"numSolutions":2,"difficulty":57,"stars":3,"difficulty_raw":{"search_info":4.778,"p_sol":1.6666666666666667e-05,"space":388080,"branching":8.599,"formable":62,"search_norm":0.468,"lex_norm":0.717,"exact":false},"solutionWords":["edit","emit","pets","step","stew","tide","time","wets"]},{"solution":["atop","lake","acre","soak"],"pieces":[{"cells":[[2,2],[3,1],[3,2]],"letters":"roa"},{"cells":[[1,2],[1,3],[2,3]],"letters":"kee"},{"cells":[[0,0],[0,1]],"letters":"at"},{"cells":[[1,1],[2,1]],"letters":"ac"},{"cells":[[2,0]],"letters":"a"},{"cells":[[0,3]],"letters":"p"},{"cells":[[1,0]],"letters":"l"},{"cells":[[0,2]],"letters":"o"},{"cells":[[3,0]],"letters":"s"},{"cells":[[3,3]],"letters":"k"}],"numSolutions":1,"difficulty":52,"stars":3,"difficulty_raw":{"search_info":5.596,"p_sol":2.5344687753446877e-06,"space":394560,"branching":6.06,"formable":202,"search_norm":0.585,"lex_norm":0.419,"exact":false},"solutionWords":["acre","alas","atop","lake","okra","peek","soak","taco"]},{"solution":["star","lame","open","bent"],"pieces":[{"cells":[[0,1],[0,2],[1,1],[1,2]],"letters":"taam"},{"cells":[[2,1],[3,1]],"letters":"pe"},{"cells":[[2,2],[2,3]],"letters":"en"},{"cells":[[3,2],[3,3]],"letters":"nt"},{"cells":[[3,0]],"letters":"b"},{"cells":[[1,3]],"letters":"e"},{"cells":[[0,3]],"letters":"r"},{"cells":[[1,0]],"letters":"l"},{"cells":[[0,0]],"letters":"s"},{"cells":[[2,0]],"letters":"o"}],"numSolutions":1,"difficulty":52,"stars":3,"difficulty_raw":{"search_info":4.778,"p_sol":1.6666666666666667e-05,"space":843840,"branching":7.589,"formable":269,"search_norm":0.468,"lex_norm":0.599,"exact":false},"solutionWords":["amen","bent","lame","open","rent","slob","star","tape"]},{"solution":["wads","area","sing","hate"],"pieces":[{"cells":[[0,0],[1,0]],"letters":"wa"},{"cells":[[1,1],[1,2]],"letters":"re"},{"cells":[[2,0],[3,0]],"letters":"sh"},{"cells":[[2,1],[3,1]],"letters":"ia"},{"cells":[[2,2]],"letters":"n"},{"cells":[[0,2]],"letters":"d"},{"cells":[[3,2]],"letters":"t"},{"cells":[[2,3]],"letters":"g"},{"cells":[[3,3]],"letters":"e"},{"cells":[[0,3]],"letters":"s"},{"cells":[[0,1]],"letters":"a"},{"cells":[[1,3]],"letters":"a"}],"numSolutions":1,"difficulty":91,"stars":5,"difficulty_raw":{"search_info":7.894,"p_sol":1.2758018159252727e-08,"space":78382080,"branching":10.281,"formable":225,"search_norm":0.913,"lex_norm":0.915,"exact":false},"solutionWords":["area","aria","dent","hate","sage","sing","wads","wash"]},{"solution":["stab","pale","exec","disk"],"pieces":[{"cells":[[2,2],[3,1],[3,2],[3,3]],"letters":"eisk"},{"cells":[[0,1],[0,2],[0,3],[1,1]],"letters":"taba"},{"cells":[[2,0],[2,1],[3,0]],"letters":"exd"},{"cells":[[1,2],[1,3]],"letters":"le"},{"cells":[[0,0]],"letters":"s"},{"cells":[[1,0]],"letters":"p"},{"cells":[[2,3]],"letters":"c"}],"numSolutions":1,"difficulty":2,"stars":1,"difficulty_raw":{"search_info":1.623,"p_sol":0.023809523809523808,"space":42,"branching":2.718,"formable":220,"search_norm":0.018,"lex_norm":0.026,"exact":true},"solutionWords":["ales","beck","disk","exec","pale","sped","stab","taxi"]},{"solution":["slob","pike","acre","teas"],"pieces":[{"cells":[[2,1],[3,1],[3,2]],"letters":"cea"},{"cells":[[1,0],[2,0]],"letters":"pa"},{"cells":[[0,3],[1,3]],"letters":"be"},{"cells":[[2,2]],"letters":"r"},{"cells":[[3,3]],"letters":"s"},{"cells":[[1,2]],"letters":"k"},{"cells":[[1,1]],"letters":"i"},{"cells":[[0,2]],"letters":"o"},{"cells":[[0,1]],"letters":"l"},{"cells":[[3,0]],"letters":"t"},{"cells":[[0,0]],"letters":"s"},{"cells":[[2,3]],"letters":"e"}],"numSolutions":2,"difficulty":89,"stars":5,"difficulty_raw":{"search_info":7.593,"p_sol":2.5516036318505455e-08,"space":78382080,"branching":10.212,"formable":328,"search_norm":0.87,"lex_norm":0.907,"exact":false},"solutionWords":["acre","bees","beet","lice","okra","pike","seat","slob","spas","spat","teas"]},{"solution":["scar","cage","amen","nest"],"pieces":[{"cells":[[0,0],[0,1],[0,2],[1,2]],"letters":"scag"},{"cells":[[2,1],[3,1],[3,2]],"letters":"mes"},{"cells":[[0,3],[1,3]],"letters":"re"},{"cells":[[2,3]],"letters":"n"},{"cells":[[1,1]],"letters":"a"},{"cells":[[2,0]],"letters":"a"},{"cells":[[1,0]],"letters":"c"},{"cells":[[3,3]],"letters":"t"},{"cells":[[2,2]],"letters":"e"},{"cells":[[3,0]],"letters":"n"}],"numSolutions":1,"difficulty":52,"stars":3,"difficulty_raw":{"search_info":5.1,"p_sol":7.936507936507936e-06,"space":126000,"branching":6.918,"formable":112,"search_norm":0.514,"lex_norm":0.52,"exact":true},"solutionWords":["ages","amen","cage","came","nest","rent","scan","scar"]},{"solution":["lads","area","dies","yams"],"pieces":[{"cells":[[1,0],[2,0],[2,1]],"letters":"adi"},{"cells":[[0,0],[0,1],[1,1]],"letters":"lar"},{"cells":[[0,3],[1,3]],"letters":"sa"},{"cells":[[3,0],[3,1]],"letters":"ya"},{"cells":[[3,2]],"letters":"m"},{"cells":[[3,3]],"letters":"s"},{"cells":[[2,3]],"letters":"s"},{"cells":[[2,2]],"letters":"e"},{"cells":[[1,2]],"letters":"e"},{"cells":[[0,2]],"letters":"d"}],"numSolutions":1,"difficulty":56,"stars":3,"difficulty_raw":{"search_info":5.109,"p_sol":7.78089013383131e-06,"space":128520,"branching":7.884,"formable":123,"search_norm":0.516,"lex_norm":0.633,"exact":true},"solutionWords":["area","aria","deem","dies","lads","lady","sass","yams"]}];
 
 const OCOLORS = ['var(--o1)','var(--o2)','var(--o3)','var(--o4)','var(--o5)','var(--o6)'];
 
@@ -281,7 +374,11 @@ let state = {
   undo: [],
   redo: [],
   sessions: {},              // per-puzzle saved state (cells + undo/redo)
+  // Super Check: forming new words charges a meter; spending it sorts the words
+  // currently on the board into "appears in a solution" / "doesn't" lists.
+  hints: PUZZLES.map(() => ({ seen: [], charge: 0, spent: 0, inList: [], outList: [] })),
 };
+const HINT_THRESHOLD = 5;      // charge points needed per Super Check
 let S = 72, GAP = 3;
 
 const board = document.getElementById('board');
@@ -628,6 +725,7 @@ function commit(moves) {          // push history, apply a planned move
   for (const idx in moves) state.pieces[idx].cells = moves[idx].map(c => c.slice());
   positionTiles();
   updateUndoButtons();
+  clearBadges();
 }
 function clearHistory() { state.undo.length = 0; state.redo.length = 0; updateUndoButtons(); }
 function updateUndoButtons() {
@@ -638,14 +736,14 @@ function doUndo() {
   if (!state.undo.length || state.busy) return;
   state.redo.push(snapshot());
   restore(state.undo.pop());
-  setSelected(null); clearGhost(); positionTiles(); updateUndoButtons();
+  setSelected(null); clearGhost(); clearBadges(); positionTiles(); updateUndoButtons();
   setMsg('');
 }
 function doRedo() {
   if (!state.redo.length || state.busy) return;
   state.undo.push(snapshot());
   restore(state.redo.pop());
-  setSelected(null); clearGhost(); positionTiles(); updateUndoButtons();
+  setSelected(null); clearGhost(); clearBadges(); positionTiles(); updateUndoButtons();
   setMsg('');
 }
 document.getElementById('undoBtn').addEventListener('click', doUndo);
@@ -660,6 +758,35 @@ window.addEventListener('keydown', e => {
 // ------------------------------------------------------------- ghost layer
 let ghostPool = [];
 function clearGhost() { ghostPool.forEach(g => g.style.opacity = '0'); }
+
+// ✓/✗ verdict badges, shown just past the end of each checked word. Shape-based
+// so they read clearly for everyone, including reduced-motion & colorblind players.
+let badgePool = [];
+function clearBadges() { badgePool.forEach(b => { b.style.opacity = '0'; }); }
+function showBadge(i, kind, off, unique) {
+  let b = badgePool[i];
+  if (!b) { b = document.createElement('div'); board.appendChild(b); badgePool[i] = b; }
+  const size = Math.round(S * 0.5);
+  const r = i < 4 ? i + off : off + 4;          // rows → right margin; cols → bottom margin
+  const c = i < 4 ? off + 4 : (i - 4) + off;
+  b.className = 'verdict-badge ' + kind + (unique ? ' unique' : '');
+  b.textContent = kind === 'star' ? '★' : (kind === 'good' ? '✓' : '✗');
+  b.style.width = size + 'px'; b.style.height = size + 'px';
+  b.style.fontSize = Math.round(size * 0.6) + 'px';
+  b.style.left = (c * S + (S - size) / 2) + 'px';
+  b.style.top = (r * S + (S - size) / 2) + 'px';
+  b.style.opacity = '1';
+  if (b.animate) {
+    const reduce = window.matchMedia &&
+      window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if (reduce) b.animate([{ opacity: 0 }, { opacity: 1 }], { duration: 200, easing: 'ease-out' });
+    else b.animate([
+      { opacity: 0, transform: 'scale(.4)' },
+      { opacity: 1, transform: 'scale(1.15)', offset: 0.7 },
+      { opacity: 1, transform: 'scale(1)' },
+    ], { duration: 320, easing: 'ease-out' });
+  }
+}
 function drawGhost(moves, movedPi, ok) {
   const PAL = {
     ok:    { fill: 'color-mix(in srgb, var(--accent) 17%, transparent)',    edge: 'color-mix(in srgb, var(--accent) 68%, transparent)' },
@@ -857,16 +984,152 @@ function tapAt(r, c) {
   registerEmptyTap();                            // empty space, nothing selected
 }
 
+// ------------------------------------------------------------ Super Check
+// Forming new valid words charges a meter. Spending it sorts the words currently
+// on the board into "appears in a solution" / "doesn't" — judged against every
+// solution, so a confirmed word is never contradicted by a later win.
+function boardWords() {
+  const g = currentGrid();
+  if (!g) return [];
+  const out = [];
+  for (let i = 0; i < 4; i++) out.push(g[i]);
+  for (let i = 0; i < 4; i++) out.push(g[0][i] + g[1][i] + g[2][i] + g[3][i]);
+  return out;
+}
+function meterValue() { return state.hints[state.idx].charge; }
+
+function bumpMeter(points) {
+  const h = state.hints[state.idx];
+  h.charge += points;
+  updateSuper();
+}
+
+// a small dot flies from a checkmark badge to the Super Check meter (1 per point)
+function flyDot(fromEl, delay) {
+  if (!fromEl) return;
+  setTimeout(() => {
+    const target = document.getElementById('superBtn');
+    const f = fromEl.getBoundingClientRect(), t = target.getBoundingClientRect();
+    const cx = f.left + f.width / 2, cy = f.top + f.height / 2;
+    const tx = t.left + t.width / 2, ty = t.top + t.height / 2;
+    const el = document.createElement('div');
+    el.className = 'fly-dot';
+    el.style.left = cx + 'px'; el.style.top = cy + 'px';
+    document.body.appendChild(el);
+    const dx = tx - cx, dy = ty - cy;
+    const done = () => { el.remove(); bumpMeter(1); };
+    if (!el.animate) return done();
+    const a = el.animate([
+      { transform: 'translate(-50%,-50%) scale(1)', opacity: 1 },
+      { transform: `translate(calc(-50% + ${dx * 0.5}px), calc(-50% + ${dy * 0.5}px - 22px)) scale(.85)`, opacity: 1, offset: 0.5 },
+      { transform: `translate(calc(-50% + ${dx}px), calc(-50% + ${dy}px)) scale(.4)`, opacity: 0 },
+    ], { duration: 480, easing: 'cubic-bezier(.3,0,.35,1)' });
+    a.onfinish = done; a.oncancel = done;
+  }, delay);
+}
+
+function renderWordLists(justAdded) {
+  const h = state.hints[state.idx];
+  const el = document.getElementById('wordLists');
+  const mk = (cls, title, arr, id) => arr.length
+    ? `<div class="wl ${cls}" ${id ? 'id="' + id + '"' : ''}><h4>${title}</h4><ul>` +
+      arr.map(w => `<li${w === justAdded ? ' data-new="1"' : ''}>${w.toUpperCase()}</li>`).join('') +
+      '</ul></div>'
+    : '';
+  el.innerHTML = mk('in', 'In the puzzle', h.inList, 'wlIn') +
+                 mk('out', 'Not in the puzzle', h.outList, 'wlOut');
+  // a quiet highlight flash on whichever word just landed, instead of a flying clone
+  const fresh = el.querySelector('[data-new]');
+  if (fresh && fresh.animate) fresh.animate([
+    { backgroundColor: 'color-mix(in srgb, var(--gold) 55%, transparent)' },
+    { backgroundColor: 'transparent' },
+  ], { duration: 900, easing: 'ease-out' });
+
+  const total = h.inList.length + h.outList.length;
+  const drawer = document.getElementById('drawer');
+  drawer.classList.toggle('has-words', total > 0);
+  document.body.classList.toggle('has-drawer', total > 0);
+  document.getElementById('drawerTabLabel').textContent =
+    `Word bank · ${h.inList.length} in, ${h.outList.length} out`;
+}
+function updateSuper() {
+  const v = meterValue();
+  const stacks = Math.floor(v / HINT_THRESHOLD);
+  const ready = stacks >= 1;
+  document.getElementById('superBtn').disabled = !ready || state.busy;
+  const frac = (v % HINT_THRESHOLD) / HINT_THRESHOLD;
+  const CIRC = 113.1;
+  document.getElementById('superRingFill').style.strokeDashoffset =
+    (CIRC * (1 - frac)).toFixed(1);
+  const badge = document.getElementById('superBadge');
+  if (stacks >= 2) { badge.textContent = '×' + stacks; badge.classList.add('show'); }
+  else badge.classList.remove('show');
+  renderWordLists();
+}
+function doSuperCheck() {
+  if (state.busy || meterValue() < HINT_THRESHOLD) return;
+  const words = boardWords().filter(w => WORDSET.has(w));
+  if (!words.length) { setMsg('Make some words on the board first.'); return; }
+  const h = state.hints[state.idx];
+  const unsorted = words.filter(w =>
+    h.inList.indexOf(w) === -1 && h.outList.indexOf(w) === -1);
+  if (!unsorted.length) { setMsg('Those are already sorted — try some new words.'); return; }
+  runCheck(true);
+}
+document.getElementById('superBtn').addEventListener('click', doSuperCheck);
+
+document.getElementById('drawerTab').addEventListener('click', () => {
+  const d = document.getElementById('drawer');
+  const open = d.classList.toggle('open');
+  document.getElementById('drawerTab').setAttribute('aria-expanded', open ? 'true' : 'false');
+});
+
 // ---------------------------------------------------------------- submit
-document.getElementById('submitBtn').addEventListener('click', () => {
+// Verdict animation driven by the Web Animations API, so it replays reliably on
+// every Check (the CSS class + reflow-restart trick silently fails on iOS/WebKit).
+// Reduced-motion users get a gentle opacity pulse instead of a translate.
+function playVerdict(letters, ok) {
+  const reduce = window.matchMedia &&
+    window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  letters.forEach(el => {
+    if (!el || !el.animate) return;
+    if (reduce) {
+      el.animate([{ opacity: 1 }, { opacity: 0.3 }, { opacity: 1 }],
+                 { duration: 440, easing: 'ease-in-out' });
+    } else if (ok) {
+      el.animate([
+        { transform: 'translateY(0)' },
+        { transform: 'translateY(-11px)', offset: 0.3 },
+        { transform: 'translateY(3px)', offset: 0.6 },
+        { transform: 'translateY(0)' },
+      ], { duration: 400, easing: 'ease-in-out' });
+    } else {
+      el.animate([
+        { transform: 'translateX(0)' },
+        { transform: 'translateX(-7px)', offset: 0.2 },
+        { transform: 'translateX(7px)', offset: 0.4 },
+        { transform: 'translateX(-5px)', offset: 0.6 },
+        { transform: 'translateX(5px)', offset: 0.8 },
+        { transform: 'translateX(0)' },
+      ], { duration: 360, easing: 'ease-in-out' });
+    }
+  });
+}
+
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+
+// Shared verdict sequence. Normal Check: words nod/shake, and each NEW word flies
+// into the Super Check meter (worth ×N where N = new words found this check).
+// Super Check: same animation, but words are starred and fly into the word lists.
+async function runCheck(superMode) {
   if (state.busy) return;
-  setSelected(null); clearGhost();
+  setSelected(null); clearGhost(); clearBadges();
 
   if (state.mode === 'free') {
-    const off = innerOff();
+    const off0 = innerOff();
     const stray = [];
     state.pieces.forEach(p => p.cells.forEach(([r, c], ci) => {
-      if (r < off || c < off || r >= off + 4 || c >= off + 4) stray.push(p.tiles[ci]);
+      if (r < off0 || c < off0 || r >= off0 + 4 || c >= off0 + 4) stray.push(p.tiles[ci]);
     }));
     if (stray.length) {
       stray.forEach(t => {
@@ -882,6 +1145,7 @@ document.getElementById('submitBtn').addEventListener('click', () => {
   }
 
   const g = currentGrid();
+  if (!g) return;
   const off = innerOff();
   const occ = occupancy();
   const lineLetters = i => {
@@ -894,34 +1158,85 @@ document.getElementById('submitBtn').addEventListener('click', () => {
     });
   };
 
+  const h = state.hints[state.idx];
+  const solWords = new Set(PUZZLES[state.idx].solutionWords || []);
+  const words = [];
+  for (let i = 0; i < 8; i++)
+    words.push(i < 4 ? g[i] : g[0][i-4] + g[1][i-4] + g[2][i-4] + g[3][i-4]);
+
+  // words never formed on this puzzle before → they charge the meter, ×N of them
+  const fresh = [];
+  if (!superMode) {
+    const dedupe = new Set();
+    words.forEach(w => {
+      if (WORDSET.has(w) && h.seen.indexOf(w) === -1 && !dedupe.has(w)) {
+        dedupe.add(w); fresh.push(w);
+      }
+    });
+  }
   state.busy = true;
+  updateSuper();
+
   let good = 0;
-  const ANIM = 385, PAUSE = 150, STEP = ANIM + PAUSE;   // 35% faster, half the pause
+  const ANIM = 385, PAUSE = 150, STEP = ANIM + PAUSE, FANFARE_PAD = 100;
+  const flown = new Set();
+  const freshBadges = [];        // badges of fresh words found so far *this* check
+
   for (let i = 0; i < 8; i++) {
-    const word = i < 4 ? g[i] : g[0][i-4] + g[1][i-4] + g[2][i-4] + g[3][i-4];
+    const word = words[i];
     const ok = WORDSET.has(word);
+    const inSol = solWords.has(word);
     if (ok) good++;
-    setTimeout(() => {
-      const letters = lineLetters(i);
-      // whole row/column bounces (valid) or shakes (invalid) in unison
-      letters.forEach(el => {
-        el.classList.remove('nod', 'shake'); void el.offsetWidth;
-        el.classList.add(ok ? 'nod' : 'shake');
-      });
-      setMsg((i < 4 ? 'Row ' + (i + 1) : 'Column ' + (i - 3)) + ': ' +
-             word.toUpperCase() + (ok ? ' ✓' : ''), '');
-    }, i * STEP);
+    const letters = lineLetters(i);
+    playVerdict(letters, ok);
+
+    const isFresh = !superMode && ok && fresh.indexOf(word) !== -1 && !flown.has(word);
+    showBadge(i, superMode ? (inSol ? 'star' : (ok ? 'good' : 'bad')) : (ok ? 'good' : 'bad'), off, isFresh);
+    setMsg((i < 4 ? 'Row ' + (i + 1) : 'Column ' + (i - 3)) + ': ' + word.toUpperCase() +
+           (superMode ? (inSol ? ' ★ in the puzzle' : (ok ? ' ✓ not in the puzzle' : ' — not a word'))
+                      : (ok ? ' ✓' : '')), '');
+
+    let fanfare = false;
+    if (isFresh) {
+      flown.add(word);
+      h.seen.push(word);
+      const badge = badgePool[i];
+      // this word's own point (base), plus one bonus point re-fired from each
+      // earlier fresh word this check — so word #N nets exactly N points.
+      flyDot(badge, 0);
+      freshBadges.forEach((prev, k) => flyDot(prev, 70 + k * 60));
+      freshBadges.push(badge);
+      fanfare = true;
+    }
+    if (superMode && ok && !flown.has(word) &&
+        h.inList.indexOf(word) === -1 && h.outList.indexOf(word) === -1) {
+      flown.add(word);
+      (inSol ? h.inList : h.outList).push(word);
+      renderWordLists(word);
+      fanfare = true;
+    }
+    await sleep(STEP + (fanfare ? FANFARE_PAD : 0));
   }
 
-  setTimeout(() => {
-    state.busy = false;
-    document.querySelectorAll('.letter').forEach(el => {
-      el.classList.remove('nod', 'shake');
-    });
+  await sleep(450);
+  state.busy = false;
+  document.querySelectorAll('.letter').forEach(el => el.classList.remove('nod', 'shake'));
+
+  if (superMode) {
+    h.charge = Math.max(0, h.charge - HINT_THRESHOLD);
+    h.spent++;
+    h.inList.sort(); h.outList.sort();
+    updateSuper();
+    setMsg('Super Check done — ★ words appear in a solution.', '');
+  } else {
+    updateSuper();
+    const K = freshBadges.length, earned = K * (K + 1) / 2;
     if (good === 8) onWin(g);
-    else setMsg(good + ' of 8 words check out. Keep going!', '');
-  }, 8 * STEP + 400);
-});
+    else setMsg(good + ' of 8 words check out.' +
+                (K ? ` +${earned} to Super Check.` : ' Keep going!'), '');
+  }
+}
+document.getElementById('submitBtn').addEventListener('click', () => runCheck(false));
 
 function onWin(g) {
   const P = PUZZLES[state.idx];
@@ -1094,7 +1409,7 @@ function loadPuzzle(idx) {
     color: OCOLORS[
       P.pieces.filter((q, j) => j < i && q.letters.length > 1).length % OCOLORS.length],
   }));
-  setSelected(null); clearGhost();
+  setSelected(null); clearGhost(); clearBadges();
 
   const sess = state.sessions[state.idx];
   if (sess && sess.cells.length === state.pieces.length) {   // returning → restore progress
@@ -1111,6 +1426,7 @@ function loadPuzzle(idx) {
   positionTiles();
   updateUndoButtons();
   updateMeta();
+  updateSuper();
   setMsg('Drag a piece, or tap it then tap a destination. Double-tap empty space to undo.');
 }
 
@@ -1174,7 +1490,7 @@ document.getElementById('reveal').addEventListener('click', () => {
   state.pieces.forEach((p, i) => { p.cells = P.pieces[i].cells.map(c => c.slice()); });
   if (state.mode === 'free') shiftAll(1);
   state.revealed = true;
-  setSelected(null); clearGhost(); clearHistory(); positionTiles();
+  setSelected(null); clearGhost(); clearHistory(); clearBadges(); positionTiles();
   setMsg('Solution revealed — shuffle to play it for real.', 'good');
 });
 
@@ -1195,7 +1511,7 @@ function setMode(mode) {
   metrics(); positionTiles();
 }
 
-window.addEventListener('resize', () => { metrics(); positionTiles(); });
+window.addEventListener('resize', () => { metrics(); positionTiles(); clearBadges(); });
 
 loadPuzzle(0);
 </script>
