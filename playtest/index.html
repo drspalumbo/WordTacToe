@@ -34,7 +34,7 @@
     font-family:'Fraunces',serif; font-weight:620; font-size:clamp(30px,7vw,42px);
     margin:0; letter-spacing:-.01em;
   }
-  h1 .dana{font-weight:500;}
+
   .tagline{color:var(--ink-soft); font-size:13.5px; max-width:340px; margin:8px auto 0; line-height:1.45;}
 
   .modes{display:none;}
@@ -100,19 +100,96 @@
     transform:translate(-50%,-50%); box-shadow:0 3px 10px rgba(20,32,45,.28);
   }
 
-  /* Super Check: compact ring-progress icon button */
-  #superBtn{position:relative; overflow:visible;}
-  #superBtn .ring{position:absolute; top:0; left:0; transform:rotate(-90deg);}
+  /* Super Check: compact ring button that merges into the Check button when ready */
+  .check-group{
+    display:flex; align-items:center; gap:9px; padding:0;
+    border-radius:14px; background:transparent;
+    transition:gap .3s ease, padding .3s ease, background .3s ease, box-shadow .3s ease;
+  }
+  /* when charged the group becomes a gold shell; Check nests in from the LEFT only,
+     so the seam is a clear curved gap but the two stay one control */
+  .check-group.merged{
+    gap:0; padding:0; background:var(--gold);
+    transition:gap .3s ease, padding .3s ease, background .3s ease;
+  }
+  /* we style Super's states explicitly — don't let :disabled grey it out */
+  #superBtn:disabled{opacity:1; cursor:default;}
+  #superBtn{
+    position:relative; overflow:visible; width:44px; height:44px; flex:none;
+    transition:width .38s cubic-bezier(.3,.9,.4,1), height .3s ease,
+               border-radius .3s ease, background .3s ease, border-color .3s ease,
+               opacity .3s ease;
+  }
+  .check-group.merged #superBtn{
+    width:82px; height:44px; border-radius:14px 0 0 14px;
+    background:transparent; border-color:transparent; cursor:pointer;
+  }
+  .check-group.merged #superBtn:active{background:rgba(0,0,0,.10);}
+  /* mid-Check: the gold recedes so only Check reads as active */
+  .check-group.merged.checking{background:color-mix(in srgb, var(--gold) 26%, transparent);}
+  .check-group.checking #superBtn{opacity:.35;}
+  /* mid-Super-Check: gold stays full — it's the thing being used */
+  .check-group.merged.supering{background:var(--gold);}
+  .check-group.supering #superBtn{opacity:1;}
+  #superBtn .ring{
+    position:absolute; top:50%; left:50%;
+    transform:translate(-50%,-50%) rotate(-90deg);
+    transition:opacity .25s ease;
+  }
+  .check-group.merged #superBtn .ring{opacity:0;}
   #superBtn .ring-track{stroke:#DCE3E9;}
   #superBtn .ring-fill{
     stroke:var(--gold); stroke-dasharray:113.1; stroke-dashoffset:113.1;
     transition:stroke-dashoffset .4s cubic-bezier(.3,.9,.4,1), stroke .2s;
   }
-  #superBtn:not(:disabled){background:var(--gold); border-color:var(--gold);}
-  #superBtn:not(:disabled) .ring-track{stroke:color-mix(in srgb, #fff 40%, transparent);}
-  #superBtn:not(:disabled) .ring-fill{stroke:#fff;}
-  .super-star{position:relative; z-index:2; color:var(--ink-soft); pointer-events:none;}
-  #superBtn:not(:disabled) .super-star{color:var(--ink);}
+  /* gap:0 while collapsed, or it pushes the lone star off-centre */
+  .super-inner{
+    position:relative; z-index:2; display:flex; align-items:center; gap:0;
+    justify-content:center; width:100%;
+    transition:gap .38s cubic-bezier(.3,.9,.4,1), transform .3s ease;
+  }
+  .check-group.merged .super-inner{gap:6px;}
+  .super-star{color:var(--ink-soft); pointer-events:none; flex:none;
+    transition:color .3s ease;}
+  .check-group.merged .super-star{color:var(--ink);}
+  /* the label wipes open left→right as the button widens. The padding/negative-margin
+     pair gives the clip box vertical headroom so lifted letters aren't sliced off. */
+  .super-label{
+    display:inline-block; max-width:0; overflow:hidden; white-space:nowrap;
+    padding:12px 0; margin:-12px 0;
+    opacity:0; color:var(--ink); font-weight:800; font-size:15px; letter-spacing:.01em;
+    transition:max-width .38s cubic-bezier(.3,.9,.4,1), opacity .22s ease .1s;
+  }
+  .check-group.merged .super-label{max-width:56px; opacity:1;}
+  /* progress toward the NEXT charge, once one is banked */
+  .super-bar{
+    position:absolute; left:11px; right:11px; bottom:3px; height:3px; z-index:2;
+    border-radius:2px; background:rgba(255,255,255,.5); overflow:hidden;
+    opacity:0; transition:opacity .25s ease .12s;
+  }
+  .check-group.merged .super-bar{opacity:1;}
+  #superBarFill{
+    display:block; height:100%; width:0%; background:#fff;
+    transition:width .35s cubic-bezier(.3,.9,.4,1);
+  }
+  /* Check is flush on top/right/bottom; only its left edge is inset into the gold */
+  #submitBtn{
+    flex:none; white-space:nowrap; height:44px; padding:0 24px;
+    display:flex; align-items:center; justify-content:center;
+    transition:padding .3s ease, border-radius .3s ease, height .3s ease,
+               margin-left .3s ease, background .12s ease;
+  }
+  .check-label{display:inline-block; white-space:nowrap;}
+  .check-group.merged #submitBtn{
+    border-radius:12px 14px 14px 12px; padding:0 16px; height:44px;
+    margin-left:5px;
+  }
+  /* pressed: Check alone darkens; pressing Super darkens the whole control */
+  #submitBtn.pressed{background:#16307A;}
+  .check-group.pressed{background:#C6A310;}
+  .check-group.pressed #submitBtn{background:#16307A;}
+  /* per-letter spans so "Super Check" can ripple as one phrase */
+  .ltr{display:inline-block; will-change:transform;}
   .super-badge{
     position:absolute; top:-4px; right:-4px; z-index:3; min-width:16px; height:16px;
     padding:0 3px; border-radius:8px; background:var(--ink); color:#fff;
@@ -188,14 +265,15 @@
   }
   #msg.bad{color:var(--bad);} #msg.good{color:var(--good);}
 
-  .actions{display:flex; gap:9px; margin-top:9px; align-items:center;}
+  .actions{display:flex; gap:7px; margin-top:9px; align-items:center;
+    max-width:100%; flex-wrap:nowrap;}
   .btn{
     font:inherit; font-weight:800; font-size:15px; border:0; cursor:pointer;
     border-radius:12px; padding:12px 26px; touch-action:manipulation;
   }
   .btn:focus-visible{outline:2px solid var(--ink); outline-offset:2px;}
-  .btn.primary{background:var(--accent); color:#fff; box-shadow:0 3px 0 #1D3F92;}
-  .btn.primary:active{transform:translateY(2px); box-shadow:0 1px 0 #1D3F92;}
+  .btn.primary{background:var(--accent); color:#fff; transition:background .12s ease;}
+  .btn.primary:active{background:#16307A;}
   .btn.ghost{background:transparent; color:var(--ink-soft); font-weight:700; padding:12px 10px;}
   .btn.ghost:hover{color:var(--ink);}
   .btn:disabled{opacity:.35; cursor:default;}
@@ -318,7 +396,7 @@
 <body>
 
 <header>
-  <div class="eyebrow">Prototype · 4×4 Omino Edition · <span id="verTag">v0.25</span></div>
+  <div class="eyebrow">Prototype · 4×4 Omino Edition · <span id="verTag">v0.32</span></div>
   <h1>Daily <span class="dana">Dana</span>gram</h1>
 </header>
 
@@ -343,19 +421,35 @@
       <line x1="4" y1="4" x2="9" y2="9"/>
     </svg>
   </button>
-  <button class="btn icon" id="undoBtn" aria-label="Undo" title="Undo" disabled>↶</button>
-  <button class="btn icon" id="redoBtn" aria-label="Redo" title="Redo" disabled>↷</button>
-  <button class="btn icon" id="superBtn" disabled aria-label="Super Check" title="Super Check">
-    <svg class="ring" viewBox="0 0 44 44" width="44" height="44">
-      <circle class="ring-track" cx="22" cy="22" r="18" fill="none" stroke-width="3"/>
-      <circle class="ring-fill" id="superRingFill" cx="22" cy="22" r="18" fill="none" stroke-width="3" stroke-linecap="round"/>
+  <button class="btn icon" id="undoBtn" aria-label="Undo" title="Undo" disabled>
+    <svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <polyline points="9 14 4 9 9 4"/>
+      <path d="M20 19v-6a4 4 0 0 0-4-4H4"/>
     </svg>
-    <svg class="super-star" viewBox="0 0 24 24" width="18" height="18" fill="currentColor">
-      <path d="M12 2.4l2.9 6.7 7.2.8-5.4 4.9 1.5 7.2-6.2-3.7-6.2 3.7 1.5-7.2-5.4-4.9 7.2-.8z"/>
-    </svg>
-    <span class="super-badge" id="superBadge"></span>
   </button>
-  <button class="btn primary" id="submitBtn">Check</button>
+  <button class="btn icon" id="redoBtn" aria-label="Redo" title="Redo" disabled>
+    <svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <polyline points="15 14 20 9 15 4"/>
+      <path d="M4 19v-6a4 4 0 0 1 4-4h12"/>
+    </svg>
+  </button>
+  <div class="check-group" id="checkGroup">
+    <button class="btn icon" id="superBtn" disabled aria-label="Super Check" title="Super Check">
+      <svg class="ring" viewBox="0 0 44 44" width="44" height="44">
+        <circle class="ring-track" cx="22" cy="22" r="18" fill="none" stroke-width="3"/>
+        <circle class="ring-fill" id="superRingFill" cx="22" cy="22" r="18" fill="none" stroke-width="3" stroke-linecap="round"/>
+      </svg>
+      <span class="super-inner">
+        <svg class="super-star" viewBox="0 0 24 24" width="18" height="18" fill="currentColor">
+          <path d="M12 2.4l2.9 6.7 7.2.8-5.4 4.9 1.5 7.2-6.2-3.7-6.2 3.7 1.5-7.2-5.4-4.9 7.2-.8z"/>
+        </svg>
+        <span class="super-label">Super</span>
+      </span>
+      <span class="super-bar"><span id="superBarFill"></span></span>
+      <span class="super-badge" id="superBadge"></span>
+    </button>
+    <button class="btn primary" id="submitBtn"><span class="check-label" id="checkLabel">Check</span></button>
+  </div>
 </div>
 
 <div id="drawer">
@@ -1215,27 +1309,46 @@ function flyDot(fromEl, delay) {
 
 // The drawer's whole top edge is one continuous line: flat, then it flares out
 // (concave) into slanted sides that rise to a convex-cornered tab, then back down.
+// Every blend is a cubic matched to its neighbours' tangents, so the corners and
+// the slants flow into each other with no kinks.
 function drawerTopPath(W, H) {
   const btn = document.getElementById('drawerTab');
   const tabW = Math.min(W - 60, Math.max(150, btn.offsetWidth || 190));
   const slant = 15;                 // sides splay outward toward the base
-  const rv = 14;                    // convex radius at the tab's top corners
-  const rc = 13;                    // concave radius where it meets the flat line
   const cx = W / 2;
   const tL = cx - tabW / 2, tR = cx + tabW / 2;      // tab top edge
   const bL = tL - slant, bR = tR + slant;           // tab base (wider)
-  const f = (n) => n.toFixed(1);
-  let d = `M 0 ${f(H)}`;
-  d += ` L ${f(bL - rc)} ${f(H)}`;
-  // concave flare up off the flat line
-  d += ` Q ${f(bL)} ${f(H)} ${f(bL + slant * 0.2)} ${f(H - rc)}`;
-  // slanted side rising to the convex corner
-  d += ` L ${f(tL - rv * 0.22)} ${f(rv)}`;
-  d += ` Q ${f(tL)} 0 ${f(tL + rv)} 0`;
-  d += ` L ${f(tR - rv)} 0`;
-  d += ` Q ${f(tR)} 0 ${f(tR + rv * 0.22)} ${f(rv)}`;
-  d += ` L ${f(bR - slant * 0.2)} ${f(H - rc)}`;
-  d += ` Q ${f(bR)} ${f(H)} ${f(bR + rc)} ${f(H)}`;
+
+  const len = Math.hypot(slant, H);
+  const uL = [slant / len, -H / len];               // up the left slant
+  const uR = [slant / len,  H / len];               // down the right slant
+  const flat = [1, 0];
+  const RC = 13, RV = 13, DS = 11;                  // concave / convex / along-slant blends
+
+  const f = n => n.toFixed(1);
+  const pt = p => `${f(p[0])} ${f(p[1])}`;
+  // cubic from p0 leaving along t0, arriving at p1 along t1
+  const blend = (p0, t0, p1, t1, k0, k1) =>
+    ` C ${pt([p0[0] + t0[0] * k0, p0[1] + t0[1] * k0])},` +
+    ` ${pt([p1[0] - t1[0] * k1, p1[1] - t1[1] * k1])}, ${pt(p1)}`;
+
+  const A  = [bL - RC, H];                                   // leave the flat line
+  const B  = [bL + uL[0] * DS, H + uL[1] * DS];              // land on the left slant
+  const C  = [tL - uL[0] * DS, -uL[1] * DS];                 // leave the slant near the top
+  const D  = [tL + RV, 0];                                   // land on the tab's top edge
+  const D2 = [tR - RV, 0];                                   // leave the top edge
+  const E  = [tR + uR[0] * DS, uR[1] * DS];                  // land on the right slant
+  const F  = [bR - uR[0] * DS, H - uR[1] * DS];              // leave the right slant
+  const G  = [bR + RC, H];                                   // rejoin the flat line
+
+  let d = `M 0 ${f(H)} L ${pt(A)}`;
+  d += blend(A, flat, B, uL, RC * 0.62, DS * 0.62);          // concave flare up
+  d += ` L ${pt(C)}`;                                        // straight up the slant
+  d += blend(C, uL, D, flat, DS * 0.62, RV * 0.62);          // convex top-left corner
+  d += ` L ${pt(D2)}`;                                       // across the tab top
+  d += blend(D2, flat, E, uR, RV * 0.62, DS * 0.62);         // convex top-right corner
+  d += ` L ${pt(F)}`;                                        // straight down the slant
+  d += blend(F, uR, G, flat, DS * 0.62, RC * 0.62);          // concave flare back down
   d += ` L ${f(W)} ${f(H)}`;
   return d;
 }
@@ -1279,15 +1392,113 @@ function renderWordLists(justAdded, newestFirst) {
     `Word bank · ${h.inList.length} in, ${h.outList.length} out`;
   layoutDrawer();
 }
+// --------------------------------------------- Check / Super Check button states
+// "Super" and "Check" are split into letters so a Super Check can ripple across the
+// whole phrase — reading as "Super Check", not "Super" then "Check".
+function splitLetters(el) {
+  if (!el) return [];
+  const t = el.textContent;
+  el.textContent = '';
+  [...t].forEach(ch => {
+    const s = document.createElement('span');
+    s.className = 'ltr';
+    s.textContent = ch;
+    el.appendChild(s);
+  });
+  return [...el.querySelectorAll('.ltr')];
+}
+const SUPER_LTRS = splitLetters(document.querySelector('.super-label'));
+const CHECK_LTRS = splitLetters(document.getElementById('checkLabel'));
+
+let btnAnims = [];
+
+// iOS Safari won't reliably apply :active, so drive the pressed look from pointer
+// events. Pressing Check darkens Check; pressing Super darkens the whole control.
+function wirePress(btn, target) {
+  if (!btn || !target || !btn.addEventListener) return;
+  const on = () => { if (!btn.disabled) target.classList.add('pressed'); };
+  const off = () => target.classList.remove('pressed');
+  btn.addEventListener('pointerdown', on);
+  btn.addEventListener('pointerup', off);
+  btn.addEventListener('pointercancel', off);
+  btn.addEventListener('pointerleave', off);
+  btn.addEventListener('blur', off);
+}
+wirePress(document.getElementById('submitBtn'), document.getElementById('submitBtn'));
+wirePress(document.getElementById('superBtn'), document.getElementById('checkGroup'));
+
+function stopBtnAnims() {
+  btnAnims.forEach(a => { try { a.cancel(); } catch (e) {} });
+  btnAnims = [];
+  [...SUPER_LTRS, ...CHECK_LTRS].forEach(el => { el.style.transform = ''; });
+  const lbl = document.getElementById('checkLabel');
+  if (lbl) lbl.style.transform = '';
+}
+// Height over time for a real jump is a parabola: y = -4h·t(1-t). Sampling it and
+// interpolating linearly gives the true curve, rather than approximating with easing.
+function jumpFrames(h, steps) {
+  const out = [];
+  for (let k = 0; k <= steps; k++) {
+    const t = k / steps;
+    out.push({ t, y: -4 * h * t * (1 - t) });
+  }
+  return out;
+}
+
+function setBtnState(mode) {              // '' | 'checking' | 'supering'
+  const g = document.getElementById('checkGroup');
+  g.classList.toggle('checking', mode === 'checking');
+  g.classList.toggle('supering', mode === 'supering');
+  stopBtnAnims();
+  if (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+
+  if (mode === 'checking') {
+    // Check alone is working: the word jumps on a parabolic arc, then lands and rests
+    const lbl = document.getElementById('checkLabel');
+    if (lbl && lbl.animate) {
+      const JUMP = 470, REST = 150, CYCLE = JUMP + REST;
+      const kf = jumpFrames(5, 14).map(f => ({
+        transform: `translateY(${f.y.toFixed(2)}px)`,
+        offset: +((f.t * JUMP) / CYCLE).toFixed(4),
+        easing: 'linear',
+      }));
+      kf.push({ transform: 'translateY(0)', offset: 1, easing: 'linear' });
+      btnAnims.push(lbl.animate(kf, { duration: CYCLE, iterations: Infinity }));
+    }
+  } else if (mode === 'supering') {
+    // ripple every letter of "SuperCheck" in sequence, then pause briefly and repeat
+    const all = [...SUPER_LTRS, ...CHECK_LTRS];
+    const LIFT = 400, STAGGER = 81, PAUSE = 100;      // 80% of the old speed
+    const wave = (all.length - 1) * STAGGER + LIFT;
+    const CYCLE = wave + PAUSE;
+    all.forEach((el, i) => {
+      if (!el.animate) return;
+      const s = i * STAGGER;
+      const kf = [];
+      if (s > 0) kf.push({ transform: 'translateY(0)', offset: 0, easing: 'linear' });
+      jumpFrames(6, 10).forEach(f => kf.push({
+        transform: `translateY(${f.y.toFixed(2)}px)`,
+        offset: +((s + f.t * LIFT) / CYCLE).toFixed(4),
+        easing: 'linear',
+      }));
+      kf.push({ transform: 'translateY(0)', offset: 1, easing: 'linear' });
+      btnAnims.push(el.animate(kf, { duration: CYCLE, iterations: Infinity }));
+    });
+  }
+}
+
 function updateSuper() {
   const v = meterValue();
   const stacks = Math.floor(v / HINT_THRESHOLD);
   const ready = stacks >= 1;
   document.getElementById('superBtn').disabled = !ready || state.busy;
+  // once charged, Super expands and merges with Check so it reads "Super Check"
+  document.getElementById('checkGroup').classList.toggle('merged', ready);
   const frac = (v % HINT_THRESHOLD) / HINT_THRESHOLD;
   const CIRC = 113.1;
   document.getElementById('superRingFill').style.strokeDashoffset =
     (CIRC * (1 - frac)).toFixed(1);
+  document.getElementById('superBarFill').style.width = (frac * 100).toFixed(0) + '%';
   const badge = document.getElementById('superBadge');
   if (stacks >= 2) { badge.textContent = '×' + stacks; badge.classList.add('show'); }
   else badge.classList.remove('show');
@@ -1415,6 +1626,7 @@ async function runCheck(superMode) {
 
   state.busy = true;
   updateSuper();
+  setBtnState(superMode ? 'supering' : 'checking');
 
   let good = 0;
   const ANIM = 385, PAUSE = 150, STEP = ANIM + PAUSE, FANFARE_PAD = 100;
@@ -1475,6 +1687,7 @@ async function runCheck(superMode) {
 
   await sleep(450);
   state.busy = false;
+  setBtnState('');
   document.querySelectorAll('.letter').forEach(el => el.classList.remove('nod', 'shake'));
 
   if (superMode) {
