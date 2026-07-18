@@ -26,7 +26,480 @@
   }
   body.has-drawer{padding-bottom:50px; transition:padding-bottom .2s;}
   header{text-align:center; margin-bottom:6px;}
-  .eyebrow{
+#helpBtn{
+    position:fixed; top:12px; right:12px; z-index:45;
+    width:34px; height:34px; border-radius:50%; cursor:pointer;
+    border:1px solid var(--tile-line); background:#fff; color:var(--ink-soft);
+    font:inherit; font-weight:800; font-size:16px; line-height:1;
+    display:flex; align-items:center; justify-content:center;
+    touch-action:manipulation;
+  }
+  #helpBtn:hover{color:var(--ink); border-color:var(--ink-soft);}
+  #dailyLine{
+    margin-top:5px; font-size:12.5px; font-weight:700; color:var(--ink-soft);
+    letter-spacing:.03em;
+  }
+  #dailyLine b{color:var(--accent);}
+
+  #helpOverlay{
+    position:fixed; inset:0; background:rgba(28,40,54,.45); display:none;
+    align-items:center; justify-content:center; z-index:55; padding:12px;
+  }
+  #helpOverlay.show{display:flex;}
+  #helpOverlay .card{
+    text-align:left; position:relative;
+    max-width:364px; padding:24px 20px 18px;
+    max-height:calc(100vh - 24px);
+  }
+  #helpOverlay h2{margin:0 0 6px; font-size:23px;}
+  #helpOverlay h2{text-align:center;}
+  #helpClose{
+    position:absolute; top:12px; right:12px; z-index:1;
+    width:30px; height:30px; border-radius:50%; cursor:pointer;
+    border:1px solid var(--tile-line); background:#fff; color:var(--ink-soft);
+    font:inherit; font-weight:800; font-size:16px; line-height:1;
+    display:flex; align-items:center; justify-content:center;
+    touch-action:manipulation; padding:0;
+  }
+  #helpClose:hover{color:var(--ink); border-color:var(--ink-soft);}
+  .help-page{display:none;}
+  .help-page.active{display:block;}
+  .help-body p{margin:0 0 12px; font-size:14.5px; line-height:1.5; color:var(--ink);}
+  .help-list{list-style:none; margin:0; padding:0;}
+  .help-list li{
+    font-size:13.5px; line-height:1.38; color:var(--ink-soft);
+    padding:8px 0; border-top:1px solid #EEF2F5;
+    display:flex; align-items:flex-start; gap:10px;
+  }
+  #helpPage1 .help-list li{
+    flex-direction:column; align-items:stretch; gap:7px;
+  }
+  #helpPage1 .help-list li > :first-child{align-self:center;}
+  .hk-icon{
+    flex:none; width:30px; height:30px; margin-top:1px; border-radius:9px;
+    background:#fff; border:1px solid var(--tile-line); color:var(--ink);
+    display:flex; align-items:center; justify-content:center;
+  }
+  .hk-icon svg{width:15px; height:15px;}
+  /* ===================================================================
+     One 12s story runs across all three rows of "How to play", so every
+     animation below shares the same clock and is keyed by percentage:
+        0-8%   scrambled RDWO at rest
+        8-14%  Check pressed -> letters shake, red X badge
+       22-37%  RD lifts out, W/O shuffle left, RD drops -> WORD
+       41-46%  Check pressed again -> letters nod, gold check badge
+       52-60%  gold check funnels down + pips stream -> Super charges
+       60-67%  star jumps, Super merges to gold
+       74-84%  Super pressed -> WORD gets circled
+       92-97%  reset
+     Slots are 30px wide on a 34px pitch, so one slot-step is 34px.
+     =================================================================== */
+  .move-demo{position:relative; display:inline-block; flex:none; pointer-events:none;}
+  .move-icon{
+    position:relative; display:block; width:144px; height:48px; border-radius:14px;
+    background:var(--well); box-shadow:inset 0 2px 6px rgba(25,40,55,.16);
+  }
+  .move-cell{
+    position:absolute; top:6px; width:30px; height:36px; border-radius:9px;
+    background:var(--well-outer);
+  }
+  .move-piece{position:absolute; top:6px; height:36px;}
+  .mp-body{
+    position:absolute; inset:0; border-radius:9px;
+    background:var(--tile); box-shadow:inset 0 0 0 1px var(--tile-line);
+    display:flex; align-items:center; justify-content:center;
+    font-size:17px; font-weight:800; color:var(--ink);
+    font-family:'Archivo',sans-serif; text-transform:uppercase;
+  }
+  /* multi-cell pieces are tinted like real ominos; singles stay plain --tile */
+  .piece-rd .mp-body{background:var(--o4);}
+  .mp-l{display:inline-block; animation:letterStory 12s ease-in-out infinite;}
+  .piece-w{left:74px; width:30px; z-index:2; animation:mvW 12s ease-in-out infinite;}
+  .piece-o{left:108px; width:30px; z-index:2; animation:mvO 12s ease-in-out infinite;}
+  /* the fused domino spans two slots plus the gap between them, as one silhouette */
+  .piece-rd{left:6px; width:64px; z-index:3; animation:mvRD 12s ease-in-out infinite;}
+  .piece-rd .mp-body{animation:rdShadow 12s ease-in-out infinite;}
+  .piece-rd .mp-l{
+    position:absolute; top:0; height:100%; width:30px;
+    display:flex; align-items:center; justify-content:center;
+  }
+  .mp-a{left:0;}
+  .mp-b{left:34px;}
+  .mp-seam{
+    position:absolute; left:31px; top:6px; width:2px; height:24px;
+    border-radius:2px; background:rgba(34,48,63,.14);
+  }
+  /* verdict badges, drawn just past the end of the word like the real ones */
+  .vbadge{
+    position:absolute; top:12px; left:150px;
+    width:22px; height:22px; border-radius:50%;
+    display:flex; align-items:center; justify-content:center;
+    font-weight:900; font-size:13px; line-height:1;
+    opacity:0; z-index:1;
+  }
+  .vb-x{color:var(--ink); animation:vbX 12s ease-in-out infinite;}
+  .vb-check{
+    color:#fff; background:var(--gold);
+    --fx:-89px; --fy:219px;           /* measured badge centre -> star centre */
+    animation:vbCheck 12s ease-in-out infinite;
+  }
+  /* hand-drawn ring around the solved word, from the game's own sketch algorithm */
+  .word-circle{
+    position:absolute; left:0; top:0; width:144px; height:48px;
+    overflow:visible; pointer-events:none; z-index:5;
+  }
+  .wc-path{
+    fill:none; stroke:var(--ink); stroke-width:2.8; stroke-linecap:round;
+    --len:324;        /* measured via getTotalLength() */
+    stroke-dasharray:var(--len); stroke-dashoffset:var(--len); opacity:.8;
+    animation:wordCircle 12s ease-out infinite;
+  }
+  /* letters shake on a failed check and nod on a good one, reusing the real curves */
+  @keyframes letterStory{
+    0%,10.8%{transform:translate(0,0);}
+    11.4%{transform:translate(-3px,0);}
+    11.9%{transform:translate(3px,0);}
+    12.5%{transform:translate(-2px,0);}
+    13.0%{transform:translate(2px,0);}
+    13.6%,42.5%{transform:translate(0,0);}
+    43.4%{transform:translate(0,-5px);}
+    44.3%{transform:translate(0,1px);}
+    45.6%,100%{transform:translate(0,0);}
+  }
+  @keyframes mvRD{
+    0%,23%{transform:translate(0,0) scale(1); opacity:1;}
+    25.5%,31%{transform:translate(0,-18px) scale(1.05); opacity:1;}
+    34.5%{transform:translate(68px,-18px) scale(1.05); opacity:1;}
+    36.5%,91.7%{transform:translate(68px,0) scale(1); opacity:1;}
+    94%{transform:translate(68px,0) scale(1); opacity:0;}
+    94.5%{transform:translate(0,0) scale(1); opacity:0;}
+    96.7%,100%{transform:translate(0,0) scale(1); opacity:1;}
+  }
+  @keyframes rdShadow{
+    0%,23%{box-shadow:inset 0 0 0 1px var(--tile-line);}
+    25.5%,34.5%{box-shadow:inset 0 0 0 1px var(--tile-line), 0 6px 11px rgba(20,32,45,.3);}
+    36.5%,100%{box-shadow:inset 0 0 0 1px var(--tile-line);}
+  }
+  @keyframes mvW{
+    0%,26%{transform:translate(0,0); opacity:1;}
+    29%,91.7%{transform:translate(-68px,0); opacity:1;}
+    94%{transform:translate(-68px,0); opacity:0;}
+    94.5%{transform:translate(0,0); opacity:0;}
+    96.7%,100%{transform:translate(0,0); opacity:1;}
+  }
+  @keyframes mvO{
+    0%,27%{transform:translate(0,0); opacity:1;}
+    30%,91.7%{transform:translate(-68px,0); opacity:1;}
+    94%{transform:translate(-68px,0); opacity:0;}
+    94.5%{transform:translate(0,0); opacity:0;}
+    96.7%,100%{transform:translate(0,0); opacity:1;}
+  }
+  @keyframes vbX{
+    0%,13.2%{opacity:0; transform:scale(.4);}
+    14.5%,20%{opacity:1; transform:scale(1);}
+    22%,100%{opacity:0; transform:scale(.8);}
+  }
+  /* the gold check appears, holds, then funnels down into the Super button */
+  @keyframes vbCheck{
+    0%,45.2%{opacity:0; transform:translate(0,0) scale(.4);}
+    46.5%,51.7%{opacity:1; transform:translate(0,0) scale(1);}
+    58%{opacity:1; transform:translate(var(--fx),var(--fy)) scale(.45);}
+    59.5%,100%{opacity:0; transform:translate(var(--fx),var(--fy)) scale(.3);}
+  }
+  @keyframes wordCircle{
+    0%,76%{stroke-dashoffset:var(--len); opacity:.8;}
+    84%,91.7%{stroke-dashoffset:0; opacity:.8;}
+    94%{stroke-dashoffset:0; opacity:0;}
+    94.1%{stroke-dashoffset:var(--len); opacity:0;}
+    96.7%,100%{stroke-dashoffset:var(--len); opacity:.8;}
+  }
+  /* the check row's pips fall past this row's text and land in the star below, so
+     the row can't clip them and the text needs to sit above them in the stack */
+  #helpPage1 .help-list li{position:relative;}
+  /* opaque + above the pips so the charge passes behind the copy */
+  #helpPage1 .help-text{position:relative; z-index:2; background:#fff; text-align:center;}
+  .help-h{display:block; color:var(--ink); font-weight:800; margin-bottom:2px;}
+  /* -------- win condition: a solved 4x4 grid saluting row by row, then column by
+     column (all eight words), then a confetti burst. Shares the 12s clock. -------- */
+  .win-note{
+    padding-top:10px; border-top:1px solid #EEF2F5;
+    display:flex; align-items:center; justify-content:center; gap:12px;
+  }
+  .win-demo{position:relative; flex:none; width:56px; height:56px; pointer-events:none;}
+  .win-grid{
+    display:block; width:56px; height:56px;
+    fill:none; stroke:var(--ink-soft); stroke-width:1.1; opacity:.55;
+  }
+  .wcell{
+    position:absolute; width:14px; height:14px;
+    display:flex; align-items:center; justify-content:center;
+  }
+  /* row hop and column hop live on separate elements so each cell can do both */
+  .wr{display:flex; animation:rowHop 12s ease-in-out infinite;
+      animation-delay:calc(var(--r) * .36s);}
+  .wc2{display:flex; animation:colHop 12s ease-in-out infinite;
+       animation-delay:calc(var(--c) * .36s);}
+  .wchk{width:9px; height:9px; color:var(--ink);}
+  @keyframes rowHop{
+    0%,20%{transform:translateY(0);}
+    20.9%{transform:translateY(-4px);}
+    21.8%{transform:translateY(1px);}
+    23%,100%{transform:translateY(0);}
+  }
+  @keyframes colHop{
+    0%,36%{transform:translateY(0);}
+    36.9%{transform:translateY(-4px);}
+    37.8%{transform:translateY(1px);}
+    39%,100%{transform:translateY(0);}
+  }
+  .conf{
+    position:absolute; left:50%; top:50%; width:4px; height:6px;
+    margin:-3px 0 0 -2px; border-radius:1px; opacity:0; pointer-events:none;
+    animation:confBurst 12s ease-out infinite;
+  }
+  @keyframes confBurst{
+    0%,48%{opacity:0; transform:translate(0,0) scale(.4) rotate(0deg);}
+    49.5%{opacity:1; transform:translate(calc(var(--ax) * .35), calc(var(--ay) * .35 - 3px)) scale(1) rotate(70deg);}
+    54%{opacity:1; transform:translate(calc(var(--ax) * .85), calc(var(--ay) * .85)) scale(1) rotate(210deg);}
+    60%,100%{opacity:0; transform:translate(var(--ax), calc(var(--ay) + 10px)) scale(.75) rotate(320deg);}
+  }
+  .win-line{
+    text-align:left; font-size:13.5px; line-height:1.35;
+    color:var(--ink); font-weight:800;
+  }
+  .check-demo{
+    position:relative; flex:none;
+    display:flex; align-items:center; justify-content:center;
+    pointer-events:none;
+  }
+  .mini-check{
+    flex:none; cursor:default; white-space:nowrap;
+    display:inline-flex; align-items:center; justify-content:center;
+    font-weight:800; font-family:inherit; border:0;
+    padding:8px 16px; font-size:11px; border-radius:9px;
+    background:var(--accent); color:#fff;
+    animation:checkStory 12s ease-in-out infinite;
+  }
+  /* Check is pressed twice: once on the scramble (fails) and once on WORD (scores) */
+  @keyframes checkStory{
+    0%,8.3%{transform:scale(1) translateY(0); background:var(--accent);}
+    9.2%{transform:scale(.94) translateY(1px); background:#16307A;}
+    10.4%,41%{transform:scale(1) translateY(0); background:var(--accent);}
+    41.8%{transform:scale(.94) translateY(1px); background:#16307A;}
+    43%,100%{transform:scale(1) translateY(0); background:var(--accent);}
+  }
+  /* -------- Super: charges from the check, then merges and is spent -------- */
+  .super-demo{
+    position:relative; flex:none;
+    width:35px; height:35px; border-radius:10px;
+    background:#fff; border:1px solid var(--tile-line); box-sizing:border-box;
+    display:flex; align-items:center; justify-content:center;
+    animation:superShell 12s ease-in-out infinite, superPress 12s ease-in-out infinite;
+  }
+  .demo-ring{
+    position:absolute; top:50%; left:50%;
+    transform:translate(-50%,-50%) rotate(-90deg);
+    animation:superRingOpacity 12s ease-in-out infinite;
+  }
+  .demo-ring-track{stroke:#DCE3E9;}
+  .demo-ring-fill{
+    stroke:var(--gold); stroke-dasharray:88; stroke-dashoffset:88;
+    animation:superRingFill 12s ease-in-out infinite;
+  }
+  .demo-inner{
+    position:relative; z-index:2; display:flex; align-items:center; justify-content:center;
+    width:100%; animation:superGap 12s ease-in-out infinite;
+  }
+  .demo-star{
+    flex:none; color:var(--ink-soft); transform-origin:center;
+    animation:superStarColor 12s ease-in-out infinite, starJump 12s ease-in-out infinite;
+  }
+  .demo-label{
+    display:inline-block; max-width:0; overflow:hidden; white-space:nowrap;
+    opacity:0; color:var(--ink); font-weight:800; font-size:10px;
+    animation:superLabel 12s ease-in-out infinite;
+  }
+  /* pips of charge that drop out of Check, slip behind the text block, and land in
+     the star. --fall is the measured pill-centre → star-centre distance. */
+  .pip{
+    position:absolute; left:50%; top:50%; width:6px; height:6px;
+    margin:-3px 0 0 -3px; border-radius:50%;
+    background:var(--gold); opacity:0; z-index:0; pointer-events:none;
+    --fall:115px;
+    animation-name:pipFall; animation-duration:12s;
+    animation-timing-function:linear; animation-iteration-count:infinite;
+  }
+  /* the same gold check the word earns, but issued by the Check button itself as it
+     throws off charge — then it funnels into Super alongside the pips */
+  .cbadge{
+    position:absolute; left:78px; top:50%; margin-top:-9px;
+    width:18px; height:18px; border-radius:50%;
+    background:var(--gold); color:#fff;
+    display:flex; align-items:center; justify-content:center;
+    font-weight:900; font-size:11px; line-height:1;
+    opacity:0; z-index:1; pointer-events:none;
+    --cdx:-52.4px; --cdy:115px;   /* measured check-dot centre -> star centre */
+    animation:cbadgeStory 12s ease-in-out infinite;
+  }
+  @keyframes cbadgeStory{
+    0%,51.2%{opacity:0; transform:translate(0,0) scale(.4);}
+    52.4%,55%{opacity:1; transform:translate(0,0) scale(1);}
+    59%{opacity:1; transform:translate(var(--cdx),var(--cdy)) scale(.45);}
+    60.5%,100%{opacity:0; transform:translate(var(--cdx),var(--cdy)) scale(.3);}
+  }
+  @keyframes pipFall{
+    0%,51.7%{opacity:0; transform:translate(0,0) scale(.4);}
+    52.2%{opacity:0; transform:translate(calc(var(--dx) * .2), 11px) scale(.7);}
+    52.6%{opacity:1; transform:translate(calc(var(--dx) * .3), 17px) scale(1);}
+    53.8%{opacity:1; transform:translate(calc(var(--dx) * .7), calc(var(--fall) * .32)) scale(1);}
+    55.4%{opacity:1; transform:translate(var(--dx), calc(var(--fall) * .82)) scale(.9);}
+    56.2%,100%{opacity:0; transform:translate(0, var(--fall)) scale(.35);}
+  }
+  /* Super's whole job is telling you a word is really in the puzzle, so pressing it
+     circles a little word right here — the same gesture the board gets. */
+  .super-row{
+    position:relative; flex:none;
+    display:flex; align-items:center; justify-content:center;
+    width:70px; height:35px;
+  }
+  .mini-word{
+    position:absolute; left:82px; top:50%; margin-top:-11px;
+    width:48px; height:22px;
+    display:flex; align-items:center; justify-content:center;
+    opacity:0; pointer-events:none;
+    animation:miniWordFade 12s ease-in-out infinite;
+  }
+  .mw-text{
+    font-family:'Archivo',sans-serif; font-weight:800; font-size:9.5px;
+    letter-spacing:.05em; color:var(--ink);
+  }
+  .mw-circle{position:absolute; left:0; top:0; width:48px; height:22px; overflow:visible;}
+  .mwc-path{
+    fill:none; stroke:var(--ink); stroke-width:1.5; stroke-linecap:round;
+    --mlen:101.3;     /* measured via getTotalLength() */
+    stroke-dasharray:var(--mlen); stroke-dashoffset:var(--mlen); opacity:.8;
+    animation:miniCircle 12s ease-out infinite;
+  }
+  @keyframes miniWordFade{
+    0%,71%{opacity:0;}
+    73%,91.7%{opacity:1;}
+    94%,100%{opacity:0;}
+  }
+  @keyframes miniCircle{
+    0%,76%{stroke-dashoffset:var(--mlen); opacity:.8;}
+    83%,91.7%{stroke-dashoffset:0; opacity:.8;}
+    94%{stroke-dashoffset:0; opacity:0;}
+    94.1%{stroke-dashoffset:var(--mlen); opacity:0;}
+    96.7%,100%{stroke-dashoffset:var(--mlen); opacity:.8;}
+  }
+  @keyframes superShell{
+    0%,63%{width:35px; height:35px; border-radius:10px; background:#fff; border-color:var(--tile-line);}
+    66.5%,91.7%{width:70px; height:35px; border-radius:11px; background:var(--gold); border-color:var(--gold);}
+    95%,100%{width:35px; height:35px; border-radius:10px; background:#fff; border-color:var(--tile-line);}
+  }
+  /* Super gets pressed once charged, which is what reveals the word */
+  @keyframes superPress{
+    0%,74%{transform:scale(1);}
+    74.8%{transform:scale(.93);}
+    75.8%,100%{transform:scale(1);}
+  }
+  @keyframes superRingFill{
+    0%,51.7%{stroke-dashoffset:88;}
+    60%,91.7%{stroke-dashoffset:0;}
+    95%,100%{stroke-dashoffset:88;}
+  }
+  @keyframes superRingOpacity{
+    0%,62%{opacity:1;}
+    66%,92%{opacity:0;}
+    96%,100%{opacity:1;}
+  }
+  @keyframes starJump{
+    0%,60%{transform:translateY(0);}
+    61.2%{transform:translateY(-4px);}
+    62%{transform:translateY(-7px);}
+    62.8%{transform:translateY(-3px);}
+    63.5%,100%{transform:translateY(0);}
+  }
+  @keyframes superGap{
+    0%,63%{gap:0;}
+    66.5%,92%{gap:6px;}
+    96%,100%{gap:0;}
+  }
+  @keyframes superStarColor{
+    0%,62%{color:var(--ink-soft);}
+    66%,92%{color:var(--ink);}
+    96%,100%{color:var(--ink-soft);}
+  }
+  @keyframes superLabel{
+    0%,63%{max-width:0; opacity:0;}
+    66.5%,92%{max-width:42px; opacity:1;}
+    96%,100%{max-width:0; opacity:0;}
+  }
+  /* -------- Tips: a Check press, then its charge multiplying cell-division style -------- */
+  .divide-icon{position:relative; overflow:visible; background:transparent; border:0;}
+  .dpip{
+    position:absolute; left:50%; top:50%; width:7px; height:7px;
+    margin:-3.5px 0 0 -3.5px; border-radius:50%; background:var(--gold);
+    animation-duration:3.6s; animation-timing-function:ease-in-out;
+    animation-iteration-count:infinite;
+  }
+  /* d1 starts life as the big check circle, so it is 20px at base and scales to
+     .35 (= 7px) once it has divided down into an ordinary pip */
+  .d1{
+    width:20px; height:20px; margin:-10px 0 0 -10px; color:#fff;
+    display:flex; align-items:center; justify-content:center;
+    animation-name:divide1;
+  }
+  .dcheck{
+    width:12px; height:12px; flex:none;
+    animation:dcheckFade 3.6s ease-in-out infinite;
+  }
+  .d2{animation-name:divide2;}
+  .d3{animation-name:divide3;}
+  .d4{animation-name:divide4;}
+  @keyframes dcheckFade{
+    0%,13%{opacity:1;}
+    17%,86%{opacity:0;}
+    93%,100%{opacity:1;}
+  }
+  /* each pip stretches just before it splits, the way a dividing cell pinches */
+  @keyframes divide1{
+    0%,14%{transform:translate(0,0) scale(1,1);}
+    19%{transform:translate(0,0) scale(.6,.25);}
+    25%,42%{transform:translate(-6px,0) scale(.35,.35);}
+    47%{transform:translate(-6px,0) scale(.25,.6);}
+    53%,80%{transform:translate(-6px,-6px) scale(.35,.35);}
+    89%,100%{transform:translate(0,0) scale(1,1);}
+  }
+  @keyframes divide2{
+    0%,19%{transform:translate(0,0) scale(0,0);}
+    25%,42%{transform:translate(6px,0) scale(1,1);}
+    47%{transform:translate(6px,0) scale(.7,1.7);}
+    53%,80%{transform:translate(6px,-6px) scale(1,1);}
+    89%,100%{transform:translate(0,0) scale(0,0);}
+  }
+  @keyframes divide3{
+    0%,47%{transform:translate(-6px,0) scale(0,0);}
+    53%,80%{transform:translate(-6px,6px) scale(1,1);}
+    89%,100%{transform:translate(0,0) scale(0,0);}
+  }
+  @keyframes divide4{
+    0%,47%{transform:translate(6px,0) scale(0,0);}
+    53%,80%{transform:translate(6px,6px) scale(1,1);}
+    89%,100%{transform:translate(0,0) scale(0,0);}
+  }
+  .hk{
+    display:inline-block; min-width:64px; font-weight:800; color:var(--ink);
+  }
+  .help-tip{
+    font-size:13px; font-style:italic; color:var(--ink-soft);
+    background:#F5F8FA; border-radius:9px; padding:9px 11px; margin:0;
+  }
+  .help-version{
+    text-align:center; font-size:10.5px; font-weight:700; color:var(--tile-line);
+    margin-top:12px; letter-spacing:.04em;
+  }
+    .eyebrow{
     font-size:11px; font-weight:700; letter-spacing:.18em; text-transform:uppercase;
     color:var(--ink-soft); margin-bottom:6px;
   }
@@ -395,6 +868,8 @@
 </head>
 <body>
 
+<button id="helpBtn" aria-label="How to play" title="How to play">?</button>
+
 <header>
   <div class="eyebrow">Prototype · 4×4 Omino Edition · <span id="verTag">v0.32</span></div>
   <h1>Daily <span class="dana">Dana</span>gram</h1>
@@ -478,6 +953,172 @@
   <button id="rateBtn">Rate this puzzle</button>
   <button id="reveal">Reveal solution</button>
 </div>
+
+<div id="helpOverlay"><div class="card">
+  <button id="helpClose" aria-label="Close" title="Close">×</button>
+
+  <div class="help-page active" id="helpPage1">
+    <h2>How to play</h2>
+    <div class="help-body">
+      <ul class="help-list">
+        <li>
+          <span class="move-demo" aria-hidden="true">
+            <span class="move-icon">
+              <span class="move-cell" style="left:6px"></span>
+              <span class="move-cell" style="left:40px"></span>
+              <span class="move-cell" style="left:74px"></span>
+              <span class="move-cell" style="left:108px"></span>
+              <span class="move-piece piece-w"><span class="mp-body"><span class="mp-l">W</span></span></span>
+              <span class="move-piece piece-o"><span class="mp-body"><span class="mp-l">O</span></span></span>
+              <span class="move-piece piece-rd"><span class="mp-body">
+                <span class="mp-l mp-a">R</span>
+                <span class="mp-seam"></span>
+                <span class="mp-l mp-b">D</span>
+              </span></span>
+              <svg class="word-circle" viewBox="0 0 144 48">
+                <path class="wc-path" d="M 133.2 10.1 C 142.9 15.4, 145.9 22.3, 139.5 28.7 C 133.2 35.2, 118.8 41.1, 100.5 44.4 C 82.2 47.8, 60.6 48.4, 42.5 46.4 C 24.5 44.4, 11.1 39.5, 5.3 33.6 C -0.6 27.7, 2.8 20.7, 12.6 14.9 C 22.4 9.0, 39.7 4.5, 58.4 2.5 C 77.2 0.5, 97.5 1.1, 112.9 4.2 C 128.3 7.4, 139.3 12.8, 141.2 19.1"/>
+              </svg>
+            </span>
+            <span class="vbadge vb-x">✗</span>
+            <span class="vbadge vb-check">✓</span>
+          </span>
+          <span class="help-text"><b class="help-h">Unscramble tiles to make words</b>Drag a piece, or tap it and tell it where to go!</span>
+        </li>
+        <li>
+          <span class="check-demo" aria-hidden="true">
+            <span class="mini-check">Check</span>
+            <span class="pip" style="--dx:-9px; animation-delay:0ms;"></span>
+            <span class="pip" style="--dx:7px; animation-delay:90ms;"></span>
+            <span class="pip" style="--dx:-3px; animation-delay:180ms;"></span>
+            <span class="pip" style="--dx:10px; animation-delay:270ms;"></span>
+            <span class="pip" style="--dx:-7px; animation-delay:360ms;"></span>
+            <span class="pip" style="--dx:3px; animation-delay:450ms;"></span>
+            <span class="cbadge">✓</span>
+          </span>
+          <span class="help-text"><b class="help-h">Check your words (and charge up!)</b>Check your words as you make them. New words charge your SuperCheck!</span>
+        </li>
+        <li>
+          <span class="super-row" aria-hidden="true">
+            <span class="super-demo">
+            <svg class="demo-ring" viewBox="0 0 35 35" width="35" height="35">
+              <circle class="demo-ring-track" cx="17.5" cy="17.5" r="14" fill="none" stroke-width="2.5"/>
+              <circle class="demo-ring-fill" cx="17.5" cy="17.5" r="14" fill="none" stroke-width="2.5" stroke-linecap="round"/>
+            </svg>
+            <span class="demo-inner">
+              <svg class="demo-star" viewBox="0 0 24 24" width="13" height="13" fill="currentColor"><path d="M12 2.4l2.9 6.7 7.2.8-5.4 4.9 1.5 7.2-6.2-3.7-6.2 3.7 1.5-7.2-5.4-4.9 7.2-.8z"/></svg>
+              <span class="demo-label">Super</span>
+            </span>
+            </span>
+            <span class="mini-word">
+              <span class="mw-text">WORD</span>
+              <svg class="mw-circle" viewBox="0 0 48 22"><path class="mwc-path" d="M 42.3 6.1 C 45.3 8.0, 46.2 10.6, 44.3 13.0 C 42.4 15.3, 38.1 17.5, 32.6 18.6 C 27.1 19.8, 20.6 20.0, 15.2 19.2 C 9.8 18.4, 5.8 16.5, 4.0 14.3 C 2.2 12.1, 3.2 9.6, 6.1 7.4 C 9.1 5.3, 14.2 3.7, 19.9 3.0 C 25.5 2.3, 31.6 2.6, 36.2 3.8 C 40.8 5.0, 44.2 7.1, 44.7 9.4"/></svg>
+            </span>
+          </span>
+          <span class="help-text"><b class="help-h">SuperCheck to build your word bank</b>Once charged, SuperCheck tells you which words on your board are in today’s puzzle…and which aren’t!</span>
+        </li>
+      </ul>
+      <div class="win-note">
+        <span class="win-demo" aria-hidden="true">
+            <svg class="win-grid" viewBox="0 0 56 56">
+              <rect x="0.6" y="0.6" width="54.8" height="54.8" rx="3"/>
+              <line x1="14" y1="0" x2="14" y2="56"/>
+              <line x1="0" y1="14" x2="56" y2="14"/>
+              <line x1="28" y1="0" x2="28" y2="56"/>
+              <line x1="0" y1="28" x2="56" y2="28"/>
+              <line x1="42" y1="0" x2="42" y2="56"/>
+              <line x1="0" y1="42" x2="56" y2="42"/>
+            </svg>
+            <span class="wcell" style="left:0px; top:0px; --r:0; --c:0"><span class="wr"><span class="wc2"><svg class="wchk" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></span></span></span>
+            <span class="wcell" style="left:14px; top:0px; --r:0; --c:1"><span class="wr"><span class="wc2"><svg class="wchk" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></span></span></span>
+            <span class="wcell" style="left:28px; top:0px; --r:0; --c:2"><span class="wr"><span class="wc2"><svg class="wchk" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></span></span></span>
+            <span class="wcell" style="left:42px; top:0px; --r:0; --c:3"><span class="wr"><span class="wc2"><svg class="wchk" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></span></span></span>
+            <span class="wcell" style="left:0px; top:14px; --r:1; --c:0"><span class="wr"><span class="wc2"><svg class="wchk" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></span></span></span>
+            <span class="wcell" style="left:14px; top:14px; --r:1; --c:1"><span class="wr"><span class="wc2"><svg class="wchk" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></span></span></span>
+            <span class="wcell" style="left:28px; top:14px; --r:1; --c:2"><span class="wr"><span class="wc2"><svg class="wchk" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></span></span></span>
+            <span class="wcell" style="left:42px; top:14px; --r:1; --c:3"><span class="wr"><span class="wc2"><svg class="wchk" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></span></span></span>
+            <span class="wcell" style="left:0px; top:28px; --r:2; --c:0"><span class="wr"><span class="wc2"><svg class="wchk" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></span></span></span>
+            <span class="wcell" style="left:14px; top:28px; --r:2; --c:1"><span class="wr"><span class="wc2"><svg class="wchk" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></span></span></span>
+            <span class="wcell" style="left:28px; top:28px; --r:2; --c:2"><span class="wr"><span class="wc2"><svg class="wchk" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></span></span></span>
+            <span class="wcell" style="left:42px; top:28px; --r:2; --c:3"><span class="wr"><span class="wc2"><svg class="wchk" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></span></span></span>
+            <span class="wcell" style="left:0px; top:42px; --r:3; --c:0"><span class="wr"><span class="wc2"><svg class="wchk" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></span></span></span>
+            <span class="wcell" style="left:14px; top:42px; --r:3; --c:1"><span class="wr"><span class="wc2"><svg class="wchk" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></span></span></span>
+            <span class="wcell" style="left:28px; top:42px; --r:3; --c:2"><span class="wr"><span class="wc2"><svg class="wchk" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></span></span></span>
+            <span class="wcell" style="left:42px; top:42px; --r:3; --c:3"><span class="wr"><span class="wc2"><svg class="wchk" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></span></span></span>
+            <span class="conf" style="--ax:-23px; --ay:-13px; background:var(--gold); animation-delay:0ms"></span>
+            <span class="conf" style="--ax:-23px; --ay:-23px; background:var(--accent); animation-delay:18ms"></span>
+            <span class="conf" style="--ax:-20px; --ay:-35px; background:var(--good); animation-delay:36ms"></span>
+            <span class="conf" style="--ax:-7px; --ay:-25px; background:var(--o1); animation-delay:54ms"></span>
+            <span class="conf" style="--ax:0px; --ay:-33px; background:var(--o2); animation-delay:72ms"></span>
+            <span class="conf" style="--ax:10px; --ay:-39px; background:var(--o4); animation-delay:90ms"></span>
+            <span class="conf" style="--ax:13px; --ay:-23px; background:var(--o6); animation-delay:108ms"></span>
+            <span class="conf" style="--ax:23px; --ay:-23px; background:var(--gold); animation-delay:126ms"></span>
+            <span class="conf" style="--ax:35px; --ay:-20px; background:var(--accent); animation-delay:144ms"></span>
+        </span>
+        <span class="win-line">Fill the grid with words, and win!</span>
+      </div>
+    </div>
+    <div class="card-actions">
+      <button class="btn primary" id="closeHelp">Got it</button>
+      <button class="btn ghost" id="toTipsBtn">Tools &amp; Tips →</button>
+    </div>
+  </div>
+
+  <div class="help-page" id="helpPage2">
+    <h2>Tools &amp; Tips</h2>
+    <div class="help-body">
+      <ul class="help-list">
+        <li>
+          <span class="hk-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="9 14 4 9 9 4"/><path d="M20 19v-6a4 4 0 0 0-4-4H4"/>
+            </svg>
+          </span>
+          <span><span class="hk">Undo/Redo</span> Move back and forth through your history of moves.</span>
+        </li>
+        <li>
+          <span class="hk-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="16 3 21 3 21 8"/><line x1="4" y1="20" x2="21" y2="3"/>
+              <polyline points="21 16 21 21 16 21"/><line x1="15" y1="15" x2="21" y2="21"/>
+              <line x1="4" y1="4" x2="9" y2="9"/>
+            </svg>
+          </span>
+          <span><span class="hk">Shuffle</span> Try out different board arrangements. A great way to find new words and get unstuck.</span>
+        </li>
+        <li>
+          <span class="hk-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="10" y="10" width="4" height="4" rx="0.5"/>
+              <polyline points="7 3 3 3 3 7"/><line x1="3" y1="3" x2="8.5" y2="8.5"/>
+              <polyline points="17 3 21 3 21 7"/><line x1="21" y1="3" x2="15.5" y2="8.5"/>
+              <polyline points="21 17 21 21 17 21"/><line x1="21" y1="21" x2="15.5" y2="15.5"/>
+              <polyline points="7 21 3 21 3 17"/><line x1="3" y1="21" x2="8.5" y2="15.5"/>
+            </svg>
+          </span>
+          <span><span class="hk">Scatter</span> Move the single letter tiles off to the edges. Sometimes, the best way to solve a Danagram is to start with arranging the larger Ominos.</span>
+        </li>
+        <li>
+          <span class="hk-icon divide-icon" aria-hidden="true">
+            <span class="dpip d1">
+              <svg class="dcheck" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+            </span>
+            <span class="dpip d2"></span>
+            <span class="dpip d3"></span>
+            <span class="dpip d4"></span>
+          </span>
+          <span><span class="hk">Find New Words</span> Checking unique words charges SuperCheck — but checking more at once gets bonus charge!</span>
+        </li>
+      </ul>
+    </div>
+    <div class="card-actions">
+      <button class="btn primary" id="closeHelp2">Got it</button>
+      <button class="btn ghost" id="toPage1Btn">← Back</button>
+    </div>
+  </div>
+
+  <div class="help-version">v0.32 + help modal</div>
+</div></div>
+
 
 <div id="overlay"><div class="card">
   <h2 id="cardTitle">Solution!</h2>
@@ -2165,7 +2806,35 @@ function setMode(mode) {
 
 window.addEventListener('resize', () => { metrics(); positionTiles(); clearBadges(); clearScribbles(); layoutDrawer(); });
 
+// ------------------------------------------------------------- how to play
+const HELP_SEEN = 'danagram_help_seen';
+function showHelp() {
+  document.getElementById('helpOverlay').classList.add('show');
+  document.getElementById('helpPage1').classList.add('active');
+  document.getElementById('helpPage2').classList.remove('active');
+}
+function hideHelp() {
+  document.getElementById('helpOverlay').classList.remove('show');
+  store.set(HELP_SEEN, 1);
+}
+document.getElementById('helpBtn').addEventListener('click', showHelp);
+document.getElementById('closeHelp').addEventListener('click', hideHelp);
+document.getElementById('closeHelp2').addEventListener('click', hideHelp);
+document.getElementById('helpClose').addEventListener('click', hideHelp);
+document.getElementById('toTipsBtn').addEventListener('click', () => {
+  document.getElementById('helpPage1').classList.remove('active');
+  document.getElementById('helpPage2').classList.add('active');
+});
+document.getElementById('toPage1Btn').addEventListener('click', () => {
+  document.getElementById('helpPage2').classList.remove('active');
+  document.getElementById('helpPage1').classList.add('active');
+});
+document.getElementById('helpOverlay').addEventListener('click', (e) => {
+  if (e.target.id === 'helpOverlay') hideHelp();
+});
+
 loadPuzzle(0);
+if (!store.get(HELP_SEEN)) showHelp();
 </script>
 </body>
 </html>
