@@ -1,0 +1,526 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#141821">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<title>Danagram Curator</title>
+<style>
+  :root{
+    --bg:#141821; --bg2:#1c212d; --line:#2b3242; --ink:#eef1f6; --mut:#93a0b5;
+    --tile:#f5f0e6; --tileink:#20242e; --tileline:#d9cfb8;
+    --accept:#3fb98c; --reject:#e8615a; --check:#e7a93f; --peek:#5b9bd5;
+    --shadow:0 18px 40px rgba(0,0,0,.45);
+    --serif:Iowan Old Style,Palatino,Georgia,"Times New Roman",serif;
+    --sans:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  html,body{margin:0;height:100%}
+  body{
+    background:var(--bg); color:var(--ink); font-family:var(--sans);
+    touch-action:manipulation; overflow:hidden; overscroll-behavior:none;
+    display:flex; flex-direction:column;
+    padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+  }
+  /* top bar */
+  .dg-top{display:flex;align-items:center;gap:.6rem;padding:.7rem 1rem .4rem}
+  .dg-top h1{font-family:var(--serif);font-size:1.15rem;font-weight:600;margin:0;letter-spacing:.02em}
+  .dg-top .dg-spacer{flex:1}
+  .dg-count{font-size:.78rem;color:var(--mut);font-variant-numeric:tabular-nums}
+  .dg-sync{font-size:.72rem;padding:.2rem .5rem;border-radius:999px;border:1px solid var(--line);color:var(--mut);cursor:pointer;white-space:nowrap}
+  .dg-sync.ok{color:var(--accept);border-color:rgba(63,185,140,.4)}
+  .dg-sync.busy{color:var(--check);border-color:rgba(231,169,63,.4)}
+  .dg-sync.err{color:var(--reject);border-color:rgba(232,97,90,.4)}
+  .dg-iconbtn{background:none;border:1px solid var(--line);color:var(--mut);border-radius:9px;padding:.28rem .5rem;cursor:pointer;font-size:.85rem}
+  .dg-iconbtn:focus-visible,.dg-sync:focus-visible{outline:2px solid var(--peek);outline-offset:2px}
+  /* tabs */
+  .dg-tabs{display:flex;gap:.4rem;padding:0 1rem .4rem}
+  .dg-tab{flex:1;text-align:center;padding:.5rem;border-radius:10px;border:1px solid var(--line);background:var(--bg2);color:var(--mut);font-weight:600;font-size:.9rem;cursor:pointer}
+  .dg-tab[aria-selected="true"]{color:var(--ink);border-color:var(--peek);background:#20293a}
+  /* main */
+  main{flex:1;position:relative;min-height:0}
+  .dg-view{position:absolute;inset:0;display:none;flex-direction:column}
+  .dg-view.on{display:flex}
+  /* card stack */
+  .dg-stack{flex:1;position:relative;margin:.2rem 1rem;min-height:0;touch-action:none}
+  .dg-card{
+    position:absolute;inset:0;background:var(--bg2);border:1px solid var(--line);
+    border-radius:20px;box-shadow:var(--shadow);display:flex;flex-direction:column;
+    padding:1.1rem;will-change:transform;user-select:none;touch-action:none;
+  }
+  .dg-card.under{transform:scale(.955) translateY(14px);filter:brightness(.8)}
+  .dg-wordbig{font-family:var(--serif);font-weight:600;font-size:clamp(2.6rem,13vw,3.8rem);
+    text-align:center;text-transform:none;letter-spacing:.01em;margin:.4rem 0 .1rem;color:var(--ink)}
+  .dg-flags{display:flex;gap:.4rem;justify-content:center;flex-wrap:wrap;margin:.7rem 0 .2rem}
+  .dg-chip{font-size:.68rem;color:var(--mut);border:1px solid var(--line);border-radius:999px;padding:.12rem .5rem}
+  .dg-chip.on{color:var(--ink);border-color:var(--mut)}
+  .dg-def{flex:1;min-height:0;overflow:auto;margin-top:.6rem;padding-top:.6rem;border-top:1px solid var(--line);
+    font-size:.92rem;line-height:1.5;color:var(--ink);touch-action:none}
+  .dg-def .pos{color:var(--peek);font-style:italic;font-size:.82rem;margin:.5rem 0 .15rem}
+  .dg-def ol{margin:.1rem 0 .1rem 1.1rem;padding:0}
+  .dg-def li{margin:.15rem 0}
+  .dg-defnote{color:var(--mut);font-size:.82rem}
+  .dg-defnote a{color:var(--peek)}
+  /* swipe hint label */
+  .dg-hint{position:absolute;top:16px;font-weight:800;font-size:1.05rem;letter-spacing:.08em;
+    padding:.3rem .7rem;border-radius:10px;border:2px solid;opacity:0;pointer-events:none;text-transform:uppercase}
+  .dg-hint.left{right:16px;color:var(--reject);border-color:var(--reject);transform:rotate(12deg)}
+  .dg-hint.right{left:16px;color:var(--accept);border-color:var(--accept);transform:rotate(-12deg)}
+  .dg-hint.down{left:50%;transform:translateX(-50%);top:auto;bottom:16px;color:var(--check);border-color:var(--check)}
+  .dg-hint.up{left:50%;transform:translateX(-50%);color:var(--peek);border-color:var(--peek)}
+  /* controls */
+  .dg-controls{display:flex;gap:.5rem;justify-content:center;align-items:center;padding:.6rem 1rem 1rem}
+  .dg-btn{border:none;border-radius:14px;padding:.7rem;cursor:pointer;font-weight:700;font-size:.95rem;flex:1;
+    background:var(--bg2);color:var(--ink);border:1px solid var(--line)}
+  .dg-btn:active{transform:translateY(1px)}
+  .dg-btn:focus-visible{outline:2px solid var(--peek);outline-offset:2px}
+  .dg-btn.reject{color:var(--reject)} .dg-btn.check{color:var(--check)} .dg-btn.accept{color:var(--accept)}
+  .dg-btn.small{flex:0 0 auto;padding:.7rem .8rem;color:var(--mut)}
+  /* note prompt */
+  .dg-sheet{position:absolute;inset:0;background:rgba(10,12,18,.62);display:none;align-items:flex-end;z-index:5}
+  .dg-sheet.on{display:flex}
+  .dg-sheetcard{width:100%;background:var(--bg2);border-top:1px solid var(--line);border-radius:18px 18px 0 0;padding:1rem 1rem calc(1rem + env(safe-area-inset-bottom))}
+  .dg-sheetcard h3{margin:.1rem 0 .1rem;font-size:1rem}
+  .dg-sheetcard p{margin:.1rem 0 .8rem;color:var(--mut);font-size:.82rem}
+  .dg-cats{display:grid;grid-template-columns:repeat(3,1fr);gap:.5rem}
+  .dg-cat{padding:.7rem .4rem;border-radius:12px;border:1px solid var(--line);background:var(--bg);color:var(--ink);font-weight:600;font-size:.9rem;cursor:pointer}
+  .dg-cat.suggest{border-color:var(--check);color:var(--check)}
+  .dg-cat:focus-visible{outline:2px solid var(--peek);outline-offset:2px}
+  .dg-more{margin-top:.5rem;background:none;border:none;color:var(--mut);font-size:.82rem;cursor:pointer;text-decoration:underline}
+  .dg-cancel{display:block;width:100%;margin-top:.7rem;padding:.7rem;border-radius:12px;border:1px solid var(--line);background:transparent;color:var(--mut);font-weight:600;font-size:.9rem;cursor:pointer}
+  .dg-cancel:active{transform:translateY(1px)}
+  .dg-cancel:focus-visible{outline:2px solid var(--peek);outline-offset:2px}
+  .dg-hidden{display:none}
+  /* search */
+  .dg-search{padding:.6rem 1rem;display:flex;flex-direction:column;gap:.6rem;height:100%}
+  .dg-search input{width:100%;padding:.75rem .9rem;border-radius:12px;border:1px solid var(--line);background:var(--bg2);color:var(--ink);font-size:1rem}
+  .dg-results{flex:1;overflow:auto;display:flex;flex-direction:column;gap:.5rem}
+  .dg-row{border:1px solid var(--line);border-radius:12px;padding:.6rem .8rem;background:var(--bg2)}
+  .dg-rowhead{display:flex;align-items:center;gap:.6rem}
+  .dg-word{font-family:var(--serif);font-size:1.3rem;text-transform:none;letter-spacing:.01em}
+  .dg-status{font-size:.72rem;padding:.15rem .5rem;border-radius:999px;border:1px solid}
+  .dg-status.accept{color:var(--accept);border-color:var(--accept)}
+  .dg-status.check{color:var(--check);border-color:var(--check)}
+  .dg-status.reject{color:var(--reject);border-color:var(--reject)}
+  .dg-status.none{color:var(--mut);border-color:var(--line)}
+  .dg-rownote{color:var(--mut);font-size:.8rem;margin-left:auto}
+  .dg-edit{display:flex;gap:.4rem;margin-top:.55rem;flex-wrap:wrap}
+  .dg-edit button{flex:1;min-width:5rem;padding:.5rem;border-radius:10px;border:1px solid var(--line);background:var(--bg);color:var(--ink);font-weight:600;font-size:.82rem;cursor:pointer}
+  .dg-edit .sel{border-color:var(--peek)}
+  .dg-empty{color:var(--mut);text-align:center;margin-top:2rem;padding:0 1.5rem;line-height:1.5}
+  .dg-empty b{color:var(--ink)}
+  /* settings */
+  .dg-modal{position:absolute;inset:0;background:rgba(10,12,18,.72);display:none;align-items:center;justify-content:center;z-index:9;padding:1rem}
+  .dg-modal.on{display:flex}
+  .dg-modalcard{width:100%;max-width:420px;max-height:90%;overflow:auto;background:var(--bg2);border:1px solid var(--line);border-radius:16px;padding:1.1rem}
+  .dg-modalcard h2{margin:.1rem 0 .2rem;font-family:var(--serif)}
+  .dg-modalcard label{display:block;font-size:.8rem;color:var(--mut);margin:.7rem 0 .2rem}
+  .dg-modalcard input{width:100%;padding:.6rem;border-radius:10px;border:1px solid var(--line);background:var(--bg);color:var(--ink);font-size:.9rem}
+  .dg-modalcard .hint{font-size:.75rem;color:var(--mut);margin-top:.3rem;line-height:1.4}
+  .dg-modalcard .rowbtns{display:flex;gap:.5rem;margin-top:1rem}
+  .dg-modalcard .rowbtns button{flex:1;padding:.7rem;border-radius:10px;border:1px solid var(--line);background:var(--bg);color:var(--ink);font-weight:600;cursor:pointer}
+  .dg-modalcard .rowbtns button.primary{background:var(--peek);border-color:var(--peek);color:#0c1420}
+  @media (prefers-reduced-motion: reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+  <div class="dg-top">
+    <h1>Danagram</h1>
+    <div class="dg-spacer"></div>
+    <span class="dg-count" id="count">…</span>
+    <button class="dg-sync" id="sync" title="Sync to GitHub">offline</button>
+    <button class="dg-iconbtn" id="gear" aria-label="Settings">⚙</button>
+  </div>
+  <div class="dg-tabs" role="tablist">
+    <button class="dg-tab" id="tab-swipe" role="tab" aria-selected="true">Swipe</button>
+    <button class="dg-tab" id="tab-search" role="tab" aria-selected="false">Search</button>
+  </div>
+
+  <main>
+    <!-- SWIPE -->
+    <section class="dg-view on" id="view-swipe">
+      <div class="dg-stack" id="stack"><div class="dg-empty" id="loading">Loading word list…</div></div>
+      <div class="dg-controls">
+        <button class="dg-btn small" id="c-undo" title="Undo (Backspace)">↶ Undo</button>
+        <button class="dg-btn reject" id="c-reject">✕ Reject</button>
+        <button class="dg-btn check" id="c-check">↓ Check</button>
+        <button class="dg-btn accept" id="c-accept">✓ Accept</button>
+        <button class="dg-btn small" id="c-skip" title="Skip (Space)">Skip →</button>
+      </div>
+      <!-- note prompt -->
+      <div class="dg-sheet" id="sheet">
+        <div class="dg-sheetcard">
+          <h3 id="sheet-title">Why not accepted?</h3>
+          <p id="sheet-sub">Pick a reason — ? is the default.</p>
+          <div class="dg-cats" id="cats-primary"></div>
+          <div class="dg-cats dg-hidden" id="cats-more" style="margin-top:.5rem"></div>
+          <button class="dg-more" id="more-toggle">More reasons ▾</button>
+          <button class="dg-cancel" id="sheet-cancel">Cancel — keep swiping</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- SEARCH -->
+    <section class="dg-view" id="view-search">
+      <div class="dg-search">
+        <input id="q" type="search" inputmode="search" placeholder="Type a word to review your call…" autocomplete="off">
+        <div class="dg-results" id="results"><div class="dg-empty">Search any of the <b>4,837</b> words to see or change your decision.</div></div>
+      </div>
+    </section>
+
+    <!-- SETTINGS -->
+    <div class="dg-modal" id="modal">
+      <div class="dg-modalcard">
+        <h2>Settings</h2>
+        <p class="hint">Everything is stored only in this browser. Fill these in to sync across devices and pull definitions — the app works without them too.</p>
+        <label>GitHub repo (owner/name)</label>
+        <input id="s-repo" placeholder="dave/danagram" autocapitalize="off" autocomplete="off">
+        <label>Branch</label>
+        <input id="s-branch" placeholder="main" autocapitalize="off" autocomplete="off">
+        <label>Folder path in repo (blank = root)</label>
+        <input id="s-path" placeholder="e.g. curator" autocapitalize="off" autocomplete="off">
+        <label>GitHub token (fine-grained, Contents: read & write)</label>
+        <input id="s-token" type="password" placeholder="github_pat_…" autocomplete="off">
+        <label>Merriam-Webster Collegiate API key</label>
+        <input id="s-mw" type="password" placeholder="xxxxxxxx-xxxx-…" autocomplete="off">
+        <div class="hint">Free key from dictionaryapi.com. Definitions you view get cached back into the repo so each word is fetched only once.</div>
+        <div class="rowbtns">
+          <button id="s-pull">Pull latest</button>
+          <button id="s-close">Close</button>
+          <button id="s-save" class="primary">Save</button>
+        </div>
+        <div class="hint" id="s-status" style="margin-top:.6rem"></div>
+      </div>
+    </div>
+  </main>
+
+<script>
+"use strict";
+/* ---------- config / categories ---------- */
+const PRIMARY = ['?','Proper','Slang','Foreign','Profane','SUBTLEX Only'];
+const MORE    = ['Old','Odd','Jargon','Exclamation','Contraction','Onomatopoeia','Shortening','Prefix'];
+const CFG_KEY='danagram_cfg', PROG_KEY='danagram_progress', DEFS_KEY='danagram_defs';
+const $=s=>document.querySelector(s);
+
+let corpus=[], byWord=new Map(), progress={}, defs={};
+let queue=[];               // corpus indices, undecided, freq order; current = queue[0]
+let history=[];             // {type:'decide'|'skip', ci, prev}
+let cfg=loadJSON(CFG_KEY,{});
+let progDirty=false, defsDirty=false, flushTimer=null;
+let shas={};                // path -> last known sha
+
+/* ---------- tiny helpers ---------- */
+function loadJSON(k,d){try{return JSON.parse(localStorage.getItem(k))??d}catch{return d}}
+function saveJSON(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch{}}
+function b64(str){const b=new TextEncoder().encode(str);let s='';b.forEach(c=>s+=String.fromCharCode(c));return btoa(s);}
+function fromb64(s){const bin=atob(s);const arr=Uint8Array.from(bin,c=>c.charCodeAt(0));return new TextDecoder().decode(arr);}
+function ghBase(){const p=cfg.path?cfg.path.replace(/^\/|\/$/g,'')+'/':'';return f=>`https://api.github.com/repos/${cfg.repo}/contents/${p}${f}`;}
+function decisionOf(w){const d=progress[w];if(!d)return'none';if(d.check&&d.gen)return'accept';if(d.check&&!d.gen)return'check';return'reject';}
+
+/* ---------- boot ---------- */
+async function boot(){
+  try{ corpus = await (await fetch('./words.json',{cache:'no-store'})).json(); }
+  catch(e){ $('#loading').innerHTML='<b>Couldn\u2019t load words.json.</b><br>Open this page over http — deploy to GitHub Pages, or run <code>python -m http.server</code> in this folder. Opening the file directly (file://) blocks the data load.'; return; }
+  corpus.forEach((r,i)=>byWord.set(r.word,i));
+
+  // progress: local overlay is truth if present, else seed from repo file
+  const local=loadJSON(PROG_KEY,null);
+  if(local){ progress=local; }
+  else { try{ progress=await (await fetch('./progress.json',{cache:'no-store'})).json(); }catch{ progress={}; } saveJSON(PROG_KEY,progress); }
+
+  const localDefs=loadJSON(DEFS_KEY,null);
+  if(localDefs){ defs=localDefs; }
+  else { try{ defs=await (await fetch('./definitions.json',{cache:'no-store'})).json(); }catch{ defs={}; } }
+
+  buildQueue(); buildCats(); render(); updateSync();
+}
+function buildQueue(){ queue=[]; for(let i=0;i<corpus.length;i++){ if(!progress[corpus[i].word]) queue.push(i); } }
+
+/* ---------- swipe card ---------- */
+const stack=$('#stack');
+function render(){
+  stack.innerHTML='';
+  if(queue.length===0){
+    stack.innerHTML='<div class="dg-empty"><b>Queue clear.</b><br>Every untouched word has a decision. Use Search to revisit any call, or Undo to step back.</div>';
+    updateCount(); return;
+  }
+  if(queue[1]!=null) stack.appendChild(cardEl(corpus[queue[1]],true));
+  const top=cardEl(corpus[queue[0]],false);
+  stack.appendChild(top); wireDrag(top);
+  ensureDef(corpus[queue[0]].word);
+  updateCount();
+}
+function cardEl(rec,under){
+  const c=document.createElement('div'); c.className='dg-card'+(under?' under':'');
+  const flags=[['enable1','ENABLE'],['scrabble','TWL'],['subtlex','SUBTLEX']]
+    .map(([k,l])=>`<span class="dg-chip ${rec[k]?'on':''}">${l}${rec[k]?'':' ✕'}</span>`).join('')
+    + `<span class="dg-chip on">${rec.fpm} / M</span>`;
+  c.innerHTML=`
+    <div class="dg-hint left">Reject</div><div class="dg-hint right">Accept</div>
+    <div class="dg-hint down">Check only</div>
+    <div class="dg-wordbig">${rec.word}</div>
+    <div class="dg-flags">${flags}</div>
+    <div class="dg-def" data-def>${defBody(rec.word)}</div>`;
+  return c;
+}
+function defBody(word){
+  const d=defs[word];
+  if(!d) return `<span class="dg-defnote">${cfg.mwKey?'Fetching definition…':'Add a Merriam-Webster key in ⚙ to show definitions.'}</span>`;
+  if(d.notfound) return `<span class="dg-defnote">No dictionary entry. <a href="https://www.merriam-webster.com/dictionary/${word}" target="_blank" rel="noopener">Check MW ↗</a></span>`;
+  if(d.error) return `<span class="dg-defnote">Couldn\u2019t fetch (${d.error}). <a href="https://www.merriam-webster.com/dictionary/${word}" target="_blank" rel="noopener">Open MW ↗</a></span>`;
+  return d.entries.map(e=>`<div class="pos">${e.fl||''}</div><ol>${e.defs.map(x=>`<li>${x}</li>`).join('')}</ol>`).join('');
+}
+/* pointer drag */
+function wireDrag(card){
+  let sx=0,sy=0,drag=false,dx=0,dy=0,scrollMode=false,startScroll=0;
+  const TH=52;
+  const def=card.querySelector('[data-def]');
+  const hints={left:card.querySelector('.dg-hint.left'),right:card.querySelector('.dg-hint.right'),down:card.querySelector('.dg-hint.down')};
+  card.addEventListener('pointerdown',e=>{
+    scrollMode = e.target.closest('[data-def]') && def.scrollHeight>def.clientHeight+2;
+    startScroll = def.scrollTop;
+    drag=true;sx=e.clientX;sy=e.clientY;card.setPointerCapture(e.pointerId);card.style.transition='none';
+  });
+  card.addEventListener('pointermove',e=>{
+    if(!drag)return; e.preventDefault(); dx=e.clientX-sx; dy=e.clientY-sy;
+    if(scrollMode){ def.scrollTop=startScroll-dy; return; } // drag scrolls a long definition
+    card.style.transform=`translate(${dx}px,${dy}px) rotate(${dx*0.05}deg)`;
+    const horiz=Math.abs(dx)>Math.abs(dy);
+    setHint(hints,horiz?(dx>0?'right':'left'):(dy>0?'down':null),horiz?Math.abs(dx)/TH:Math.abs(dy)/TH);
+  });
+  card.addEventListener('pointerup',e=>{
+    if(!drag)return; drag=false;
+    if(scrollMode){ scrollMode=false; return; }
+    const horiz=Math.abs(dx)>Math.abs(dy);
+    if(horiz&&Math.abs(dx)>TH){ dx>0?fling(card,'accept'):fling(card,'reject'); }
+    else if(!horiz&&dy>TH){ fling(card,'check'); }
+    else snap(card);
+    Object.values(hints).forEach(h=>h.style.opacity=0);
+    dx=dy=0;
+  });
+  card.addEventListener('pointercancel',()=>{drag=false;scrollMode=false;snap(card);});
+}
+function setHint(h,dir,amt){Object.values(h).forEach(x=>x.style.opacity=0);if(dir&&h[dir])h[dir].style.opacity=Math.min(amt,1);}
+function snap(card){card.style.transition='transform .22s ease';card.style.transform='';}
+function fling(card,kind){
+  const dest={accept:'120% ,0',reject:'-120% ,0',check:'0,120%'}[kind];
+  card.style.transition='transform .28s ease';
+  card.style.transform=`translate(${dest.split(',')[0]}, ${dest.split(',')[1]}) rotate(${kind==='reject'?-14:kind==='accept'?14:0}deg)`;
+  setTimeout(()=>decide(kind),150);
+}
+
+/* ---------- decisions ---------- */
+function decide(kind){
+  if(queue.length===0)return;
+  const ci=queue[0], word=corpus[ci].word;
+  if(kind==='accept'){ commit(ci,{check:true,gen:true,note:null}); return; }
+  // reject / check-only -> ask for a note
+  openSheet(kind,ci);
+}
+function commit(ci,dec){
+  const word=corpus[ci].word;
+  history.push({type:'decide',ci,prev:progress[word]?{...progress[word]}:null});
+  progress[word]=dec; queue.shift();
+  progDirty=true; saveJSON(PROG_KEY,progress); scheduleFlush();
+  render();
+}
+function skip(){
+  if(queue.length<2)return;
+  history.push({type:'skip',ci:queue[0]});
+  queue.push(queue.shift()); render();
+}
+function undo(){
+  if(pending){ cancelSheet(); return; }
+  const h=history.pop(); if(!h)return; closeSheet();
+  if(h.type==='skip'){ queue.pop(); queue.unshift(h.ci); render(); return; }
+  const word=corpus[h.ci].word;
+  if(h.prev) progress[word]=h.prev; else delete progress[word];
+  queue.unshift(h.ci);
+  progDirty=true; saveJSON(PROG_KEY,progress); scheduleFlush();
+  render();
+}
+
+/* note sheet */
+let pending=null;
+function buildCats(){
+  const mk=(name,parent,suggestFlag)=>{const b=document.createElement('button');b.className='dg-cat';b.textContent=name;b.dataset.cat=name;b.onclick=()=>chooseCat(name);parent.appendChild(b);};
+  PRIMARY.forEach(n=>mk(n,$('#cats-primary')));
+  MORE.forEach(n=>mk(n,$('#cats-more')));
+  $('#more-toggle').onclick=()=>{const m=$('#cats-more');m.classList.toggle('dg-hidden');$('#more-toggle').textContent=m.classList.contains('dg-hidden')?'More reasons ▾':'Fewer reasons ▴';};
+}
+function suggestedNote(rec){ return (rec.subtlex&&!rec.enable1&&!rec.scrabble)?'SUBTLEX Only':'?'; }
+function openSheet(kind,ci){
+  pending={kind,ci};
+  const rec=corpus[ci], sug=suggestedNote(rec);
+  $('#sheet-title').textContent = kind==='check'?'Check-only — why not for Gen?':'Rejected — why?';
+  $('#sheet-sub').textContent = `Pick a reason for “${rec.word.toUpperCase()}”. Tap to confirm.`;
+  document.querySelectorAll('.dg-cat').forEach(b=>b.classList.toggle('suggest',b.dataset.cat===sug));
+  $('#sheet').classList.add('on');
+}
+function chooseCat(note){
+  if(!pending)return;
+  const {kind,ci}=pending; pending=null; $('#sheet').classList.remove('on');
+  commit(ci, kind==='check'?{check:true,gen:false,note}:{check:false,gen:false,note});
+}
+function closeSheet(){pending=null;$('#sheet').classList.remove('on');}
+function cancelSheet(){ pending=null; $('#sheet').classList.remove('on'); render(); } // re-render restores a card that was swiped away
+
+/* ---------- definitions (Merriam-Webster) ---------- */
+async function ensureDef(word){
+  if(defs[word]||!cfg.mwKey) return;
+  try{
+    const r=await fetch(`https://dictionaryapi.com/api/v3/references/collegiate/json/${encodeURIComponent(word)}?key=${cfg.mwKey}`);
+    const data=await r.json();
+    if(Array.isArray(data)&&data.length&&typeof data[0]==='object'){
+      const entries=data.filter(e=>e.shortdef&&e.shortdef.length).slice(0,4)
+        .map(e=>({fl:e.fl||'',defs:e.shortdef}));
+      defs[word]=entries.length?{entries}:{notfound:true};
+    } else defs[word]={notfound:true};
+  }catch(err){ defs[word]={error:'network/CORS'}; }
+  defsDirty=true; saveJSON(DEFS_KEY,defs); scheduleFlush();
+  // repaint current card if still showing this word
+  if(queue.length&&corpus[queue[0]].word===word){
+    const cur=stack.querySelector('.dg-card:not(.under) [data-def]');
+    if(cur) cur.innerHTML=defBody(word);
+  }
+}
+
+/* ---------- GitHub sync ---------- */
+function ghReady(){return !!(cfg.repo&&cfg.token);}
+function updateSync(){
+  const el=$('#sync');
+  if(!ghReady()){el.textContent='local only';el.className='dg-sync';return;}
+  const pend=(progDirty?1:0)+(defsDirty?1:0);
+  el.textContent=pend?`sync ${pend}`:'synced';
+  el.className='dg-sync '+(pend?'':'ok');
+}
+function scheduleFlush(){ updateSync(); if(!ghReady())return; clearTimeout(flushTimer); flushTimer=setTimeout(flush,4000); }
+async function ghPut(file,obj){
+  const url=ghBase()(file), hdr={'Authorization':'Bearer '+cfg.token,'Accept':'application/vnd.github+json'};
+  if(shas[file]===undefined){ // learn current sha
+    try{const g=await fetch(url+`?ref=${cfg.branch||'main'}`,{headers:hdr});shas[file]=g.ok?(await g.json()).sha:null;}catch{shas[file]=null;}
+  }
+  const body={message:`curator: update ${file}`,content:b64(JSON.stringify(obj,null,0)),branch:cfg.branch||'main'};
+  if(shas[file])body.sha=shas[file];
+  let res=await fetch(url,{method:'PUT',headers:hdr,body:JSON.stringify(body)});
+  if(res.status===409){ // sha stale, refetch once
+    const g=await fetch(url+`?ref=${cfg.branch||'main'}`,{headers:hdr}); shas[file]=g.ok?(await g.json()).sha:null;
+    if(shas[file])body.sha=shas[file]; res=await fetch(url,{method:'PUT',headers:hdr,body:JSON.stringify(body)});
+  }
+  if(!res.ok) throw new Error('HTTP '+res.status);
+  shas[file]=(await res.json()).content.sha;
+}
+async function flush(){
+  if(!ghReady())return;
+  $('#sync').textContent='saving…';$('#sync').className='dg-sync busy';
+  try{
+    if(progDirty){ await ghPut('progress.json',progress); progDirty=false; }
+    if(defsDirty){ await ghPut('definitions.json',defs); defsDirty=false; }
+    updateSync();
+  }catch(e){ $('#sync').textContent='sync error';$('#sync').className='dg-sync err'; }
+}
+async function pullLatest(){
+  if(!ghReady()){setStatus('Add a repo and token first.');return;}
+  setStatus('Pulling…');
+  try{
+    const hdr={'Authorization':'Bearer '+cfg.token,'Accept':'application/vnd.github+json'};
+    for(const [file,assign] of [['progress.json',o=>{progress=o;saveJSON(PROG_KEY,o)}],['definitions.json',o=>{defs=o;saveJSON(DEFS_KEY,o)}]]){
+      const g=await fetch(ghBase()(file)+`?ref=${cfg.branch||'main'}`,{headers:hdr});
+      if(g.ok){const j=await g.json();shas[file]=j.sha;assign(JSON.parse(fromb64(j.content)));}
+    }
+    buildQueue();render();setStatus('Pulled latest from GitHub.');
+  }catch(e){setStatus('Pull failed: '+e.message);}
+}
+
+/* ---------- search ---------- */
+const results=$('#results');
+$('#q').addEventListener('input',e=>runSearch(e.target.value.trim().toLowerCase()));
+function runSearch(q){
+  if(!q){results.innerHTML='<div class="dg-empty">Search any of the <b>4,837</b> words to see or change your decision.</div>';return;}
+  const hits=[]; for(const r of corpus){ if(r.word.includes(q)){hits.push(r); if(hits.length>=60)break;} }
+  if(!hits.length){results.innerHTML=`<div class="dg-empty">No word contains “${q}”.</div>`;return;}
+  results.innerHTML='';
+  hits.sort((a,b)=>(a.word===q?-1:b.word===q?1:a.word.startsWith(q)-b.word.startsWith(q)||0));
+  hits.forEach(r=>results.appendChild(rowEl(r)));
+}
+function rowEl(r){
+  const st=decisionOf(r.word), note=progress[r.word]?.note;
+  const lbl={accept:'Accept',check:'Check only',reject:'Reject',none:'Not reviewed'}[st];
+  const row=document.createElement('div'); row.className='dg-row';
+  row.innerHTML=`<div class="dg-rowhead"><span class="dg-word">${r.word}</span>
+    <span class="dg-status ${st}">${lbl}</span>${note?`<span class="dg-rownote">${note}</span>`:''}</div>
+    <div class="dg-edit">
+      <button data-k="accept" class="${st==='accept'?'sel':''}">✓ Accept</button>
+      <button data-k="check"  class="${st==='check' ?'sel':''}">↓ Check</button>
+      <button data-k="reject" class="${st==='reject'?'sel':''}">✕ Reject</button>
+    </div>`;
+  row.querySelectorAll('[data-k]').forEach(b=>b.onclick=()=>editDecision(r,b.dataset.k,row));
+  return row;
+}
+function editDecision(r,kind,row){
+  if(kind==='accept'){ setDecision(r.word,{check:true,gen:true,note:null}); refreshRow(r,row); return; }
+  // small inline note picker
+  const note=prompt(`Reason for “${r.word.toUpperCase()}” (${kind}):`, progress[r.word]?.note || suggestedNote(r)) ?? '?';
+  setDecision(r.word, kind==='check'?{check:true,gen:false,note}:{check:false,gen:false,note});
+  refreshRow(r,row);
+}
+function setDecision(word,dec){
+  progress[word]=dec; progDirty=true; saveJSON(PROG_KEY,progress); scheduleFlush();
+  const i=queue.indexOf(byWord.get(word)); if(i>-1){queue.splice(i,1); if(i===0)render();}
+}
+function refreshRow(r,row){ row.replaceWith(rowEl(r)); }
+
+/* ---------- ui plumbing ---------- */
+function updateCount(){
+  const decided=Object.keys(progress).length;
+  $('#count').textContent=`${queue.length} left · ${decided} done`;
+}
+$('#c-reject').onclick=()=>decide('reject');
+$('#c-check').onclick=()=>decide('check');
+$('#c-accept').onclick=()=>decide('accept');
+$('#c-skip').onclick=skip;
+$('#c-undo').onclick=undo;
+$('#sync').onclick=flush;
+$('#sheet-cancel').onclick=cancelSheet;
+document.addEventListener('keydown',e=>{
+  if($('#view-search').classList.contains('on')||document.activeElement.tagName==='INPUT')return;
+  if(pending){ if(e.key==='Escape'||e.key==='Backspace'){e.preventDefault();cancelSheet();} return; }
+  if(e.key==='ArrowRight')decide('accept'); else if(e.key==='ArrowLeft')decide('reject');
+  else if(e.key==='ArrowDown')decide('check');
+  else if(e.key==='Backspace'){e.preventDefault();undo();} else if(e.key===' '){e.preventDefault();skip();}
+});
+$('#sheet').addEventListener('click',e=>{if(e.target===$('#sheet'))cancelSheet();});
+function tab(which){
+  const sw=which==='swipe';
+  $('#tab-swipe').setAttribute('aria-selected',sw);$('#tab-search').setAttribute('aria-selected',!sw);
+  $('#view-swipe').classList.toggle('on',sw);$('#view-search').classList.toggle('on',!sw);
+  if(!sw)setTimeout(()=>$('#q').focus(),50);
+}
+$('#tab-swipe').onclick=()=>tab('swipe'); $('#tab-search').onclick=()=>tab('search');
+
+/* settings */
+function setStatus(t){$('#s-status').textContent=t;}
+$('#gear').onclick=()=>{
+  $('#s-repo').value=cfg.repo||'';$('#s-branch').value=cfg.branch||'main';$('#s-path').value=cfg.path||'';
+  $('#s-token').value=cfg.token||'';$('#s-mw').value=cfg.mwKey||'';setStatus('');$('#modal').classList.add('on');
+};
+$('#s-close').onclick=()=>$('#modal').classList.remove('on');
+$('#s-save').onclick=()=>{
+  cfg={repo:$('#s-repo').value.trim(),branch:$('#s-branch').value.trim()||'main',path:$('#s-path').value.trim(),
+       token:$('#s-token').value.trim(),mwKey:$('#s-mw').value.trim()};
+  saveJSON(CFG_KEY,cfg);shas={};updateSync();$('#modal').classList.remove('on');
+  if(queue.length)ensureDef(corpus[queue[0]].word);
+};
+$('#s-pull').onclick=pullLatest;
+$('#modal').addEventListener('click',e=>{if(e.target===$('#modal'))$('#modal').classList.remove('on');});
+
+/* best-effort save when leaving */
+document.addEventListener('visibilitychange',()=>{if(document.hidden&&(progDirty||defsDirty))flush();});
+window.addEventListener('pagehide',()=>{if(progDirty||defsDirty)flush();});
+
+boot();
+</script>
+</body>
+</html>
