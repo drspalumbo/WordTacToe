@@ -59,6 +59,9 @@
   .dg-def{flex:1;min-height:0;overflow:auto;margin-top:.6rem;padding-top:.6rem;border-top:1px solid var(--line);
     font-size:.92rem;line-height:1.5;color:var(--ink);touch-action:none}
   .dg-def .pos{color:var(--peek);font-style:italic;font-size:.82rem;margin:.5rem 0 .15rem}
+  .dg-tags{display:flex;gap:.35rem;flex-wrap:wrap;margin-bottom:.5rem}
+  .dg-tag{font-size:.68rem;padding:.16rem .55rem;border-radius:999px;border:1px solid var(--check);color:var(--check);font-weight:700;text-transform:uppercase;letter-spacing:.03em}
+  .dg-origin{font-size:.8rem;color:var(--mut);font-style:italic;margin-bottom:.5rem}
   .dg-def ol{margin:.1rem 0 .1rem 1.1rem;padding:0}
   .dg-def li{margin:.15rem 0}
   .dg-defnote{color:var(--mut);font-size:.82rem}
@@ -68,6 +71,9 @@
     padding:.3rem .7rem;border-radius:10px;border:2px solid;opacity:0;pointer-events:none;text-transform:uppercase}
   .dg-hint.left{right:16px;color:var(--reject);border-color:var(--reject);transform:rotate(12deg)}
   .dg-hint.right{left:16px;color:var(--accept);border-color:var(--accept);transform:rotate(-12deg)}
+  .dg-hint.right.holding{background:var(--accept);color:#0c1420}
+  @keyframes holdPulse{0%{box-shadow:0 0 0 0 rgba(63,185,140,.55)}70%{box-shadow:0 0 0 18px rgba(63,185,140,0)}100%{box-shadow:0 0 0 0 rgba(63,185,140,0)}}
+  .dg-card.holdflag{animation:holdPulse .85s ease-out infinite}
   .dg-hint.down{left:50%;transform:translateX(-50%);top:auto;bottom:16px;color:var(--check);border-color:var(--check)}
   .dg-hint.up{left:50%;transform:translateX(-50%);color:var(--peek);border-color:var(--peek)}
   /* controls */
@@ -198,7 +204,7 @@
 "use strict";
 /* ---------- config / categories ---------- */
 const PRIMARY = ['?','Proper','Slang','Foreign','Profane','SUBTLEX Only'];
-const MORE    = ['Old','Odd','Jargon','Exclamation','Contraction','Onomatopoeia','Shortening','Prefix'];
+const MORE    = ['Borderline','Old','Odd','Jargon','Exclamation','Contraction','Onomatopoeia','Shortening','Prefix'];
 const CFG_KEY='danagram_cfg', PROG_KEY='danagram_progress', DEFS_KEY='danagram_defs';
 const $=s=>document.querySelector(s);
 
@@ -263,19 +269,46 @@ function cardEl(rec,under){
     <div class="dg-def" data-def>${defBody(rec.word)}</div>`;
   return c;
 }
+/* Flags common regional/register labels straight out of the definition text — American
+   word games usually want to exclude these, so surface them instead of burying them in prose. */
+const REGION_WORDS=['british','uk','scottish','scotland','irish','ireland','welsh','wales','yorkshire','cockney',
+  'northern england','english dialect','australian','canadian','new zealand','south african','indian english','caribbean'];
+const REGISTER_WORDS=['archaic','dialectal','obsolete','dated','historical','informal','slang','vulgar',
+  'offensive','derogatory','nonstandard','colloquial','regional','poetic','literary'];
+function titleCase(s){ return s.replace(/\b\w/g,c=>c.toUpperCase()); }
+function extractTags(defStrings){
+  const found=new Set();
+  for(const text of (defStrings||[])){
+    if(!text) continue;
+    const lead=(text.match(/^\s*\(([^)]{1,60})\)/)||[])[1];
+    const seg=(lead||text.slice(0,70)).toLowerCase();
+    for(const w of REGION_WORDS) if(seg.includes(w)) found.add(titleCase(w));
+    for(const w of REGISTER_WORDS) if(seg.includes(w)) found.add(titleCase(w));
+  }
+  return [...found].slice(0,6);
+}
 function defBody(word){
   const d=defs[word];
   if(!d) return `<span class="dg-defnote">Fetching definition…</span>`;
   if(d.notfound) return `<span class="dg-defnote">No dictionary entry found. <a href="https://www.merriam-webster.com/dictionary/${word}" target="_blank" rel="noopener">Check Merriam-Webster ↗</a></span>`;
   if(d.error) return `<span class="dg-defnote">Couldn\u2019t fetch a definition. <a href="https://www.merriam-webster.com/dictionary/${word}" target="_blank" rel="noopener">Look it up ↗</a></span>`;
-  return d.entries.map(e=>`<div class="pos">${e.fl||''}</div><ol>${e.defs.map(x=>`<li>${x}</li>`).join('')}</ol>`).join('');
+  const allDefs=d.entries.flatMap(e=>e.defs);
+  const tags=extractTags(allDefs);
+  const tagsHtml=tags.length?`<div class="dg-tags">${tags.map(t=>`<span class="dg-tag">${t}</span>`).join('')}</div>`:'';
+  const originHtml=d.origin?`<div class="dg-origin">${d.origin}</div>`:'';
+  return tagsHtml+originHtml+d.entries.map(e=>`<div class="pos">${e.fl||''}</div><ol>${e.defs.map(x=>`<li>${x}</li>`).join('')}</ol>`).join('');
 }
 /* pointer drag */
 function wireDrag(card){
   let sx=0,sy=0,drag=false,dx=0,dy=0,scrollMode=false,startScroll=0;
-  const TH=52;
+  let holdTimer=null,holdFired=false;
+  const TH=52, HOLD_MS=1200; // hold this long past the accept threshold to accept-and-flag
   const def=card.querySelector('[data-def]');
   const hints={left:card.querySelector('.dg-hint.left'),right:card.querySelector('.dg-hint.right'),down:card.querySelector('.dg-hint.down')};
+  function endHold(){
+    if(holdTimer){clearTimeout(holdTimer);holdTimer=null;}
+    if(holdFired){holdFired=false;card.classList.remove('holdflag');hints.right.classList.remove('holding');hints.right.textContent='Accept';}
+  }
   card.addEventListener('pointerdown',e=>{
     scrollMode = e.target.closest('[data-def]') && def.scrollHeight>def.clientHeight+2;
     startScroll = def.scrollTop;
@@ -286,27 +319,36 @@ function wireDrag(card){
     if(scrollMode){ def.scrollTop=startScroll-dy; return; } // drag scrolls a long definition
     card.style.transform=`translate(${dx}px,${dy}px) rotate(${dx*0.05}deg)`;
     const horiz=Math.abs(dx)>Math.abs(dy);
+    const inAcceptZone = horiz && dx>TH;
     setHint(hints,horiz?(dx>0?'right':'left'):(dy>0?'down':null),horiz?Math.abs(dx)/TH:Math.abs(dy)/TH);
+    if(inAcceptZone){
+      if(!holdTimer&&!holdFired) holdTimer=setTimeout(()=>{
+        holdFired=true; card.classList.add('holdflag'); hints.right.classList.add('holding'); hints.right.textContent='Flag & Accept';
+        if(navigator.vibrate) navigator.vibrate(15);
+      },HOLD_MS);
+    } else endHold();
   });
   card.addEventListener('pointerup',e=>{
     if(!drag)return; drag=false;
     if(scrollMode){ scrollMode=false; return; }
+    if(holdTimer){clearTimeout(holdTimer);holdTimer=null;}
     const horiz=Math.abs(dx)>Math.abs(dy);
-    if(horiz&&Math.abs(dx)>TH){ dx>0?fling(card,'accept'):fling(card,'reject'); }
+    if(horiz&&Math.abs(dx)>TH){ dx>0?fling(card,'accept',holdFired?decideAcceptFlag:null):fling(card,'reject'); }
     else if(!horiz&&dy>TH){ fling(card,'check'); }
     else snap(card);
+    holdFired=false;
     Object.values(hints).forEach(h=>h.style.opacity=0);
     dx=dy=0;
   });
-  card.addEventListener('pointercancel',()=>{drag=false;scrollMode=false;snap(card);});
+  card.addEventListener('pointercancel',()=>{drag=false;scrollMode=false;endHold();snap(card);});
 }
 function setHint(h,dir,amt){Object.values(h).forEach(x=>x.style.opacity=0);if(dir&&h[dir])h[dir].style.opacity=Math.min(amt,1);}
 function snap(card){card.style.transition='transform .22s ease';card.style.transform='';}
-function fling(card,kind){
+function fling(card,kind,after){
   const dest={accept:'120% ,0',reject:'-120% ,0',check:'0,120%'}[kind];
   card.style.transition='transform .28s ease';
   card.style.transform=`translate(${dest.split(',')[0]}, ${dest.split(',')[1]}) rotate(${kind==='reject'?-14:kind==='accept'?14:0}deg)`;
-  setTimeout(()=>decide(kind),150);
+  setTimeout(()=>{ after?after():decide(kind); },150);
 }
 
 /* ---------- decisions ---------- */
@@ -316,6 +358,12 @@ function decide(kind){
   if(kind==='accept'){ commit(ci,{check:true,gen:true,note:null}); return; }
   // reject / check-only -> ask for a note
   openSheet(kind,ci);
+}
+function decideAcceptFlag(){
+  if(queue.length===0)return;
+  const ci=queue[0], word=corpus[ci].word;
+  commit(ci,{check:true,gen:true,note:null});
+  openFlagSheet(word);
 }
 function commit(ci,dec){
   const word=corpus[ci].word;
@@ -349,23 +397,44 @@ function buildCats(){
   $('#more-toggle').onclick=()=>{const m=$('#cats-more');m.classList.toggle('dg-hidden');$('#more-toggle').textContent=m.classList.contains('dg-hidden')?'More reasons ▾':'Fewer reasons ▴';};
 }
 function suggestedNote(rec){ return (rec.subtlex&&!rec.enable1&&!rec.scrabble)?'SUBTLEX Only':'?'; }
+function collapseMore(){ $('#cats-more').classList.add('dg-hidden'); $('#more-toggle').textContent='More reasons ▾'; }
 function openSheet(kind,ci){
-  pending={kind,ci};
+  pending={type:'decide',kind,ci};
   const rec=corpus[ci], sug=suggestedNote(rec);
   $('#sheet-title').textContent = kind==='check'?'Check-only — why not for Gen?':'Rejected — why?';
   $('#sheet-sub').textContent = `Pick a reason for “${rec.word.toUpperCase()}”. Tap to confirm.`;
+  $('#sheet-cancel').textContent = 'Cancel — keep swiping';
+  collapseMore();
   document.querySelectorAll('.dg-cat').forEach(b=>b.classList.toggle('suggest',b.dataset.cat===sug));
+  $('#sheet').classList.add('on');
+}
+function openFlagSheet(word){
+  pending={type:'flag',word};
+  $('#sheet-title').textContent = 'Accepted — tag it to revisit?';
+  $('#sheet-sub').textContent = `“${word.toUpperCase()}” is in. Optionally tag why it\u2019s borderline — find it later in Search.`;
+  $('#sheet-cancel').textContent = 'Skip — leave untagged';
+  $('#cats-more').classList.remove('dg-hidden'); $('#more-toggle').textContent='Fewer reasons ▴';
+  document.querySelectorAll('.dg-cat').forEach(b=>b.classList.toggle('suggest',b.dataset.cat==='Borderline'));
   $('#sheet').classList.add('on');
 }
 function chooseCat(note){
   if(!pending)return;
+  if(pending.type==='flag'){
+    const {word}=pending; pending=null; $('#sheet').classList.remove('on');
+    progress[word]={...progress[word],note}; progDirty=true; saveJSON(PROG_KEY,progress); scheduleFlush();
+    return;
+  }
   const {kind,ci}=pending; pending=null; $('#sheet').classList.remove('on');
   commit(ci, kind==='check'?{check:true,gen:false,note}:{check:false,gen:false,note});
 }
 function closeSheet(){pending=null;$('#sheet').classList.remove('on');}
-function cancelSheet(){ pending=null; $('#sheet').classList.remove('on'); render(); } // re-render restores a card that was swiped away
+function cancelSheet(){
+  const wasFlag = pending&&pending.type==='flag';
+  pending=null; $('#sheet').classList.remove('on');
+  if(!wasFlag) render(); // re-render restores a card that was swiped away; a flag-skip leaves the already-committed accept as-is
+}
 
-/* ---------- definitions (Merriam-Webster) ---------- */
+/* ---------- definitions (free dictionary API) ---------- */
 async function ensureDef(word){
   if(defs[word]) return;
   try{
@@ -373,9 +442,10 @@ async function ensureDef(word){
     if(r.status===404){ defs[word]={notfound:true}; }
     else{
       const data=await r.json();
-      const entries=[];
+      const entries=[]; let origin=null;
       if(Array.isArray(data)){
         for(const e of data){
+          if(!origin&&e.origin) origin=e.origin;
           for(const m of (e.meanings||[])){
             const ds=(m.definitions||[]).map(x=>x.definition).filter(Boolean).slice(0,3);
             if(ds.length) entries.push({fl:m.partOfSpeech||'',defs:ds});
@@ -384,7 +454,7 @@ async function ensureDef(word){
           if(entries.length>=4) break;
         }
       }
-      defs[word]=entries.length?{entries}:{notfound:true};
+      defs[word]=entries.length?{entries,...(origin?{origin}:{})}:{notfound:true};
     }
   }catch(err){ defs[word]={error:'network'}; }
   defsDirty=true; saveJSON(DEFS_KEY,defs); scheduleFlush();
@@ -468,7 +538,14 @@ function rowEl(r){
   return row;
 }
 function editDecision(r,kind,row){
-  if(kind==='accept'){ setDecision(r.word,{check:true,gen:true,note:null}); refreshRow(r,row); return; }
+  if(kind==='accept'){
+    if(decisionOf(r.word)==='accept'){ // already accepted -> offer to set/clear its tag instead of silently wiping it
+      const note=prompt(`Tag for “${r.word.toUpperCase()}” (blank to clear):`, progress[r.word]?.note || '');
+      if(note===null) return; // cancelled, leave untouched
+      setDecision(r.word,{check:true,gen:true,note:note.trim()?note.trim():null}); refreshRow(r,row); return;
+    }
+    setDecision(r.word,{check:true,gen:true,note:null}); refreshRow(r,row); return;
+  }
   // small inline note picker
   const note=prompt(`Reason for “${r.word.toUpperCase()}” (${kind}):`, progress[r.word]?.note || suggestedNote(r)) ?? '?';
   setDecision(r.word, kind==='check'?{check:true,gen:false,note}:{check:false,gen:false,note});
@@ -495,7 +572,7 @@ $('#sheet-cancel').onclick=cancelSheet;
 document.addEventListener('keydown',e=>{
   if($('#view-search').classList.contains('on')||document.activeElement.tagName==='INPUT')return;
   if(pending){ if(e.key==='Escape'||e.key==='Backspace'){e.preventDefault();cancelSheet();} return; }
-  if(e.key==='ArrowRight')decide('accept'); else if(e.key==='ArrowLeft')decide('reject');
+  if(e.key==='ArrowRight'){ e.shiftKey?decideAcceptFlag():decide('accept'); } else if(e.key==='ArrowLeft')decide('reject');
   else if(e.key==='ArrowDown')decide('check');
   else if(e.key==='Backspace'){e.preventDefault();undo();} else if(e.key===' '){e.preventDefault();skip();}
 });
