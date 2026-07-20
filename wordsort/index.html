@@ -174,7 +174,7 @@
     <div class="dg-modal" id="modal">
       <div class="dg-modalcard">
         <h2>Settings</h2>
-        <p class="hint">Everything is stored only in this browser. Fill these in to sync across devices and pull definitions — the app works without them too.</p>
+        <p class="hint">Everything is stored only in this browser. Definitions load automatically — no setup needed. Fill in a GitHub token below to sync your decisions across devices.</p>
         <label>GitHub repo (owner/name)</label>
         <input id="s-repo" placeholder="dave/danagram" autocapitalize="off" autocomplete="off">
         <label>Branch</label>
@@ -183,9 +183,7 @@
         <input id="s-path" placeholder="e.g. curator" autocapitalize="off" autocomplete="off">
         <label>GitHub token (fine-grained, Contents: read & write)</label>
         <input id="s-token" type="password" placeholder="github_pat_…" autocomplete="off">
-        <label>Merriam-Webster Collegiate API key</label>
-        <input id="s-mw" type="password" placeholder="xxxxxxxx-xxxx-…" autocomplete="off">
-        <div class="hint">Free key from dictionaryapi.com. Definitions you view get cached back into the repo so each word is fetched only once.</div>
+        <div class="hint">Definitions load automatically from a free dictionary API — no key needed. They're cached back into the repo so each word is fetched only once.</div>
         <div class="rowbtns">
           <button id="s-pull">Pull latest</button>
           <button id="s-close">Close</button>
@@ -267,9 +265,9 @@ function cardEl(rec,under){
 }
 function defBody(word){
   const d=defs[word];
-  if(!d) return `<span class="dg-defnote">${cfg.mwKey?'Fetching definition…':'Add a Merriam-Webster key in ⚙ to show definitions.'}</span>`;
-  if(d.notfound) return `<span class="dg-defnote">No dictionary entry. <a href="https://www.merriam-webster.com/dictionary/${word}" target="_blank" rel="noopener">Check MW ↗</a></span>`;
-  if(d.error) return `<span class="dg-defnote">Couldn\u2019t fetch (${d.error}). <a href="https://www.merriam-webster.com/dictionary/${word}" target="_blank" rel="noopener">Open MW ↗</a></span>`;
+  if(!d) return `<span class="dg-defnote">Fetching definition…</span>`;
+  if(d.notfound) return `<span class="dg-defnote">No dictionary entry found. <a href="https://www.merriam-webster.com/dictionary/${word}" target="_blank" rel="noopener">Check Merriam-Webster ↗</a></span>`;
+  if(d.error) return `<span class="dg-defnote">Couldn\u2019t fetch a definition. <a href="https://www.merriam-webster.com/dictionary/${word}" target="_blank" rel="noopener">Look it up ↗</a></span>`;
   return d.entries.map(e=>`<div class="pos">${e.fl||''}</div><ol>${e.defs.map(x=>`<li>${x}</li>`).join('')}</ol>`).join('');
 }
 /* pointer drag */
@@ -369,16 +367,26 @@ function cancelSheet(){ pending=null; $('#sheet').classList.remove('on'); render
 
 /* ---------- definitions (Merriam-Webster) ---------- */
 async function ensureDef(word){
-  if(defs[word]||!cfg.mwKey) return;
+  if(defs[word]) return;
   try{
-    const r=await fetch(`https://dictionaryapi.com/api/v3/references/collegiate/json/${encodeURIComponent(word)}?key=${cfg.mwKey}`);
-    const data=await r.json();
-    if(Array.isArray(data)&&data.length&&typeof data[0]==='object'){
-      const entries=data.filter(e=>e.shortdef&&e.shortdef.length).slice(0,4)
-        .map(e=>({fl:e.fl||'',defs:e.shortdef}));
+    const r=await fetch(`https://api.dictionaryapi.dev/api/v2/entries/en/${encodeURIComponent(word)}`);
+    if(r.status===404){ defs[word]={notfound:true}; }
+    else{
+      const data=await r.json();
+      const entries=[];
+      if(Array.isArray(data)){
+        for(const e of data){
+          for(const m of (e.meanings||[])){
+            const ds=(m.definitions||[]).map(x=>x.definition).filter(Boolean).slice(0,3);
+            if(ds.length) entries.push({fl:m.partOfSpeech||'',defs:ds});
+            if(entries.length>=4) break;
+          }
+          if(entries.length>=4) break;
+        }
+      }
       defs[word]=entries.length?{entries}:{notfound:true};
-    } else defs[word]={notfound:true};
-  }catch(err){ defs[word]={error:'network/CORS'}; }
+    }
+  }catch(err){ defs[word]={error:'network'}; }
   defsDirty=true; saveJSON(DEFS_KEY,defs); scheduleFlush();
   // repaint current card if still showing this word
   if(queue.length&&corpus[queue[0]].word===word){
@@ -504,12 +512,12 @@ $('#tab-swipe').onclick=()=>tab('swipe'); $('#tab-search').onclick=()=>tab('sear
 function setStatus(t){$('#s-status').textContent=t;}
 $('#gear').onclick=()=>{
   $('#s-repo').value=cfg.repo||'';$('#s-branch').value=cfg.branch||'main';$('#s-path').value=cfg.path||'';
-  $('#s-token').value=cfg.token||'';$('#s-mw').value=cfg.mwKey||'';setStatus('');$('#modal').classList.add('on');
+  $('#s-token').value=cfg.token||'';setStatus('');$('#modal').classList.add('on');
 };
 $('#s-close').onclick=()=>$('#modal').classList.remove('on');
 $('#s-save').onclick=()=>{
   cfg={repo:$('#s-repo').value.trim(),branch:$('#s-branch').value.trim()||'main',path:$('#s-path').value.trim(),
-       token:$('#s-token').value.trim(),mwKey:$('#s-mw').value.trim()};
+       token:$('#s-token').value.trim()};
   saveJSON(CFG_KEY,cfg);shas={};updateSync();$('#modal').classList.remove('on');
   if(queue.length)ensureDef(corpus[queue[0]].word);
 };
