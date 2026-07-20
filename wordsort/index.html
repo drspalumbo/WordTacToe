@@ -87,14 +87,13 @@
   /* note prompt */
   .dg-sheet{position:absolute;inset:0;background:rgba(10,12,18,.62);display:none;align-items:flex-end;z-index:5}
   .dg-sheet.on{display:flex}
-  .dg-sheetcard{width:100%;background:var(--bg2);border-top:1px solid var(--line);border-radius:18px 18px 0 0;padding:1rem 1rem calc(1rem + env(safe-area-inset-bottom))}
+  .dg-sheetcard{width:100%;max-height:85vh;overflow-y:auto;background:var(--bg2);border-top:1px solid var(--line);border-radius:18px 18px 0 0;padding:1rem 1rem calc(1rem + env(safe-area-inset-bottom))}
   .dg-sheetcard h3{margin:.1rem 0 .1rem;font-size:1rem}
   .dg-sheetcard p{margin:.1rem 0 .8rem;color:var(--mut);font-size:.82rem}
   .dg-cats{display:grid;grid-template-columns:repeat(3,1fr);gap:.5rem}
   .dg-cat{padding:.7rem .4rem;border-radius:12px;border:1px solid var(--line);background:var(--bg);color:var(--ink);font-weight:600;font-size:.9rem;cursor:pointer}
   .dg-cat.suggest{border-color:var(--check);color:var(--check)}
   .dg-cat:focus-visible{outline:2px solid var(--peek);outline-offset:2px}
-  .dg-more{margin-top:.5rem;background:none;border:none;color:var(--mut);font-size:.82rem;cursor:pointer;text-decoration:underline}
   .dg-cancel{display:block;width:100%;margin-top:.7rem;padding:.7rem;border-radius:12px;border:1px solid var(--line);background:transparent;color:var(--mut);font-weight:600;font-size:.9rem;cursor:pointer}
   .dg-cancel:active{transform:translateY(1px)}
   .dg-cancel:focus-visible{outline:2px solid var(--peek);outline-offset:2px}
@@ -160,9 +159,7 @@
         <div class="dg-sheetcard">
           <h3 id="sheet-title">Why not accepted?</h3>
           <p id="sheet-sub">Pick a reason — ? is the default.</p>
-          <div class="dg-cats" id="cats-primary"></div>
-          <div class="dg-cats dg-hidden" id="cats-more" style="margin-top:.5rem"></div>
-          <button class="dg-more" id="more-toggle">More reasons ▾</button>
+          <div class="dg-cats" id="cats-all"></div>
           <button class="dg-cancel" id="sheet-cancel">Cancel — keep swiping</button>
         </div>
       </div>
@@ -203,8 +200,7 @@
 <script>
 "use strict";
 /* ---------- config / categories ---------- */
-const PRIMARY = ['?','Proper','Slang','Foreign','Profane','SUBTLEX Only'];
-const MORE    = ['Borderline','Old','Odd','Jargon','Exclamation','Contraction','Onomatopoeia','Shortening','Prefix'];
+const CATS = ['?','No Def','Proper','Slang','Foreign','Profane','SUBTLEX Only','Old','Odd','Jargon','Exclamation','Contraction','Onomatopoeia','Shortening','Prefix'];
 const CFG_KEY='danagram_cfg', PROG_KEY='danagram_progress', DEFS_KEY='danagram_defs';
 const $=s=>document.querySelector(s);
 
@@ -391,20 +387,19 @@ function undo(){
 /* note sheet */
 let pending=null;
 function buildCats(){
-  const mk=(name,parent,suggestFlag)=>{const b=document.createElement('button');b.className='dg-cat';b.textContent=name;b.dataset.cat=name;b.onclick=()=>chooseCat(name);parent.appendChild(b);};
-  PRIMARY.forEach(n=>mk(n,$('#cats-primary')));
-  MORE.forEach(n=>mk(n,$('#cats-more')));
-  $('#more-toggle').onclick=()=>{const m=$('#cats-more');m.classList.toggle('dg-hidden');$('#more-toggle').textContent=m.classList.contains('dg-hidden')?'More reasons ▾':'Fewer reasons ▴';};
+  const mk=(name)=>{const b=document.createElement('button');b.className='dg-cat';b.textContent=name;b.dataset.cat=name;b.onclick=()=>chooseCat(name);$('#cats-all').appendChild(b);};
+  CATS.forEach(mk);
 }
-function suggestedNote(rec){ return (rec.subtlex&&!rec.enable1&&!rec.scrabble)?'SUBTLEX Only':'?'; }
-function collapseMore(){ $('#cats-more').classList.add('dg-hidden'); $('#more-toggle').textContent='More reasons ▾'; }
+function suggestedNote(rec){
+  if(defs[rec.word]&&defs[rec.word].notfound) return 'No Def';
+  return (rec.subtlex&&!rec.enable1&&!rec.scrabble)?'SUBTLEX Only':'?';
+}
 function openSheet(kind,ci){
   pending={type:'decide',kind,ci};
   const rec=corpus[ci], sug=suggestedNote(rec);
   $('#sheet-title').textContent = kind==='check'?'Check-only — why not for Gen?':'Rejected — why?';
   $('#sheet-sub').textContent = `Pick a reason for “${rec.word.toUpperCase()}”. Tap to confirm.`;
   $('#sheet-cancel').textContent = 'Cancel — keep swiping';
-  collapseMore();
   document.querySelectorAll('.dg-cat').forEach(b=>b.classList.toggle('suggest',b.dataset.cat===sug));
   $('#sheet').classList.add('on');
 }
@@ -413,8 +408,7 @@ function openFlagSheet(word){
   $('#sheet-title').textContent = 'Accepted — tag it to revisit?';
   $('#sheet-sub').textContent = `“${word.toUpperCase()}” is in. Optionally tag why it\u2019s borderline — find it later in Search.`;
   $('#sheet-cancel').textContent = 'Skip — leave untagged';
-  $('#cats-more').classList.remove('dg-hidden'); $('#more-toggle').textContent='Fewer reasons ▴';
-  document.querySelectorAll('.dg-cat').forEach(b=>b.classList.toggle('suggest',b.dataset.cat==='Borderline'));
+  document.querySelectorAll('.dg-cat').forEach(b=>b.classList.toggle('suggest',b.dataset.cat==='?'));
   $('#sheet').classList.add('on');
 }
 function chooseCat(note){
@@ -434,29 +428,52 @@ function cancelSheet(){
   if(!wasFlag) render(); // re-render restores a card that was swiped away; a flag-skip leaves the already-committed accept as-is
 }
 
-/* ---------- definitions (free dictionary API) ---------- */
+/* ---------- definitions ---------- */
+function htmlToText(html){ if(!html)return ''; const d=document.createElement('div'); d.innerHTML=html; return d.textContent.trim(); }
+async function fetchWiktionary(word){
+  const r=await fetch(`https://en.wiktionary.org/api/rest_v1/page/definition/${encodeURIComponent(word)}`);
+  if(!r.ok) throw new Error('wikt '+r.status);
+  const data=await r.json();
+  const langs=Object.keys(data||{});
+  const en=data.en||(langs.length?data[langs[0]]:[])||[];
+  const entries=[];
+  for(const e of en){
+    const ds=(e.definitions||[]).map(d=>htmlToText(d.definition)).filter(Boolean).slice(0,3);
+    if(ds.length) entries.push({fl:(e.partOfSpeech||'').toLowerCase(),defs:ds});
+    if(entries.length>=4) break;
+  }
+  return entries;
+}
+async function fetchFreeDict(word){
+  const r=await fetch(`https://api.dictionaryapi.dev/api/v2/entries/en/${encodeURIComponent(word)}`);
+  if(r.status===404) return {entries:[],origin:null};
+  if(!r.ok) throw new Error('fd '+r.status);
+  const data=await r.json();
+  const entries=[]; let origin=null;
+  if(Array.isArray(data)){
+    for(const e of data){
+      if(!origin&&e.origin) origin=e.origin;
+      for(const m of (e.meanings||[])){
+        const ds=(m.definitions||[]).map(x=>x.definition).filter(Boolean).slice(0,3);
+        if(ds.length) entries.push({fl:m.partOfSpeech||'',defs:ds});
+        if(entries.length>=4) break;
+      }
+      if(entries.length>=4) break;
+    }
+  }
+  return {entries,origin};
+}
+// Wiktionary first — its definitions more often keep qualifiers like "(archaic)" or "(obsolete)"
+// in the text, which is what extractTags() looks for. Falls back to the other free API if
+// Wiktionary has nothing (different word coverage), so lookups still work either way.
 async function ensureDef(word){
   if(defs[word]) return;
-  try{
-    const r=await fetch(`https://api.dictionaryapi.dev/api/v2/entries/en/${encodeURIComponent(word)}`);
-    if(r.status===404){ defs[word]={notfound:true}; }
-    else{
-      const data=await r.json();
-      const entries=[]; let origin=null;
-      if(Array.isArray(data)){
-        for(const e of data){
-          if(!origin&&e.origin) origin=e.origin;
-          for(const m of (e.meanings||[])){
-            const ds=(m.definitions||[]).map(x=>x.definition).filter(Boolean).slice(0,3);
-            if(ds.length) entries.push({fl:m.partOfSpeech||'',defs:ds});
-            if(entries.length>=4) break;
-          }
-          if(entries.length>=4) break;
-        }
-      }
-      defs[word]=entries.length?{entries,...(origin?{origin}:{})}:{notfound:true};
-    }
-  }catch(err){ defs[word]={error:'network'}; }
+  let entries=[], origin=null, okAny=false;
+  try{ entries=await fetchWiktionary(word); okAny=true; }catch(err){}
+  if(!entries.length){
+    try{ const fd=await fetchFreeDict(word); okAny=true; entries=fd.entries; origin=fd.origin; }catch(err){}
+  }
+  defs[word]= entries.length ? {entries,...(origin?{origin}:{})} : (okAny?{notfound:true}:{error:'network'});
   defsDirty=true; saveJSON(DEFS_KEY,defs); scheduleFlush();
   // repaint current card if still showing this word
   if(queue.length&&corpus[queue[0]].word===word){
