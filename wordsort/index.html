@@ -54,6 +54,9 @@
   .dg-wordbig{font-family:var(--serif);font-weight:600;font-size:clamp(2.6rem,13vw,3.8rem);
     text-align:center;text-transform:none;letter-spacing:.01em;margin:.4rem 0 .1rem;color:var(--ink)}
   .dg-flags{display:flex;gap:.4rem;justify-content:center;flex-wrap:wrap;margin:.7rem 0 .2rem}
+  .dg-mw{display:block;margin:.55rem auto .1rem;padding:.4rem 1rem;border-radius:999px;border:1px solid var(--peek);background:transparent;color:var(--peek);font-weight:700;font-size:.82rem;cursor:pointer}
+  .dg-mw:active{transform:translateY(1px)}
+  .dg-mw:focus-visible{outline:2px solid var(--peek);outline-offset:2px}
   .dg-chip{font-size:.68rem;color:var(--mut);border:1px solid var(--line);border-radius:999px;padding:.12rem .5rem}
   .dg-chip.on{color:var(--ink);border-color:var(--mut)}
   .dg-def{flex:1;min-height:0;overflow:auto;margin-top:.6rem;padding-top:.6rem;border-top:1px solid var(--line);
@@ -262,9 +265,12 @@ function cardEl(rec,under){
     <div class="dg-hint down">Check only</div>
     <div class="dg-wordbig">${rec.word}</div>
     <div class="dg-flags">${flags}</div>
+    <button class="dg-mw" type="button">Merriam-Webster ↗</button>
     <div class="dg-def" data-def>${defBody(rec.word)}</div>`;
+  c.querySelector('.dg-mw').addEventListener('click',ev=>{ev.stopPropagation();openMW(rec.word);});
   return c;
 }
+function openMW(word){ window.open('https://www.merriam-webster.com/dictionary/'+encodeURIComponent(word),'mwlookup'); }
 /* Flags common regional/register labels straight out of the definition text — American
    word games usually want to exclude these, so surface them instead of burying them in prose. */
 const REGION_WORDS=['british','uk','scottish','scotland','irish','ireland','welsh','wales','yorkshire','cockney',
@@ -306,6 +312,7 @@ function wireDrag(card){
     if(holdFired){holdFired=false;card.classList.remove('holdflag');hints.right.classList.remove('holding');hints.right.textContent='Accept';}
   }
   card.addEventListener('pointerdown',e=>{
+    if(e.target.closest('.dg-mw')) return; // let the MW button receive its tap, no swipe
     scrollMode = e.target.closest('[data-def]') && def.scrollHeight>def.clientHeight+2;
     startScroll = def.scrollTop;
     drag=true;sx=e.clientX;sy=e.clientY;card.setPointerCapture(e.pointerId);card.style.transition='none';
@@ -591,6 +598,7 @@ document.addEventListener('keydown',e=>{
   if(pending){ if(e.key==='Escape'||e.key==='Backspace'){e.preventDefault();cancelSheet();} return; }
   if(e.key==='ArrowRight'){ e.shiftKey?decideAcceptFlag():decide('accept'); } else if(e.key==='ArrowLeft')decide('reject');
   else if(e.key==='ArrowDown')decide('check');
+  else if((e.key==='m'||e.key==='M')&&queue.length)openMW(corpus[queue[0]].word);
   else if(e.key==='Backspace'){e.preventDefault();undo();} else if(e.key===' '){e.preventDefault();skip();}
 });
 $('#sheet').addEventListener('click',e=>{if(e.target===$('#sheet'))cancelSheet();});
