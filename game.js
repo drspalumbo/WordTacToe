@@ -798,8 +798,8 @@ function flyDot(fromEl, delay) {
 // Charging happens the moment any board change lands (a move, Shuffle, Scatter,
 // undo, redo), not on Check. +1 for each valid word on a row or column of the
 // target 4×4 never formed on this puzzle before, and +1 for each new crossing of
-// two valid words. A word only counts if every piece in it sits wholly inside
-// the 4×4. A crossing is the two words plus the letter each one shares,
+// two valid words. A word doesn't count if its end piece runs on past the edge
+// of the 4×4 in the same line. A crossing is the two words plus the letter each one shares,
 // so EXIT×AXIS at the X scores once, whichever way round it's laid. Words in the
 // opening scramble aren't scored up front; they count on the first move if they
 // survive it.
@@ -825,19 +825,28 @@ function scoreBoard() {
   const off = innerOff();
   const occ = occupancy();
   const lineCells = i => [0, 1, 2, 3].map(j => i < 4 ? [i, j] : [j, i - 4]);
-  // a piece hanging out of the 4×4 (SOLE whose E drags a Y below the grid)
-  // doesn't make a word — that arrangement can't be part of a solution
-  const inside = state.pieces.map(p => p.cells.every(([r, c]) =>
-    r >= off && c >= off && r < off + 4 && c < off + 4));
-  // the 8 lines of the target 4×4; null where a line isn't filled
+  // A line is broken if the piece at either end carries on past the grid edge in
+  // the same direction: SOLE whose E is fused to a Y below really reads SOLEY.
+  // Pieces sticking out sideways, and loose tiles beyond the edge, don't matter.
+  const runsOn = (end, beyond) => {
+    const a = occ.get(key(end[0] + off, end[1] + off));
+    const b = occ.get(key(beyond[0] + off, beyond[1] + off));
+    return !!(a && b && a.pi === b.pi);
+  };
+  // the 8 lines of the target 4×4; null where a line isn't filled or runs on
   const words = [];
   for (let i = 0; i < 8; i++) {
+    const cells = lineCells(i);
     let w = '';
-    for (const [r, c] of lineCells(i)) {
+    for (const [r, c] of cells) {
       const hit = occ.get(key(r + off, c + off));
-      if (!hit || !inside[hit.pi]) { w = null; break; }
+      if (!hit) { w = null; break; }
       w += state.pieces[hit.pi].letters[hit.ci];
     }
+    const [dr, dc] = i < 4 ? [0, 1] : [1, 0];
+    const first = cells[0], last = cells[3];
+    if (w && (runsOn(first, [first[0] - dr, first[1] - dc]) ||
+              runsOn(last, [last[0] + dr, last[1] + dc]))) w = null;
     words.push(w);
   }
   const valid = words.map(w => !!w && WORDSET.has(w));
