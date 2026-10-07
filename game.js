@@ -14,9 +14,11 @@ let state = {
   undo: [],
   redo: [],
   sessions: {},              // per-puzzle saved state (cells + undo/redo)
-  // Super Check: forming new words charges a meter; spending it sorts the words
-  // currently on the board into "appears in a solution" / "doesn't" lists.
-  hints: PUZZLES.map(() => ({ seen: [], charge: 0, spent: 0, inList: [], outList: [], history: [] })),
+  // Super Check: forming new words and new crossings charges a meter; spending it
+  // sorts the words currently on the board into "appears in a solution" / "doesn't".
+  // seen = words already scored, crossings = word pairs already scored (see scoreBoard)
+  hints: PUZZLES.map(() => ({ seen: [], crossings: [], charge: 0, spent: 0,
+                              inList: [], outList: [], history: [] })),
 };
 const HINT_THRESHOLD = 5;      // charge points needed per Super Check
 let S = 72, GAP = 3;
@@ -366,6 +368,7 @@ function commit(moves) {          // push history, apply a planned move
   positionTiles();
   updateUndoButtons();
   clearBadges(); clearScribbles();
+  scheduleScore();
 }
 function clearHistory() { state.undo.length = 0; state.redo.length = 0; updateUndoButtons(); }
 function updateUndoButtons() {
@@ -378,6 +381,7 @@ function doUndo() {
   restore(state.undo.pop());
   setSelected(null); clearGhost(); clearBadges(); clearScribbles(); positionTiles(); updateUndoButtons();
   setMsg('');
+  scheduleScore();
 }
 function doRedo() {
   if (!state.redo.length || state.busy) return;
@@ -385,6 +389,7 @@ function doRedo() {
   restore(state.redo.pop());
   setSelected(null); clearGhost(); clearBadges(); clearScribbles(); positionTiles(); updateUndoButtons();
   setMsg('');
+  scheduleScore();
 }
 document.getElementById('undoBtn').addEventListener('click', doUndo);
 document.getElementById('redoBtn').addEventListener('click', doRedo);
@@ -745,8 +750,8 @@ function boardWords() {
 }
 function meterValue() { return state.hints[state.idx].charge; }
 
-function bumpMeter(points) {
-  const h = state.hints[state.idx];
+function bumpMeter(points, idx = state.idx) {
+  const h = state.hints[idx];
   h.charge += points;
   updateSuper();
 }
@@ -761,6 +766,7 @@ function pulseSuper() {
 // a dot flies from a checkmark badge to the Super Check button (1 per point)
 function flyDot(fromEl, delay) {
   if (!fromEl) return;
+  const idx = state.idx;             // the point belongs to this puzzle even if you switch mid-flight
   setTimeout(() => {
     const target = document.getElementById('superBtn');
     if (!target) return;
@@ -776,7 +782,7 @@ function flyDot(fromEl, delay) {
     document.body.appendChild(el);
     const dx = tx - cx, dy = ty - cy;
     const endScale = 12 / startSize;
-    const done = () => { el.remove(); bumpMeter(1); pulseSuper(); };
+    const done = () => { el.remove(); bumpMeter(1, idx); pulseSuper(); };
     if (!el.animate) return done();
     const a = el.animate([
       { transform: 'translate(-50%,-50%) scale(1)', opacity: 1 },
@@ -787,6 +793,98 @@ function flyDot(fromEl, delay) {
     ], { duration: 780, easing: 'cubic-bezier(.32,0,.36,1)' });
     a.onfinish = done; a.oncancel = done;
   }, delay);
+}
+
+// Charging happens the moment any board change lands (a move, Shuffle, Scatter,
+// undo, redo), not on Check. +1 for each valid word on a row or column of the
+// target 4×4 never formed on this puzzle before, and +1 for each new crossing of
+// two valid words. A crossing is the two words plus the letter each one shares,
+// so EXIT×AXIS at the X scores once, whichever way round it's laid. Words in the
+// opening scramble aren't scored up front; they count on the first move if they
+// survive it.
+const SCORE_DELAY = 200;           // let the tiles finish sliding (.tile transition is .18s)
+let scoreTimer = null;
+function scheduleScore() {
+  clearTimeout(scoreTimer);
+  scoreTimer = setTimeout(scoreBoard, SCORE_DELAY);
+}
+function cancelScore() { clearTimeout(scoreTimer); scoreTimer = null; }
+
+// a 24px stand-in at a board cell for flyDot to launch from
+function cellSpot(r, c, off) {
+  const b = board.getBoundingClientRect();
+  const x = b.left + (c + off) * S + GAP + (S - GAP) / 2;
+  const y = b.top + (r + off) * S + GAP + (S - GAP) / 2;
+  return { getBoundingClientRect: () => ({ left: x - 12, top: y - 12, width: 24, height: 24 }) };
+}
+
+function scoreBoard() {
+  scoreTimer = null;
+  const h = state.hints[state.idx];
+  const off = innerOff();
+  const occ = occupancy();
+  const lineCells = i => [0, 1, 2, 3].map(j => i < 4 ? [i, j] : [j, i - 4]);
+  // the 8 lines of the target 4×4; null where a line isn't filled
+  const words = [];
+  for (let i = 0; i < 8; i++) {
+    let w = '';
+    for (const [r, c] of lineCells(i)) {
+      const hit = occ.get(key(r + off, c + off));
+      if (!hit) { w = null; break; }
+      w += state.pieces[hit.pi].letters[hit.ci];
+    }
+    words.push(w);
+  }
+  const valid = words.map(w => !!w && WORDSET.has(w));
+
+  const sources = [], newWords = [];
+  words.forEach((w, i) => {
+    if (!valid[i] || h.seen.indexOf(w) !== -1) return;
+    h.seen.push(w);
+    newWords.push(w);
+    const cells = lineCells(i);
+    // launch from the middle of the word
+    const a = cellSpot(...cells[1], off).getBoundingClientRect();
+    const b = cellSpot(...cells[2], off).getBoundingClientRect();
+    sources.push({ getBoundingClientRect: () => ({
+      left: (a.left + b.left) / 2, top: (a.top + b.top) / 2, width: 24, height: 24 }) });
+    playVerdict(cells.map(([r, c]) => {
+      const hit = occ.get(key(r + off, c + off));
+      return state.pieces[hit.pi].tiles[hit.ci].querySelector('.letter');
+    }), true);
+  });
+
+  let newCrossings = 0;
+  for (let r = 0; r < 4; r++) {
+    for (let c = 0; c < 4; c++) {
+      if (!valid[r] || !valid[4 + c]) continue;
+      // row word crosses at its letter c, column word at its letter r
+      const k = [words[r] + ':' + c, words[4 + c] + ':' + r].sort().join('|');
+      if (h.crossings.indexOf(k) !== -1) continue;
+      h.crossings.push(k);
+      newCrossings++;
+      sources.push(cellSpot(r, c, off));
+    }
+  }
+
+  sources.forEach((s, k) => flyDot(s, k * 70));    // each dot adds 1 when it lands
+  if (sources.length) {
+    const parts = [];
+    if (newWords.length) parts.push((newWords.length === 1 ? 'New word: ' : 'New words: ') +
+                                    newWords.map(w => w.toUpperCase()).join(', '));
+    if (newCrossings) parts.push(newCrossings === 1 ? 'new crossing'
+                                                    : newCrossings + ' new crossings');
+    setMsg(parts.join(' · ') + ` — +${sources.length} to Super Check.`, '');
+  }
+
+  // solved: finish without needing Check, once the dots have landed
+  if (valid.every(Boolean)) {
+    const g = words.slice(0, 4);
+    h.history.push({ mode: 'solve', marks: words.map(() => '✔️') });
+    state.busy = true;
+    setTimeout(() => { state.busy = false; onWin(g); },
+               sources.length ? 780 + sources.length * 70 : 250);
+  }
 }
 
 // The drawer's whole top edge is one continuous line: flat, then it flares out
@@ -854,8 +952,11 @@ function renderWordLists(justAdded, newestFirst) {
       order(arr).map(w => `<li${w === justAdded ? ' data-new="1"' : ''}>${w.toUpperCase()}</li>`).join('') +
       '</ul></div>'
     : '';
-  el.innerHTML = mk('in', 'In the puzzle', h.inList, 'wlIn') +
-                 mk('out', 'Not in the puzzle', h.outList, 'wlOut');
+  const total = h.inList.length + h.outList.length;
+  el.innerHTML = total
+    ? mk('in', 'In the puzzle', h.inList, 'wlIn') + mk('out', 'Not in the puzzle', h.outList, 'wlOut')
+    : '<p class="wl-empty">Find new words to charge SuperCheck. Use SuperCheck to see if ' +
+      'any of the words on your board are in today’s puzzle, and if you’re on the right track.</p>';
   // the newly banked word drops in at the top of its list
   const fresh = el.querySelector('[data-new]');
   if (fresh && fresh.animate) fresh.animate([
@@ -866,12 +967,11 @@ function renderWordLists(justAdded, newestFirst) {
     { transform: 'translateY(0)', opacity: 1, backgroundColor: 'transparent' },
   ], { duration: 950, easing: 'cubic-bezier(.3,1.2,.5,1)' });
 
-  const total = h.inList.length + h.outList.length;
-  const drawer = document.getElementById('drawer');
-  drawer.classList.toggle('has-words', total > 0);
-  document.body.classList.toggle('has-drawer', total > 0);
-  document.getElementById('drawerTabLabel').textContent =
-    `Word bank · ${h.inList.length} in, ${h.outList.length} out`;
+  // the drawer is always there; empty, it explains how to fill it
+  document.getElementById('drawer').classList.toggle('has-words', total > 0);
+  document.body.classList.add('has-drawer');
+  document.getElementById('drawerTabLabel').textContent = total
+    ? `Word bank · ${h.inList.length} in, ${h.outList.length} out` : 'Word bank';
   layoutDrawer();
 }
 // --------------------------------------------- Check / Super Check button states
@@ -1039,8 +1139,8 @@ function playVerdict(letters, ok) {
 
 const sleep = ms => new Promise(r => setTimeout(r, ms));
 
-// Shared verdict sequence. Normal Check: words nod/shake, and each NEW word flies
-// into the Super Check meter (worth ×N where N = new words found this check).
+// Shared verdict sequence. Normal Check: words nod/shake with a ✓/✗ (it no longer
+// charges the meter — scoreBoard does that as words are made).
 // Super Check: same animation, but words are starred and fly into the word lists.
 async function runCheck(superMode) {
   if (state.busy) return;
@@ -1085,24 +1185,14 @@ async function runCheck(superMode) {
   for (let i = 0; i < 8; i++)
     words.push(i < 4 ? g[i] : g[0][i-4] + g[1][i-4] + g[2][i-4] + g[3][i-4]);
 
-  // words never formed on this puzzle before → they charge the meter, ×N of them
-  const fresh = [];
-  if (!superMode) {
-    const dedupe = new Set();
-    words.forEach(w => {
-      if (WORDSET.has(w) && h.seen.indexOf(w) === -1 && !dedupe.has(w)) {
-        dedupe.add(w); fresh.push(w);
-      }
-    });
-  }
   // record what happened this check, for the win summary / share text
+  // (new words charge the meter as they're made — see scoreBoard — not here)
   h.history.push({
     mode: superMode ? 'super' : 'check',
     marks: words.map(w => {
       const okw = WORDSET.has(w), inS = solWords.has(w);
       if (superMode) return inS ? '⭐' : (okw ? '〰️' : '✖️');
-      if (!okw) return '✖️';
-      return fresh.indexOf(w) !== -1 ? '☑️' : '✔️';   // ☑️ = new word for this puzzle
+      return okw ? '✔️' : '✖️';
     }),
   });
 
@@ -1111,11 +1201,10 @@ async function runCheck(superMode) {
   setBtnState(superMode ? 'supering' : 'checking');
 
   let good = 0;
-  const ANIM = 385, PAUSE = 150, STEP = ANIM + PAUSE, FANFARE_PAD = 100;
+  const ANIM = 385, PAUSE = 150, STEP = ANIM + PAUSE;
   // Super Check paces each word out in three beats so nothing lands on top of anything else
   const NOD_BEAT = 430, MARK_BEAT = 480, BANK_BEAT = 400;
   const flown = new Set();
-  const freshBadges = [];        // badges of fresh words found so far *this* check
 
   for (let i = 0; i < 8; i++) {
     const word = words[i];
@@ -1125,8 +1214,7 @@ async function runCheck(superMode) {
     const letters = lineLetters(i);
     playVerdict(letters, ok);
 
-    const isFresh = !superMode && ok && fresh.indexOf(word) !== -1 && !flown.has(word);
-    showBadge(i, superMode ? (inSol ? 'star' : (ok ? 'good' : 'bad')) : (ok ? 'good' : 'bad'), off, isFresh);
+    showBadge(i, superMode ? (inSol ? 'star' : (ok ? 'good' : 'bad')) : (ok ? 'good' : 'bad'), off, false);
     setMsg((i < 4 ? 'Row ' + (i + 1) : 'Column ' + (i - 3)) + ': ' + word.toUpperCase() +
            (superMode ? (inSol ? ' ★ in the puzzle' : (ok ? ' ✓ not in the puzzle' : ' — not a word'))
                       : (ok ? ' ✓' : '')), '');
@@ -1152,19 +1240,7 @@ async function runCheck(superMode) {
       continue;
     }
 
-    let fanfare = false;
-    if (isFresh) {
-      flown.add(word);
-      h.seen.push(word);
-      const badge = badgePool[i];
-      // this word's own point (base), plus one bonus point re-fired from each
-      // earlier fresh word this check — so word #N nets exactly N points.
-      flyDot(badge, 0);
-      freshBadges.forEach((prev, k) => flyDot(prev, 70 + k * 60));
-      freshBadges.push(badge);
-      fanfare = true;
-    }
-    await sleep(STEP + (fanfare ? FANFARE_PAD : 0));
+    await sleep(STEP);
   }
 
   await sleep(450);
@@ -1184,10 +1260,8 @@ async function runCheck(superMode) {
     setMsg('Super Check done — ★ words appear in a solution.', '');
   } else {
     updateSuper();
-    const K = freshBadges.length, earned = K * (K + 1) / 2;
     if (good === 8) onWin(g);
-    else setMsg(good + ' of 8 words check out.' +
-                (K ? ` +${earned} to Super Check.` : ' Keep going!'), '');
+    else setMsg(good + ' of 8 words check out. Keep going!', '');
   }
 }
 document.getElementById('submitBtn').addEventListener('click', () => runCheck(false));
@@ -1198,7 +1272,7 @@ document.getElementById('submitBtn').addEventListener('click', () => runCheck(fa
 function shareLines() {
   const h = state.hints[state.idx];
   return h.history.map((e, k) => {
-    const solved = e.marks.every(m => m === '✔️' || m === '☑️');
+    const solved = e.marks.every(m => m === '✔️');
     return '➡️' + e.marks.slice(0, 4).join('') +
            '⬇️' + e.marks.slice(4).join('') +
            (solved && k === h.history.length - 1 ? '🎉' : '');
@@ -1530,6 +1604,7 @@ function saveSession() {
 
 function loadPuzzle(idx) {
   saveSession();                                 // preserve the puzzle we're leaving
+  cancelScore();                                 // a pending score belongs to that puzzle
   state.idx = (idx + PUZZLES.length) % PUZZLES.length;
   state.mode = 'free';
   const P = PUZZLES[state.idx];

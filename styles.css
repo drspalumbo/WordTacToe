@@ -665,12 +665,11 @@
 
   /* Word bank: fixed drawer that folds up from the bottom, never pushes page content */
   #drawer{
-    position:fixed; left:0; right:0; bottom:0; z-index:40; display:none;
+    position:fixed; left:0; right:0; bottom:0; z-index:40; display:flex;
     flex-direction:column; align-items:stretch;
     padding-bottom:env(safe-area-inset-bottom, 0px);
     filter:drop-shadow(0 -2px 8px rgba(20,32,45,.10));
   }
-  #drawer.has-words{display:flex;}
   #drawer.open, #drawer.peek{padding-bottom:0;}
   /* the top edge — including the pull tab — is one continuous drawn shape */
   #drawerTop{position:relative; height:42px;}
@@ -697,6 +696,8 @@
   #wordLists{display:flex; gap:22px; justify-content:center; text-align:left;
     padding:4px 18px calc(18px + env(safe-area-inset-bottom, 0px));}
   .wl{flex:1; max-width:170px;}
+  .wl-empty{margin:4px 0 0; max-width:320px; text-align:center; font-size:15px;
+    line-height:1.45; color:var(--ink-soft);}
   .wl h4{
     margin:0 0 6px; font-size:11px; letter-spacing:.1em; text-transform:uppercase;
     color:var(--ink-soft); font-weight:800;
