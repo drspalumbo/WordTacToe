@@ -1704,14 +1704,13 @@ function doSpread() {
 }
 document.getElementById('spreadBtn').addEventListener('click', doSpread);
 
-// Shift every tile one step toward an edge of the 6×6 board. With room to spare,
-// everything just steps over. Once the tiles are against that edge, the
-// arrangement rotates in place instead: the band of whole lines at the edge wraps
-// to the far side of the arrangement, snug against it, and the rest steps over to
-// fill in. A piece reaching into the band pulls its other lines into the band too
-// (pieces can't split), so rows/columns move as wholes and no gaps open. If the
-// pieces chain across the whole arrangement, it falls back to dropEdgePieces. One
-// shift = one undo step.
+// Shift toward an edge of the 6×6 board, 2048-style. Each press does the first
+// of these that applies:
+//   1. nothing touches that edge → everything steps one space;
+//   2. there are gaps → every piece slides until it hits the edge or another
+//      tile (pieces are rigid, so a piece stops as soon as any tile is blocked);
+//   3. already packed → the pieces touching the edge wrap (dropEdgePieces).
+// One shift = one undo step.
 function doShiftAll(dr, dc) {
   if (state.busy) return;
   setSelected(null); clearGhost();
@@ -1721,74 +1720,99 @@ function doShiftAll(dr, dc) {
   const pos = ([r, c]) => { const a = horiz ? c : r; return s > 0 ? a : N - 1 - a; };
   const step = ([r, c], d) => horiz ? [r, c + d * s] : [r + d * s, c];  // d steps toward the edge
   const lines = state.pieces.map(p => p.cells.map(pos));
-  const all = lines.flat();
   const moves = {};
 
-  if (Math.max(...all) < N - 1) {
+  if (Math.max(...lines.flat()) < N - 1) {
     state.pieces.forEach((p, i) => { moves[i] = p.cells.map(c => step(c, 1)); });
-  } else {
-    let start = N - 1, grew = true;           // band = lines start..N-1
-    while (grew) {
-      grew = false;
-      lines.forEach(ls => {
-        const m = Math.min(...ls);
-        if (Math.max(...ls) >= start && m < start) { start = m; grew = true; }
-      });
-    }
-    const first = Math.min(...all);
-    if (start > first) {
-      const band = N - start;
-      state.pieces.forEach((p, i) => {
-        const inBand = lines[i][0] >= start;
-        moves[i] = p.cells.map(c => step(c, inBand ? -(start - first) : band));
-      });
-    } else if (!dropEdgePieces(lines, pos, step, horiz, moves)) {
-      playVerdict(state.pieces.flatMap(p => p.tiles.map(t => t.querySelector('.letter'))), false);
-      setMsg('No room to wrap that way.', '');
-      return;
-    }
+  } else if (!slideToEdge(pos, step, moves) &&
+             !dropEdgePieces(lines, pos, step, horiz, moves)) {
+    playVerdict(state.pieces.flatMap(p => p.tiles.map(t => t.querySelector('.letter'))), false);
+    setMsg('No room to wrap that way.', '');
+    return;
   }
   commit(moves);
   setMsg('');
 }
 
-// Fallback for doShiftAll when the pieces chain all the way across, so whole
-// lines can't rotate: only the pieces touching the edge wrap. Each drops in from
-// the far side until it sits snug against the tiles already in its own rows or
-// columns; everything else stays put. Fills `moves`; false if a piece won't fit.
+// doShiftAll step 2: let every piece fall toward the edge one space at a time
+// until nothing can move. Fills `moves`; false if nothing moved (already packed).
+function slideToEdge(pos, step, moves) {
+  const N = 6;
+  const cur = state.pieces.map(p => p.cells.map(c => c.slice()));
+  const occ = new Map();
+  cur.forEach((cells, i) => cells.forEach(([r, c]) => occ.set(key(r, c), i)));
+  let moved = false, again = true;
+  while (again) {
+    again = false;
+    cur.forEach((cells, i) => {
+      const next = cells.map(c => step(c, 1));
+      const free = next.every(c => {
+        const o = occ.get(key(c[0], c[1]));
+        return pos(c) <= N - 1 && (o === undefined || o === i);
+      });
+      if (!free) return;
+      cells.forEach(([r, c]) => occ.delete(key(r, c)));
+      next.forEach(([r, c]) => occ.set(key(r, c), i));
+      cur[i] = next;
+      again = moved = true;
+    });
+  }
+  if (moved) cur.forEach((cells, i) => { moves[i] = cells; });
+  return moved;
+}
+
+// doShiftAll step 3, once everything is packed against the edge: only the pieces
+// touching the edge wrap. Each drops in from the far side until it sits snug
+// against the tiles already in its own rows or columns; everything else stays
+// put. Fills `moves`; false if a piece won't fit.
 function dropEdgePieces(lines, pos, step, horiz, moves) {
   const N = 6;
   const lane = ([r, c]) => horiz ? r : c;      // the row/column a tile travels along
   const wraps = lines.map(ls => Math.max(...ls) === N - 1);
-  const floor = {};                            // lane -> nearest far-side tile that stays
-  const settle = cells => cells.forEach(cell => {
+  const stay = {};                             // lane -> nearest far-side tile that stays
+  const settle = (floor, cells) => cells.forEach(cell => {
     const l = lane(cell);
     floor[l] = Math.min(floor[l] === undefined ? Infinity : floor[l], pos(cell));
   });
   state.pieces.forEach((p, i) => {
     if (wraps[i]) return;
-    settle(p.cells);
+    settle(stay, p.cells);
     moves[i] = p.cells.map(c => c.slice());
   });
-  const ends = Object.values(floor);
+  const ends = Object.values(stay);
   if (!ends.length) return false;
   const farEnd = Math.min(...ends);            // for lanes with nothing else in them
 
-  // deepest-reaching pieces first, so shorter ones stack beyond them
-  const order = state.pieces.map((p, i) => i).filter(i => wraps[i])
-    .sort((a, b) => Math.min(...lines[a]) - Math.min(...lines[b]));
-  for (const i of order) {
-    const cells = state.pieces[i].cells;
-    const d = Math.max(...cells.map(cell => {
-      const f = floor[lane(cell)];
-      return pos(cell) - (f === undefined ? farEnd : f) + 1;
-    }));
-    const moved = cells.map(c => step(c, -d));
-    if (moved.some(c => pos(c) < 0)) return false;
-    moves[i] = moved;
-    settle(moved);
+  // Pieces land one at a time, so order matters: a tall piece placed first can
+  // take the spot a short one needed. Try pieces nearest the edge first, then
+  // deepest-reaching first, then any other order, and use the first that fits.
+  const wrapping = state.pieces.map((p, i) => i).filter(i => wraps[i]);
+  const reach = i => Math.min(...lines[i]);
+  const tryOrder = order => {
+    const floor = Object.assign({}, stay), placed = {};
+    for (const i of order) {
+      const cells = state.pieces[i].cells;
+      const d = Math.max(...cells.map(cell => {
+        const f = floor[lane(cell)];
+        return pos(cell) - (f === undefined ? farEnd : f) + 1;
+      }));
+      const moved = cells.map(c => step(c, -d));
+      if (moved.some(c => pos(c) < 0)) return null;
+      placed[i] = moved;
+      settle(floor, moved);
+    }
+    return placed;
+  };
+  const orders = [wrapping.slice().sort((a, b) => reach(b) - reach(a)),
+                  wrapping.slice().sort((a, b) => reach(a) - reach(b))];
+  const perms = arr => arr.length <= 1 ? [arr] :
+    arr.flatMap((x, k) => perms(arr.filter((_, j) => j !== k)).map(rest => [x, ...rest]));
+  if (wrapping.length <= 6) orders.push(...perms(wrapping));
+  for (const order of orders) {
+    const placed = tryOrder(order);
+    if (placed) { Object.assign(moves, placed); return true; }
   }
-  return true;
+  return false;
 }
 document.querySelectorAll('.shifts .shift').forEach(b => b.addEventListener('click', () =>
   doShiftAll(+b.dataset.dr, +b.dataset.dc)));
