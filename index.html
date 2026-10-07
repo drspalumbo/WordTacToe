@@ -51,38 +51,8 @@
     </svg>
   </button>
   <div class="check-group" id="checkGroup">
-    <button class="btn icon" id="superBtn" disabled aria-label="Super Check" title="Super Check">
-      <svg class="ring" viewBox="0 0 44 44" width="44" height="44">
-        <circle class="ring-track" cx="22" cy="22" r="18" fill="none" stroke-width="3"/>
-        <circle class="ring-fill" id="superRingFill" cx="22" cy="22" r="18" fill="none" stroke-width="3" stroke-linecap="round"/>
-      </svg>
-      <span class="super-inner">
-        <svg class="super-star" viewBox="0 0 24 24" width="18" height="18" fill="currentColor">
-          <path d="M12 2.4l2.9 6.7 7.2.8-5.4 4.9 1.5 7.2-6.2-3.7-6.2 3.7 1.5-7.2-5.4-4.9 7.2-.8z"/>
-        </svg>
-        <span class="super-label">Super</span>
-      </span>
-      <span class="super-bar"><span id="superBarFill"></span></span>
-      <span class="super-badge" id="superBadge"></span>
-    </button>
     <button class="btn primary" id="submitBtn"><span class="check-label" id="checkLabel">Check</span></button>
   </div>
-</div>
-
-<!-- shift the whole board one step; wraps around the edges (buttons for now, gesture later) -->
-<div class="shifts" role="group" aria-label="Shift every tile">
-  <button class="btn icon shift" data-dr="0" data-dc="-1" aria-label="Shift every tile left" title="Shift left">
-    <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="11 6 5 12 11 18"/></svg>
-  </button>
-  <button class="btn icon shift" data-dr="-1" data-dc="0" aria-label="Shift every tile up" title="Shift up">
-    <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="19" x2="12" y2="5"/><polyline points="6 11 12 5 18 11"/></svg>
-  </button>
-  <button class="btn icon shift" data-dr="1" data-dc="0" aria-label="Shift every tile down" title="Shift down">
-    <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><polyline points="6 13 12 19 18 13"/></svg>
-  </button>
-  <button class="btn icon shift" data-dr="0" data-dc="1" aria-label="Shift every tile right" title="Shift right">
-    <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="13 6 19 12 13 18"/></svg>
-  </button>
 </div>
 
 <div id="drawer">
@@ -92,11 +62,28 @@
       <path id="drawerEdgePath"/>
     </svg>
     <button id="drawerTab" aria-expanded="false">
+      <!-- charge meter: fills as you make new words; full = a grid check is ready -->
+      <span class="bank-meter" id="bankMeter" aria-hidden="true">
+        <svg class="ring" viewBox="0 0 26 26" width="26" height="26">
+          <circle class="ring-track" cx="13" cy="13" r="10.5" fill="none" stroke-width="2.5"/>
+          <circle class="ring-fill" id="bankRingFill" cx="13" cy="13" r="10.5" fill="none" stroke-width="2.5" stroke-linecap="round"/>
+        </svg>
+        <svg class="bank-star" viewBox="0 0 24 24" width="12" height="12" fill="currentColor">
+          <path d="M12 2.4l2.9 6.7 7.2.8-5.4 4.9 1.5 7.2-6.2-3.7-6.2 3.7 1.5-7.2-5.4-4.9 7.2-.8z"/>
+        </svg>
+        <span class="bank-badge" id="bankBadge"></span>
+      </span>
       <span id="drawerTabLabel">Word bank</span>
       <svg class="chevron" viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
     </button>
   </div>
-  <div id="drawerPanel"><div id="wordLists"></div></div>
+  <div id="drawerPanel">
+    <div class="bank-actions">
+      <button class="btn bank-check" id="bankCheckBtn" disabled><span id="bankCheckLabel">Check current grid</span></button>
+      <div class="bank-hint" id="bankHint"></div>
+    </div>
+    <div id="wordLists"></div>
+  </div>
 </div>
 
 <div class="meta">
@@ -148,7 +135,7 @@
             <span class="pip" style="--dx:3px; animation-delay:450ms;"></span>
             <span class="cbadge">✓</span>
           </span>
-          <span class="help-text"><b class="help-h">Check your words (and charge up!)</b>Every new word you make charges your SuperCheck, and so does every new spot where two words cross!</span>
+          <span class="help-text"><b class="help-h">Check your words (and charge up!)</b>Every new word you make, and every new spot where two words cross, charges up your word bank!</span>
         </li>
         <li>
           <span class="super-row" aria-hidden="true">
@@ -167,7 +154,7 @@
               <svg class="mw-circle" viewBox="0 0 48 22"><path class="mwc-path" d="M 42.3 6.1 C 45.3 8.0, 46.2 10.6, 44.3 13.0 C 42.4 15.3, 38.1 17.5, 32.6 18.6 C 27.1 19.8, 20.6 20.0, 15.2 19.2 C 9.8 18.4, 5.8 16.5, 4.0 14.3 C 2.2 12.1, 3.2 9.6, 6.1 7.4 C 9.1 5.3, 14.2 3.7, 19.9 3.0 C 25.5 2.3, 31.6 2.6, 36.2 3.8 C 40.8 5.0, 44.2 7.1, 44.7 9.4"/></svg>
             </span>
           </span>
-          <span class="help-text"><b class="help-h">SuperCheck to build your word bank</b>Once charged, SuperCheck tells you which words on your board are in today’s puzzle…and which aren’t!</span>
+          <span class="help-text"><b class="help-h">Check your grid to sort your word bank</b>Once it’s charged, open the word bank and tap Check current grid to see which words on your board are in today’s puzzle…and which aren’t!</span>
         </li>
       </ul>
       <div class="win-note">
@@ -231,6 +218,14 @@
         <li>
           <span class="hk-icon" aria-hidden="true">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <line x1="4" y1="12" x2="20" y2="12"/><polyline points="15 7 20 12 15 17"/><polyline points="9 7 4 12 9 17"/>
+            </svg>
+          </span>
+          <span><span class="hk">Swipe</span> Swipe on an empty spot of the board to slide every tile that way. Keep going and the tiles wrap around.</span>
+        </li>
+        <li>
+          <span class="hk-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
               <polyline points="16 3 21 3 21 8"/><line x1="4" y1="20" x2="21" y2="3"/>
               <polyline points="21 16 21 21 16 21"/><line x1="15" y1="15" x2="21" y2="21"/>
               <line x1="4" y1="4" x2="9" y2="9"/>
@@ -259,7 +254,7 @@
             <span class="dpip d3"></span>
             <span class="dpip d4"></span>
           </span>
-          <span><span class="hk">Find New Words</span> Each new word, and each new place two words cross, charges SuperCheck the moment you make it.</span>
+          <span><span class="hk">Find New Words</span> Each new word, and each new place two words cross, charges your word bank the moment you make it.</span>
         </li>
       </ul>
     </div>

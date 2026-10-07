@@ -565,103 +565,17 @@
     transform:translate(-50%,-50%); box-shadow:0 3px 10px rgba(20,32,45,.28);
   }
 
-  /* Super Check: compact ring button that merges into the Check button when ready */
-  .check-group{
-    display:flex; align-items:center; gap:9px; padding:0;
-    border-radius:14px; background:transparent;
-    transition:gap .3s ease, padding .3s ease, background .3s ease, box-shadow .3s ease;
-  }
-  /* when charged the group becomes a gold shell; Check nests in from the LEFT only,
-     so the seam is a clear curved gap but the two stay one control */
-  .check-group.merged{
-    gap:0; padding:0; background:var(--gold);
-    transition:gap .3s ease, padding .3s ease, background .3s ease;
-  }
-  /* we style Super's states explicitly — don't let :disabled grey it out */
-  #superBtn:disabled{opacity:1; cursor:default;}
-  #superBtn{
-    position:relative; overflow:visible; width:44px; height:44px; flex:none;
-    transition:width .38s cubic-bezier(.3,.9,.4,1), height .3s ease,
-               border-radius .3s ease, background .3s ease, border-color .3s ease,
-               opacity .3s ease;
-  }
-  .check-group.merged #superBtn{
-    width:82px; height:44px; border-radius:14px 0 0 14px;
-    background:transparent; border-color:transparent; cursor:pointer;
-  }
-  .check-group.merged #superBtn:active{background:rgba(0,0,0,.10);}
-  /* mid-Check: the gold recedes so only Check reads as active */
-  .check-group.merged.checking{background:color-mix(in srgb, var(--gold) 26%, transparent);}
-  .check-group.checking #superBtn{opacity:.35;}
-  /* mid-Super-Check: gold stays full — it's the thing being used */
-  .check-group.merged.supering{background:var(--gold);}
-  .check-group.supering #superBtn{opacity:1;}
-  #superBtn .ring{
-    position:absolute; top:50%; left:50%;
-    transform:translate(-50%,-50%) rotate(-90deg);
-    transition:opacity .25s ease;
-  }
-  .check-group.merged #superBtn .ring{opacity:0;}
-  #superBtn .ring-track{stroke:#DCE3E9;}
-  #superBtn .ring-fill{
-    stroke:var(--gold); stroke-dasharray:113.1; stroke-dashoffset:113.1;
-    transition:stroke-dashoffset .4s cubic-bezier(.3,.9,.4,1), stroke .2s;
-  }
-  /* gap:0 while collapsed, or it pushes the lone star off-centre */
-  .super-inner{
-    position:relative; z-index:2; display:flex; align-items:center; gap:0;
-    justify-content:center; width:100%;
-    transition:gap .38s cubic-bezier(.3,.9,.4,1), transform .3s ease;
-  }
-  .check-group.merged .super-inner{gap:6px;}
-  .super-star{color:var(--ink-soft); pointer-events:none; flex:none;
-    transition:color .3s ease;}
-  .check-group.merged .super-star{color:var(--ink);}
-  /* the label wipes open left→right as the button widens. The padding/negative-margin
-     pair gives the clip box vertical headroom so lifted letters aren't sliced off. */
-  .super-label{
-    display:inline-block; max-width:0; overflow:hidden; white-space:nowrap;
-    padding:12px 0; margin:-12px 0;
-    opacity:0; color:var(--ink); font-weight:800; font-size:15px; letter-spacing:.01em;
-    transition:max-width .38s cubic-bezier(.3,.9,.4,1), opacity .22s ease .1s;
-  }
-  .check-group.merged .super-label{max-width:56px; opacity:1;}
-  /* progress toward the NEXT charge, once one is banked */
-  .super-bar{
-    position:absolute; left:11px; right:11px; bottom:3px; height:3px; z-index:2;
-    border-radius:2px; background:rgba(255,255,255,.5); overflow:hidden;
-    opacity:0; transition:opacity .25s ease .12s;
-  }
-  .check-group.merged .super-bar{opacity:1;}
-  #superBarFill{
-    display:block; height:100%; width:0%; background:#fff;
-    transition:width .35s cubic-bezier(.3,.9,.4,1);
-  }
-  /* Check is flush on top/right/bottom; only its left edge is inset into the gold */
+  /* Check sits alone at the end of the actions row */
+  .check-group{display:flex; align-items:center;}
   #submitBtn{
     flex:none; white-space:nowrap; height:44px; padding:0 24px;
     display:flex; align-items:center; justify-content:center;
-    transition:padding .3s ease, border-radius .3s ease, height .3s ease,
-               margin-left .3s ease, background .12s ease;
+    transition:background .12s ease;
   }
   .check-label{display:inline-block; white-space:nowrap;}
-  .check-group.merged #submitBtn{
-    border-radius:12px 14px 14px 12px; padding:0 16px; height:44px;
-    margin-left:5px;
-  }
-  /* pressed: Check alone darkens; pressing Super darkens the whole control */
   #submitBtn.pressed{background:#16307A;}
-  .check-group.pressed{background:#C6A310;}
-  .check-group.pressed #submitBtn{background:#16307A;}
-  /* per-letter spans so "Super Check" can ripple as one phrase */
+  /* per-letter spans so a label can ripple as one phrase */
   .ltr{display:inline-block; will-change:transform;}
-  .super-badge{
-    position:absolute; top:-4px; right:-4px; z-index:3; min-width:16px; height:16px;
-    padding:0 3px; border-radius:8px; background:var(--ink); color:#fff;
-    font-size:10px; font-weight:800; display:none; align-items:center; justify-content:center;
-    line-height:1; box-shadow:0 0 0 2px #fff;
-  }
-  .super-badge.show{display:flex;}
 
   /* Word bank: fixed drawer that folds up from the bottom, never pushes page content */
   #drawer{
@@ -698,6 +612,35 @@
   .wl{flex:1; max-width:170px;}
   .wl-empty{margin:4px 0 0; max-width:320px; text-align:center; font-size:15px;
     line-height:1.45; color:var(--ink-soft);}
+  /* found but not checked yet: quieter than the sorted lists */
+  #wordLists{flex-wrap:wrap;}
+  .wl.found{flex-basis:100%; max-width:none;}
+  .wl.found ul{display:flex; flex-wrap:wrap; gap:0 14px;}
+  .wl.found li{color:var(--ink-soft); opacity:.75; font-size:19px;}
+
+  /* charge meter on the word bank tab (gold = a grid check is ready) */
+  .bank-meter{position:relative; width:26px; height:26px; flex:none;
+    display:flex; align-items:center; justify-content:center;}
+  .bank-meter .ring{position:absolute; top:50%; left:50%;
+    transform:translate(-50%,-50%) rotate(-90deg);}
+  .bank-meter .ring-track{stroke:#DCE3E9;}
+  .bank-meter .ring-fill{stroke:var(--gold); stroke-dasharray:66; stroke-dashoffset:66;
+    transition:stroke-dashoffset .4s cubic-bezier(.3,.9,.4,1);}
+  .bank-star{color:var(--ink-soft); position:relative; transition:color .3s ease;}
+  #drawerTab.charged .bank-star{color:var(--gold);}
+  .bank-badge{position:absolute; top:-5px; right:-7px; min-width:15px; height:15px;
+    padding:0 3px; border-radius:8px; background:var(--ink); color:#fff;
+    font-size:9.5px; font-weight:800; display:none; align-items:center; justify-content:center;
+    line-height:1; box-shadow:0 0 0 2px #fff; box-sizing:border-box;}
+  .bank-badge.show{display:flex;}
+
+  /* the grid check lives at the top of the open drawer */
+  .bank-actions{display:flex; flex-direction:column; align-items:center; gap:5px;
+    padding:6px 18px 8px;}
+  .btn.bank-check{background:var(--gold); color:var(--ink); padding:10px 22px;}
+  .btn.bank-check:disabled{opacity:1; background:#EEF1F4; color:var(--ink-soft);}
+  .btn.bank-check.pressed{background:#C6A310;}
+  .bank-hint{font-size:12.5px; font-weight:600; color:var(--ink-soft); min-height:16px;}
   .wl h4{
     margin:0 0 6px; font-size:11px; letter-spacing:.1em; text-transform:uppercase;
     color:var(--ink-soft); font-weight:800;
@@ -749,8 +692,6 @@
     display:flex; align-items:center; justify-content:center;
   }
   .btn.icon:not(:disabled):hover{border-color:var(--accent); color:var(--accent);}
-  .shifts{display:flex; gap:7px; margin-top:8px; justify-content:center;}
-  .btn.icon.shift{width:44px; height:34px;}
 
   .tile{cursor:grab; touch-action:none;}
   .tile.dragging{cursor:grabbing; z-index:20; transition:none; filter:brightness(1.03);}

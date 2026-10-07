@@ -17,8 +17,9 @@ let state = {
   // Super Check: forming new words and new crossings charges a meter; spending it
   // sorts the words currently on the board into "appears in a solution" / "doesn't".
   // seen = words already scored, crossings = word pairs already scored (see scoreBoard)
+  // found = words made but not yet sorted by a grid check (shown gray in the bank)
   hints: PUZZLES.map(() => ({ seen: [], crossings: [], charge: 0, spent: 0,
-                              inList: [], outList: [], history: [] })),
+                              found: [], inList: [], outList: [], history: [] })),
 };
 const HINT_THRESHOLD = 5;      // charge points needed per Super Check
 let S = 72, GAP = 3;
@@ -598,6 +599,7 @@ function preview(pi, anchor, tr, tc) {
 }
 
 const DRAG_THRESHOLD = 4;
+const SWIPE_MIN = 30;            // px: a press on empty space that travels this far is a swipe
 
 board.addEventListener('pointerdown', e => {
   if (state.busy) return;
@@ -666,6 +668,15 @@ function endDrag(e) {
     if (res.ok) { commit(res.moves); setSelected(null); setMsg(''); }
     else { positionTiles(); if (res.reason) setMsg(res.reason, 'bad'); setSelected(null); }
     return;
+  }
+  if (d.pi === null) {                           // swipe on empty space → shift that way
+    const dx = e.clientX - d.startX, dy = e.clientY - d.startY;
+    if (Math.max(Math.abs(dx), Math.abs(dy)) >= SWIPE_MIN) {
+      resetTap();
+      if (Math.abs(dx) > Math.abs(dy)) doShiftAll(0, Math.sign(dx));
+      else doShiftAll(Math.sign(dy), 0);
+      return;
+    }
   }
   tapAt(d.downR, d.downC);                       // it was a tap
 }
@@ -757,18 +768,18 @@ function bumpMeter(points, idx = state.idx) {
 }
 
 function pulseSuper() {
-  const btn = document.getElementById('superBtn');
+  const btn = document.getElementById('bankMeter');
   if (btn && btn.animate) btn.animate(
     [{ transform: 'scale(1)' }, { transform: 'scale(1.22)' }, { transform: 'scale(1)' }],
     { duration: 300, easing: 'cubic-bezier(.3,1.7,.5,1)' });
 }
 
-// a dot flies from a checkmark badge to the Super Check button (1 per point)
+// a dot flies from where it was earned to the word bank's charge meter (1 per point)
 function flyDot(fromEl, delay) {
   if (!fromEl) return;
   const idx = state.idx;             // the point belongs to this puzzle even if you switch mid-flight
   setTimeout(() => {
-    const target = document.getElementById('superBtn');
+    const target = document.getElementById('bankMeter');
     if (!target) return;
     const f = fromEl.getBoundingClientRect(), t = target.getBoundingClientRect();
     const cx = f.left + f.width / 2, cy = f.top + f.height / 2;
@@ -882,13 +893,19 @@ function scoreBoard() {
   }
 
   sources.forEach((s, k) => flyDot(s, k * 70));    // each dot adds 1 when it lands
+  if (newWords.length) {
+    // new words go in the bank quietly (gray, unsorted); the drawer peeks so you see them land
+    newWords.forEach(w => h.found.unshift(w));
+    peekDrawer();
+    renderWordLists(newWords[newWords.length - 1], true);
+  }
   if (sources.length) {
     const parts = [];
     if (newWords.length) parts.push((newWords.length === 1 ? 'New word: ' : 'New words: ') +
                                     newWords.map(w => w.toUpperCase()).join(', '));
     if (newCrossings) parts.push(newCrossings === 1 ? 'new crossing'
                                                     : newCrossings + ' new crossings');
-    setMsg(parts.join(' · ') + ` — +${sources.length} to Super Check.`, '');
+    setMsg(parts.join(' · ') + ` — +${sources.length} charge.`, '');
   }
 
   // solved: finish without needing Check, once the dots have landed
@@ -967,19 +984,37 @@ function renderWordLists(justAdded, newestFirst) {
       '</ul></div>'
     : '';
   const total = h.inList.length + h.outList.length;
-  el.innerHTML = total
-    ? mk('in', 'In the puzzle', h.inList, 'wlIn') + mk('out', 'Not in the puzzle', h.outList, 'wlOut')
-    : '<p class="wl-empty">Find new words to charge SuperCheck. Use SuperCheck to see if ' +
-      'any of the words on your board are in today’s puzzle, and if you’re on the right track.</p>';
-  // the newly banked word drops in at the top of its list
+  // found is already newest-first (scoreBoard unshifts), so it skips order()
+  const found = h.found.length
+    ? `<div class="wl found"><h4>Found</h4><ul>` +
+      h.found.map(w => `<li${w === justAdded ? ' data-new="1"' : ''}>${w.toUpperCase()}</li>`).join('') +
+      '</ul></div>'
+    : '';
+  el.innerHTML = total || h.found.length
+    ? found + mk('in', 'In the puzzle', h.inList, 'wlIn') + mk('out', 'Not in the puzzle', h.outList, 'wlOut')
+    : '<p class="wl-empty">Find new words to charge up a check. Use Check current grid to see ' +
+      'if any of the words on your board are in today’s puzzle, and if you’re on the right track.</p>';
   const fresh = el.querySelector('[data-new]');
-  if (fresh && fresh.animate) fresh.animate([
-    { transform: 'translateY(-18px)', opacity: 0,
-      backgroundColor: 'color-mix(in srgb, var(--gold) 60%, transparent)' },
-    { transform: 'translateY(0)', opacity: 1,
-      backgroundColor: 'color-mix(in srgb, var(--gold) 60%, transparent)', offset: 0.45 },
-    { transform: 'translateY(0)', opacity: 1, backgroundColor: 'transparent' },
-  ], { duration: 950, easing: 'cubic-bezier(.3,1.2,.5,1)' });
+  if (fresh && fresh.animate) {
+    if (fresh.closest('.found')) {
+      // a word you just made: slips in quietly
+      fresh.animate([{ transform: 'translateY(-8px)', opacity: 0 }, { transform: 'none', opacity: 1 }],
+                    { duration: 450, easing: 'ease-out' });
+    } else {
+      // a word a grid check just sorted: drops in with a gold flash
+      fresh.animate([
+        { transform: 'translateY(-18px)', opacity: 0,
+          backgroundColor: 'color-mix(in srgb, var(--gold) 60%, transparent)' },
+        { transform: 'translateY(0)', opacity: 1,
+          backgroundColor: 'color-mix(in srgb, var(--gold) 60%, transparent)', offset: 0.45 },
+        { transform: 'translateY(0)', opacity: 1, backgroundColor: 'transparent' },
+      ], { duration: 950, easing: 'cubic-bezier(.3,1.2,.5,1)' });
+    }
+    // while peeking, the window scrolls to wherever the word landed
+    const panel = document.getElementById('drawerPanel');
+    if (document.getElementById('drawer').classList.contains('peek'))
+      panel.scrollTop += fresh.getBoundingClientRect().top - panel.getBoundingClientRect().top - 24;
+  }
 
   // the drawer is always there; empty, it explains how to fill it
   document.getElementById('drawer').classList.toggle('has-words', total > 0);
@@ -988,9 +1023,8 @@ function renderWordLists(justAdded, newestFirst) {
     ? `Word bank · ${h.inList.length} in, ${h.outList.length} out` : 'Word bank';
   layoutDrawer();
 }
-// --------------------------------------------- Check / Super Check button states
-// "Super" and "Check" are split into letters so a Super Check can ripple across the
-// whole phrase — reading as "Super Check", not "Super" then "Check".
+// ------------------------------------------ Check / grid check button states
+// Button labels are split into letters so they can ripple while they work.
 function splitLetters(el) {
   if (!el) return [];
   const t = el.textContent;
@@ -998,18 +1032,18 @@ function splitLetters(el) {
   [...t].forEach(ch => {
     const s = document.createElement('span');
     s.className = 'ltr';
-    s.textContent = ch;
+    s.textContent = ch === ' ' ? ' ' : ch;     // inline-block would swallow a plain space
     el.appendChild(s);
   });
   return [...el.querySelectorAll('.ltr')];
 }
-const SUPER_LTRS = splitLetters(document.querySelector('.super-label'));
+const BANK_LTRS = splitLetters(document.getElementById('bankCheckLabel'));
 const CHECK_LTRS = splitLetters(document.getElementById('checkLabel'));
 
 let btnAnims = [];
 
 // iOS Safari won't reliably apply :active, so drive the pressed look from pointer
-// events. Pressing Check darkens Check; pressing Super darkens the whole control.
+// events.
 function wirePress(btn, target) {
   if (!btn || !target || !btn.addEventListener) return;
   const on = () => { if (!btn.disabled) target.classList.add('pressed'); };
@@ -1021,12 +1055,12 @@ function wirePress(btn, target) {
   btn.addEventListener('blur', off);
 }
 wirePress(document.getElementById('submitBtn'), document.getElementById('submitBtn'));
-wirePress(document.getElementById('superBtn'), document.getElementById('checkGroup'));
+wirePress(document.getElementById('bankCheckBtn'), document.getElementById('bankCheckBtn'));
 
 function stopBtnAnims() {
   btnAnims.forEach(a => { try { a.cancel(); } catch (e) {} });
   btnAnims = [];
-  [...SUPER_LTRS, ...CHECK_LTRS].forEach(el => { el.style.transform = ''; });
+  [...BANK_LTRS, ...CHECK_LTRS].forEach(el => { el.style.transform = ''; });
   const lbl = document.getElementById('checkLabel');
   if (lbl) lbl.style.transform = '';
 }
@@ -1062,8 +1096,8 @@ function setBtnState(mode) {              // '' | 'checking' | 'supering'
       btnAnims.push(lbl.animate(kf, { duration: CYCLE, iterations: Infinity }));
     }
   } else if (mode === 'supering') {
-    // ripple every letter of "SuperCheck" in sequence, then pause briefly and repeat
-    const all = [...SUPER_LTRS, ...CHECK_LTRS];
+    // ripple every letter of "Check current grid" in sequence, then pause briefly and repeat
+    const all = BANK_LTRS;
     const LIFT = 400, STAGGER = 81, PAUSE = 100;      // 80% of the old speed
     const wave = (all.length - 1) * STAGGER + LIFT;
     const CYCLE = wave + PAUSE;
@@ -1083,41 +1117,57 @@ function setBtnState(mode) {              // '' | 'checking' | 'supering'
   }
 }
 
+// The word bank tab's ring fills toward the next grid check; gold once one is
+// ready, with ×N when several are banked. The drawer's button spends one.
 function updateSuper() {
   const v = meterValue();
   const stacks = Math.floor(v / HINT_THRESHOLD);
   const ready = stacks >= 1;
-  document.getElementById('superBtn').disabled = !ready || state.busy;
-  // once charged, Super expands and merges with Check so it reads "Super Check"
-  document.getElementById('checkGroup').classList.toggle('merged', ready);
-  const frac = (v % HINT_THRESHOLD) / HINT_THRESHOLD;
-  const CIRC = 113.1;
-  document.getElementById('superRingFill').style.strokeDashoffset =
-    (CIRC * (1 - frac)).toFixed(1);
-  document.getElementById('superBarFill').style.width = (frac * 100).toFixed(0) + '%';
-  const badge = document.getElementById('superBadge');
+  const frac = ready ? 1 : (v % HINT_THRESHOLD) / HINT_THRESHOLD;
+  document.getElementById('bankRingFill').style.strokeDashoffset = (66 * (1 - frac)).toFixed(1);
+  document.getElementById('drawerTab').classList.toggle('charged', ready);
+  const badge = document.getElementById('bankBadge');
   if (stacks >= 2) { badge.textContent = '×' + stacks; badge.classList.add('show'); }
   else badge.classList.remove('show');
+  document.getElementById('bankCheckBtn').disabled = !ready || state.busy;
+  document.getElementById('bankHint').textContent = ready
+    ? 'Sorts the words on your board into in / not in the puzzle.'
+    : `Make new words to charge it (${v % HINT_THRESHOLD} of ${HINT_THRESHOLD}).`;
   renderWordLists();
 }
+// "Check current grid" (was Super Check). Its feedback goes in the drawer, since
+// the open drawer covers the message line.
 function doSuperCheck() {
   if (state.busy || meterValue() < HINT_THRESHOLD) return;
+  const say = t => { document.getElementById('bankHint').textContent = t; };
   const words = boardWords().filter(w => WORDSET.has(w));
-  if (!words.length) { setMsg('Make some words on the board first.'); return; }
+  if (!words.length) { say('Fill the 4×4 with some words first.'); return; }
   const h = state.hints[state.idx];
   const unsorted = words.filter(w =>
     h.inList.indexOf(w) === -1 && h.outList.indexOf(w) === -1);
-  if (!unsorted.length) { setMsg('Those are already sorted — try some new words.'); return; }
+  if (!unsorted.length) { say('Those are already sorted — try some new words.'); return; }
   runCheck(true);
 }
-document.getElementById('superBtn').addEventListener('click', doSuperCheck);
+document.getElementById('bankCheckBtn').addEventListener('click', doSuperCheck);
 
 document.getElementById('drawerTab').addEventListener('click', () => {
   const d = document.getElementById('drawer');
+  clearTimeout(peekTimer);
   d.classList.remove('peek');
   const open = d.classList.toggle('open');
+  if (open) document.getElementById('drawerPanel').scrollTop = 0;   // start at the check button
   document.getElementById('drawerTab').setAttribute('aria-expanded', open ? 'true' : 'false');
 });
+
+// Crack the closed drawer open for a moment so a newly found word can be seen landing.
+let peekTimer = null;
+function peekDrawer() {
+  const d = document.getElementById('drawer');
+  if (d.classList.contains('open')) return;
+  d.classList.add('peek');
+  clearTimeout(peekTimer);
+  peekTimer = setTimeout(() => { if (!state.busy) d.classList.remove('peek'); }, 1600);
+}
 
 // ---------------------------------------------------------------- submit
 // Verdict animation driven by the Web Animations API, so it replays reliably on
@@ -1244,9 +1294,12 @@ async function runCheck(superMode) {
           h.inList.indexOf(word) === -1 && h.outList.indexOf(word) === -1) {
         flown.add(word);
         (inSol ? h.inList : h.outList).push(word);
+        const f = h.found.indexOf(word);
+        if (f !== -1) h.found.splice(f, 1);      // sorted now, so it leaves Found
         renderWordLists(word, true);             // newest on top, ticker-style
         const d = document.getElementById('drawer');
         d.classList.remove('open');
+        clearTimeout(peekTimer);
         d.classList.add('peek');                 // crack it open just enough to see it land
         await sleep(BANK_BEAT);
       }
@@ -1271,7 +1324,8 @@ async function runCheck(superMode) {
     d.classList.remove('peek');
     d.classList.add('open');                     // settle into the full list
     document.getElementById('drawerTab').setAttribute('aria-expanded', 'true');
-    setMsg('Super Check done — ★ words appear in a solution.', '');
+    document.getElementById('drawerPanel').scrollTop = 0;
+    setMsg('Grid checked — ★ words appear in a solution.', '');
   } else {
     updateSuper();
     if (good === 8) onWin(g);
@@ -1814,8 +1868,6 @@ function dropEdgePieces(lines, pos, step, horiz, moves) {
   }
   return false;
 }
-document.querySelectorAll('.shifts .shift').forEach(b => b.addEventListener('click', () =>
-  doShiftAll(+b.dataset.dr, +b.dataset.dc)));
 
 // Internal only (no UI): kept so tooling/tests can view the packed 4×4 window.
 function setMode(mode) {
