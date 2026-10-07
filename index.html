@@ -1,48 +1,298 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <title>Daily Danagram</title>
-    <link rel="stylesheet" href="style.css">
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz@9..40&family=Nunito:wght@500&display=swap" rel="stylesheet">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>Daily Danagram</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,500;0,9..144,620;1,9..144,500&family=Archivo:wght@500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="styles.css">
 </head>
 <body>
-    <div class="header-container">
-        <h1 class="game-title">Daily Danagram</h1>
-        <div class="info-container">
-            <div class="date">Tuesday, December 19, 2023</div>
-            <div class="puzzle-number">Puzzle number [n]</div>
-        </div>
+
+<button id="helpBtn" aria-label="How to play" title="How to play">?</button>
+
+<header>
+  <h1>Daily <span class="dana">Dana</span>gram</h1>
+  <div id="dailyLine"></div>
+</header>
+
+<div id="boardWrap"><div id="board"><div id="zone"></div></div></div>
+
+<div id="msg">Drag a piece, or tap it then tap a destination. Double-tap empty space to undo, triple-tap to redo.</div>
+
+<div class="actions">
+  <button class="btn icon" id="spreadBtn" aria-label="Spread singles to the edges" title="Spread singles out">
+    <svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <rect x="10" y="10" width="4" height="4" rx="0.5"/>
+      <polyline points="7 3 3 3 3 7"/><line x1="3" y1="3" x2="8.5" y2="8.5"/>
+      <polyline points="17 3 21 3 21 7"/><line x1="21" y1="3" x2="15.5" y2="8.5"/>
+      <polyline points="21 17 21 21 17 21"/><line x1="21" y1="21" x2="15.5" y2="15.5"/>
+      <polyline points="7 21 3 21 3 17"/><line x1="3" y1="21" x2="8.5" y2="15.5"/>
+    </svg>
+  </button>
+  <button class="btn icon" id="shuffleBtn" aria-label="Shuffle" title="Shuffle">
+    <svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <polyline points="16 3 21 3 21 8"/><line x1="4" y1="20" x2="21" y2="3"/>
+      <polyline points="21 16 21 21 16 21"/><line x1="15" y1="15" x2="21" y2="21"/>
+      <line x1="4" y1="4" x2="9" y2="9"/>
+    </svg>
+  </button>
+  <button class="btn icon" id="undoBtn" aria-label="Undo" title="Undo" disabled>
+    <svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <polyline points="9 14 4 9 9 4"/>
+      <path d="M20 19v-6a4 4 0 0 0-4-4H4"/>
+    </svg>
+  </button>
+  <button class="btn icon" id="redoBtn" aria-label="Redo" title="Redo" disabled>
+    <svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <polyline points="15 14 20 9 15 4"/>
+      <path d="M4 19v-6a4 4 0 0 1 4-4h12"/>
+    </svg>
+  </button>
+  <div class="check-group" id="checkGroup">
+    <button class="btn icon" id="superBtn" disabled aria-label="Super Check" title="Super Check">
+      <svg class="ring" viewBox="0 0 44 44" width="44" height="44">
+        <circle class="ring-track" cx="22" cy="22" r="18" fill="none" stroke-width="3"/>
+        <circle class="ring-fill" id="superRingFill" cx="22" cy="22" r="18" fill="none" stroke-width="3" stroke-linecap="round"/>
+      </svg>
+      <span class="super-inner">
+        <svg class="super-star" viewBox="0 0 24 24" width="18" height="18" fill="currentColor">
+          <path d="M12 2.4l2.9 6.7 7.2.8-5.4 4.9 1.5 7.2-6.2-3.7-6.2 3.7 1.5-7.2-5.4-4.9 7.2-.8z"/>
+        </svg>
+        <span class="super-label">Super</span>
+      </span>
+      <span class="super-bar"><span id="superBarFill"></span></span>
+      <span class="super-badge" id="superBadge"></span>
+    </button>
+    <button class="btn primary" id="submitBtn"><span class="check-label" id="checkLabel">Check</span></button>
+  </div>
+</div>
+
+<div id="drawer">
+  <div id="drawerTop">
+    <svg id="drawerTopSvg" aria-hidden="true" preserveAspectRatio="none">
+      <path id="drawerFillPath"/>
+      <path id="drawerEdgePath"/>
+    </svg>
+    <button id="drawerTab" aria-expanded="false">
+      <span id="drawerTabLabel">Word bank</span>
+      <svg class="chevron" viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+    </button>
+  </div>
+  <div id="drawerPanel"><div id="wordLists"></div></div>
+</div>
+
+<div class="meta">
+  <div class="nav">
+    <button id="prevBtn" aria-label="Previous puzzle">‹</button>
+    <span id="puzzleLabel">Puzzle 1 of 8</span>
+    <button id="nextBtn" aria-label="Next puzzle">›</button>
+  </div>
+</div>
+
+<div id="helpOverlay"><div class="card">
+  <button id="helpClose" aria-label="Close" title="Close">×</button>
+
+  <div class="help-page active" id="helpPage1">
+    <h2>How to play</h2>
+    <div class="help-body">
+      <ul class="help-list">
+        <li>
+          <span class="move-demo" aria-hidden="true">
+            <span class="move-icon">
+              <span class="move-cell" style="left:6px"></span>
+              <span class="move-cell" style="left:40px"></span>
+              <span class="move-cell" style="left:74px"></span>
+              <span class="move-cell" style="left:108px"></span>
+              <span class="move-piece piece-w"><span class="mp-body"><span class="mp-l">W</span></span></span>
+              <span class="move-piece piece-o"><span class="mp-body"><span class="mp-l">O</span></span></span>
+              <span class="move-piece piece-rd"><span class="mp-body">
+                <span class="mp-l mp-a">R</span>
+                <span class="mp-seam"></span>
+                <span class="mp-l mp-b">D</span>
+              </span></span>
+              <svg class="word-circle" viewBox="0 0 144 48">
+                <path class="wc-path" d="M 133.2 10.1 C 142.9 15.4, 145.9 22.3, 139.5 28.7 C 133.2 35.2, 118.8 41.1, 100.5 44.4 C 82.2 47.8, 60.6 48.4, 42.5 46.4 C 24.5 44.4, 11.1 39.5, 5.3 33.6 C -0.6 27.7, 2.8 20.7, 12.6 14.9 C 22.4 9.0, 39.7 4.5, 58.4 2.5 C 77.2 0.5, 97.5 1.1, 112.9 4.2 C 128.3 7.4, 139.3 12.8, 141.2 19.1"/>
+              </svg>
+            </span>
+            <span class="vbadge vb-x">✗</span>
+            <span class="vbadge vb-check">✓</span>
+          </span>
+          <span class="help-text"><b class="help-h">Unscramble tiles to make words</b>Drag a piece, or tap it and tell it where to go!</span>
+        </li>
+        <li>
+          <span class="check-demo" aria-hidden="true">
+            <span class="mini-check">Check</span>
+            <span class="pip" style="--dx:-9px; animation-delay:0ms;"></span>
+            <span class="pip" style="--dx:7px; animation-delay:90ms;"></span>
+            <span class="pip" style="--dx:-3px; animation-delay:180ms;"></span>
+            <span class="pip" style="--dx:10px; animation-delay:270ms;"></span>
+            <span class="pip" style="--dx:-7px; animation-delay:360ms;"></span>
+            <span class="pip" style="--dx:3px; animation-delay:450ms;"></span>
+            <span class="cbadge">✓</span>
+          </span>
+          <span class="help-text"><b class="help-h">Check your words (and charge up!)</b>Check your words as you make them. New words charge your SuperCheck!</span>
+        </li>
+        <li>
+          <span class="super-row" aria-hidden="true">
+            <span class="super-demo">
+            <svg class="demo-ring" viewBox="0 0 35 35" width="35" height="35">
+              <circle class="demo-ring-track" cx="17.5" cy="17.5" r="14" fill="none" stroke-width="2.5"/>
+              <circle class="demo-ring-fill" cx="17.5" cy="17.5" r="14" fill="none" stroke-width="2.5" stroke-linecap="round"/>
+            </svg>
+            <span class="demo-inner">
+              <svg class="demo-star" viewBox="0 0 24 24" width="13" height="13" fill="currentColor"><path d="M12 2.4l2.9 6.7 7.2.8-5.4 4.9 1.5 7.2-6.2-3.7-6.2 3.7 1.5-7.2-5.4-4.9 7.2-.8z"/></svg>
+              <span class="demo-label">Super</span>
+            </span>
+            </span>
+            <span class="mini-word">
+              <span class="mw-text">WORD</span>
+              <svg class="mw-circle" viewBox="0 0 48 22"><path class="mwc-path" d="M 42.3 6.1 C 45.3 8.0, 46.2 10.6, 44.3 13.0 C 42.4 15.3, 38.1 17.5, 32.6 18.6 C 27.1 19.8, 20.6 20.0, 15.2 19.2 C 9.8 18.4, 5.8 16.5, 4.0 14.3 C 2.2 12.1, 3.2 9.6, 6.1 7.4 C 9.1 5.3, 14.2 3.7, 19.9 3.0 C 25.5 2.3, 31.6 2.6, 36.2 3.8 C 40.8 5.0, 44.2 7.1, 44.7 9.4"/></svg>
+            </span>
+          </span>
+          <span class="help-text"><b class="help-h">SuperCheck to build your word bank</b>Once charged, SuperCheck tells you which words on your board are in today’s puzzle…and which aren’t!</span>
+        </li>
+      </ul>
+      <div class="win-note">
+        <span class="win-demo" aria-hidden="true">
+            <svg class="win-grid" viewBox="0 0 56 56">
+              <rect x="0.6" y="0.6" width="54.8" height="54.8" rx="3"/>
+              <line x1="14" y1="0" x2="14" y2="56"/>
+              <line x1="0" y1="14" x2="56" y2="14"/>
+              <line x1="28" y1="0" x2="28" y2="56"/>
+              <line x1="0" y1="28" x2="56" y2="28"/>
+              <line x1="42" y1="0" x2="42" y2="56"/>
+              <line x1="0" y1="42" x2="56" y2="42"/>
+            </svg>
+            <span class="wcell" style="left:0px; top:0px; --r:0; --c:0"><span class="wr"><span class="wc2"><svg class="wchk" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></span></span></span>
+            <span class="wcell" style="left:14px; top:0px; --r:0; --c:1"><span class="wr"><span class="wc2"><svg class="wchk" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></span></span></span>
+            <span class="wcell" style="left:28px; top:0px; --r:0; --c:2"><span class="wr"><span class="wc2"><svg class="wchk" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></span></span></span>
+            <span class="wcell" style="left:42px; top:0px; --r:0; --c:3"><span class="wr"><span class="wc2"><svg class="wchk" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></span></span></span>
+            <span class="wcell" style="left:0px; top:14px; --r:1; --c:0"><span class="wr"><span class="wc2"><svg class="wchk" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></span></span></span>
+            <span class="wcell" style="left:14px; top:14px; --r:1; --c:1"><span class="wr"><span class="wc2"><svg class="wchk" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></span></span></span>
+            <span class="wcell" style="left:28px; top:14px; --r:1; --c:2"><span class="wr"><span class="wc2"><svg class="wchk" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></span></span></span>
+            <span class="wcell" style="left:42px; top:14px; --r:1; --c:3"><span class="wr"><span class="wc2"><svg class="wchk" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></span></span></span>
+            <span class="wcell" style="left:0px; top:28px; --r:2; --c:0"><span class="wr"><span class="wc2"><svg class="wchk" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></span></span></span>
+            <span class="wcell" style="left:14px; top:28px; --r:2; --c:1"><span class="wr"><span class="wc2"><svg class="wchk" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></span></span></span>
+            <span class="wcell" style="left:28px; top:28px; --r:2; --c:2"><span class="wr"><span class="wc2"><svg class="wchk" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></span></span></span>
+            <span class="wcell" style="left:42px; top:28px; --r:2; --c:3"><span class="wr"><span class="wc2"><svg class="wchk" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></span></span></span>
+            <span class="wcell" style="left:0px; top:42px; --r:3; --c:0"><span class="wr"><span class="wc2"><svg class="wchk" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></span></span></span>
+            <span class="wcell" style="left:14px; top:42px; --r:3; --c:1"><span class="wr"><span class="wc2"><svg class="wchk" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></span></span></span>
+            <span class="wcell" style="left:28px; top:42px; --r:3; --c:2"><span class="wr"><span class="wc2"><svg class="wchk" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></span></span></span>
+            <span class="wcell" style="left:42px; top:42px; --r:3; --c:3"><span class="wr"><span class="wc2"><svg class="wchk" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></span></span></span>
+            <span class="conf" style="--ax:-23px; --ay:-13px; background:var(--gold); animation-delay:0ms"></span>
+            <span class="conf" style="--ax:-23px; --ay:-23px; background:var(--accent); animation-delay:18ms"></span>
+            <span class="conf" style="--ax:-20px; --ay:-35px; background:var(--good); animation-delay:36ms"></span>
+            <span class="conf" style="--ax:-7px; --ay:-25px; background:var(--o1); animation-delay:54ms"></span>
+            <span class="conf" style="--ax:0px; --ay:-33px; background:var(--o2); animation-delay:72ms"></span>
+            <span class="conf" style="--ax:10px; --ay:-39px; background:var(--o4); animation-delay:90ms"></span>
+            <span class="conf" style="--ax:13px; --ay:-23px; background:var(--o6); animation-delay:108ms"></span>
+            <span class="conf" style="--ax:23px; --ay:-23px; background:var(--gold); animation-delay:126ms"></span>
+            <span class="conf" style="--ax:35px; --ay:-20px; background:var(--accent); animation-delay:144ms"></span>
+        </span>
+        <span class="win-line">Fill the grid with words, and win!</span>
+      </div>
     </div>
-    <div class="game-container">
-        <div id="crosswordGrid">
-            <!-- 3x3 Grid for the crossword -->
-            <div class="grid-cell" id="cell1"></div>
-            <div class="grid-cell" id="cell2"></div>
-            <div class="grid-cell" id="cell3"></div>
-            <div class="grid-cell" id="cell4"></div>
-            <div class="grid-cell" id="cell5"></div>
-            <div class="grid-cell" id="cell6"></div>
-            <div class="grid-cell" id="cell7"></div>
-            <div class="grid-cell" id="cell8"></div>
-            <div class="grid-cell" id="cell9"></div>
-        </div>
-        <div id="congratsOverlay" class="overlay hidden">
-            <div class="overlay-content">
-                <h2>Congratulations!</h2>
-                <p>You found 1 of today's solutions! There may be more.</p>
-                <button id="keepPlaying">Keep Playing</button>
-            </div>
-        </div>
-
-        <button id="submit">Submit</button>
+    <div class="card-actions">
+      <button class="btn primary" id="closeHelp">Got it</button>
+      <button class="btn ghost" id="toTipsBtn">Tools &amp; Tips →</button>
     </div>
-    <script src="script.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1"></script>
+  </div>
+
+  <div class="help-page" id="helpPage2">
+    <h2>Tools &amp; Tips</h2>
+    <div class="help-body">
+      <ul class="help-list">
+        <li>
+          <span class="hk-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="9 14 4 9 9 4"/><path d="M20 19v-6a4 4 0 0 0-4-4H4"/>
+            </svg>
+          </span>
+          <span><span class="hk">Undo/Redo</span> Move back and forth through your history of moves.</span>
+        </li>
+        <li>
+          <span class="hk-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="16 3 21 3 21 8"/><line x1="4" y1="20" x2="21" y2="3"/>
+              <polyline points="21 16 21 21 16 21"/><line x1="15" y1="15" x2="21" y2="21"/>
+              <line x1="4" y1="4" x2="9" y2="9"/>
+            </svg>
+          </span>
+          <span><span class="hk">Shuffle</span> Try out different board arrangements. A great way to find new words and get unstuck.</span>
+        </li>
+        <li>
+          <span class="hk-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="10" y="10" width="4" height="4" rx="0.5"/>
+              <polyline points="7 3 3 3 3 7"/><line x1="3" y1="3" x2="8.5" y2="8.5"/>
+              <polyline points="17 3 21 3 21 7"/><line x1="21" y1="3" x2="15.5" y2="8.5"/>
+              <polyline points="21 17 21 21 17 21"/><line x1="21" y1="21" x2="15.5" y2="15.5"/>
+              <polyline points="7 21 3 21 3 17"/><line x1="3" y1="21" x2="8.5" y2="15.5"/>
+            </svg>
+          </span>
+          <span><span class="hk">Scatter</span> Move the single letter tiles off to the edges. Sometimes, the best way to solve a Danagram is to start with arranging the larger Ominos.</span>
+        </li>
+        <li>
+          <span class="hk-icon divide-icon" aria-hidden="true">
+            <span class="dpip d1">
+              <svg class="dcheck" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+            </span>
+            <span class="dpip d2"></span>
+            <span class="dpip d3"></span>
+            <span class="dpip d4"></span>
+          </span>
+          <span><span class="hk">Find New Words</span> Checking unique words charges SuperCheck — but checking more at once gets bonus charge!</span>
+        </li>
+      </ul>
+    </div>
+    <div class="card-actions">
+      <button class="btn primary" id="closeHelp2">Got it</button>
+      <button class="btn ghost" id="toPage1Btn">← Back</button>
+    </div>
+  </div>
+
+  <div class="help-version">v0.35</div>
+</div></div>
 
 
+<div id="overlay"><div class="card">
+  <h2 id="cardTitle">Solution!</h2>
+  <div class="words" id="cardWords"></div>
+  <p id="cardBody"></p>
+  <div id="shareBlock"></div>
+  <div id="nextIn"></div>
+  <div id="shareNote"></div>
+  <textarea id="shareFallback" readonly rows="5"></textarea>
+
+  <div id="rateBlock">
+    <div class="rate-row">
+      <span class="rate-label">How hard was it?</span>
+      <div class="stars-input" id="starsDifficulty" data-value="0"></div>
+    </div>
+    <div class="rate-row">
+      <span class="rate-label">How fun was it?</span>
+      <div class="stars-input" id="starsEnjoy" data-value="0"></div>
+    </div>
+  </div>
+
+  <div id="revealBlock">
+    <div class="calc" id="calcDifficulty"></div>
+    <div class="yours" id="yourRating"></div>
+  </div>
+
+  <div class="card-actions">
+    <button class="btn primary" id="rateSubmit" disabled>Submit</button>
+    <button class="btn ghost" id="shareBtn">Share result</button>
+    <button class="btn ghost" id="copyData">Copy playtest data</button>
+    <button class="btn ghost" id="closeCard">Keep playing</button>
+  </div>
+</div></div>
+
+<script src="data/words.js"></script>
+<script src="data/puzzles.js"></script>
+<script src="game.js"></script>
 
 </body>
 </html>

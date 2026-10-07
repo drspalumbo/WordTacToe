@@ -1,0 +1,1729 @@
+const OCOLORS = ['var(--o1)','var(--o2)','var(--o3)','var(--o4)','var(--o5)','var(--o6)'];
+
+const S_MAX = 84;
+let state = {
+  idx: 0,
+  mode: 'free',              // 'strict' | 'free'
+  pieces: [],                // {letters, cells:[[r,c],...], color, tiles:[el], shape info}
+  sel: null,                 // {pi, anchor}
+  busy: false,
+  revealed: false,
+  found: PUZZLES.map(() => new Set()),
+  drag: null,                // {pi, anchor, startX, startY, moved}
+  tap: { count: 0, timer: null },
+  undo: [],
+  redo: [],
+  sessions: {},              // per-puzzle saved state (cells + undo/redo)
+  // Super Check: forming new words charges a meter; spending it sorts the words
+  // currently on the board into "appears in a solution" / "doesn't" lists.
+  hints: PUZZLES.map(() => ({ seen: [], charge: 0, spent: 0, inList: [], outList: [], history: [] })),
+};
+const HINT_THRESHOLD = 5;      // charge points needed per Super Check
+let S = 72, GAP = 3;
+
+const board = document.getElementById('board');
+const zone = document.getElementById('zone');
+const msg = document.getElementById('msg');
+
+// ---------------------------------------------------------------- helpers
+const cols = () => state.mode === 'free' ? 6 : 4;
+const innerOff = () => state.mode === 'free' ? 1 : 0;
+const key = (r, c) => r * 8 + c;
+
+function occupancy() {
+  const map = new Map();
+  state.pieces.forEach((p, pi) =>
+    p.cells.forEach(([r, c], ci) => map.set(key(r, c), { pi, ci })));
+  return map;
+}
+
+function normShape(cells) {
+  const r0 = Math.min(...cells.map(c => c[0]));
+  const c0 = Math.min(...cells.map(c => c[1]));
+  return cells.map(([r, c]) => [r - r0, c - c0])
+              .sort((a, b) => a[0] - b[0] || a[1] - b[1])
+              .map(c => c.join(',')).join(';');
+}
+
+function setMsg(text, tone) {
+  msg.textContent = text;
+  msg.className = tone || '';
+}
+
+// ------------------------------------------------------- the move engine
+// Plans a translation of piece `pi` so its `anchor` cell lands on (tr,tc).
+// Displaced pieces are gently nudged to their nearest open, shape-preserving
+// spot. A congruent piece sitting exactly on the target is a clean swap.
+// Returns {ok:true, moves:{pi:[cells]}, kind, apply} or {ok:false, reason, blockers}.
+function planMove(pi, anchor, tr, tc, mode) {
+  const P = state.pieces[pi];
+  const [ar, ac] = P.cells[anchor];
+  const dr = tr - ar, dc = tc - ac;
+  if (dr === 0 && dc === 0) return { ok: false, reason: null };
+
+  const n = mode === 'free' ? 6 : 4;
+  const nc = P.cells.map(([r, c]) => [r + dr, c + dc]);
+  if (nc.some(([r, c]) => r < 0 || c < 0 || r >= n || c >= n))
+    return { ok: false, blockers: [], reason: 'That would leave the board.' };
+
+  const occ = occupancy();
+  const newSet = new Set(nc.map(([r, c]) => key(r, c)));
+  const displaced = new Set();
+  nc.forEach(([r, c]) => {
+    const hit = occ.get(key(r, c));
+    if (hit && hit.pi !== pi) displaced.add(hit.pi);
+  });
+
+  const moves = { [pi]: nc };
+  if (displaced.size === 0)
+    return { ok: true, moves, kind: 'move', apply: applier(moves) };
+
+  // clean congruent swap: one displaced piece sitting exactly on the target
+  if (displaced.size === 1) {
+    const qi = [...displaced][0], Q = state.pieces[qi];
+    const exact = Q.cells.length === nc.length &&
+                  Q.cells.every(([r, c]) => newSet.has(key(r, c)));
+    if (exact) {
+      const qNew = Q.cells.map(([r, c]) => [r - dr, c - dc]);
+      if (qNew.every(([r, c]) => r >= 0 && c >= 0 && r < n && c < n)) {
+        moves[qi] = qNew;
+        return { ok: true, moves, kind: 'swap', apply: applier(moves) };
+      }
+    }
+  }
+
+  // nudge: relocate displaced pieces, preferring the cells the mover vacated
+  // (so the whole thing reads like a swap even when several tiles shift).
+  const oldSet = new Set(P.cells.map(([r, c]) => key(r, c)));
+  const hole = new Set([...oldSet].filter(k => !newSet.has(k)));   // cells P left behind
+
+  const used = new Set();
+  state.pieces.forEach((p, idx) => {
+    if (idx === pi || displaced.has(idx)) return;
+    p.cells.forEach(([r, c]) => used.add(key(r, c)));
+  });
+  nc.forEach(([r, c]) => used.add(key(r, c)));
+
+  // harder (larger) pieces first
+  const order = [...displaced].sort((a, b) =>
+    state.pieces[b].cells.length - state.pieces[a].cells.length);
+  for (const qi of order) {
+    const spot = bestPlacement(state.pieces[qi], used, hole, n);
+    if (!spot) return { ok: false, blockers: [...displaced],
+                        reason: 'No room to shift that piece.' };
+    spot.forEach(([r, c]) => { used.add(key(r, c)); hole.delete(key(r, c)); });
+    moves[qi] = spot;
+  }
+  return { ok: true, moves, kind: 'nudge', apply: applier(moves) };
+}
+
+// Best shape-preserving translation of `piece` into free cells, preferring
+// placements that fill the vacated `hole` (swap-like), then least movement.
+function bestPlacement(piece, used, hole, n) {
+  const base = piece.cells;
+  const r0 = Math.min(...base.map(c => c[0])), c0 = Math.min(...base.map(c => c[1]));
+  const h = Math.max(...base.map(c => c[0])) - r0;
+  const w = Math.max(...base.map(c => c[1])) - c0;
+  let best = null, bestFill = -1, bestDist = Infinity;
+  for (let R = 0; R <= n - 1 - h; R++) {
+    for (let C = 0; C <= n - 1 - w; C++) {
+      const cells = base.map(([r, c]) => [r - r0 + R, c - c0 + C]);
+      if (cells.some(([r, c]) => used.has(key(r, c)))) continue;
+      const fill = cells.reduce((a, [r, c]) => a + (hole.has(key(r, c)) ? 1 : 0), 0);
+      const dist = Math.abs(R - r0) + Math.abs(C - c0);
+      // maximize overlap with the vacated hole, then minimize distance moved
+      if (fill > bestFill || (fill === bestFill && dist < bestDist)) {
+        bestFill = fill; bestDist = dist; best = cells;
+      }
+    }
+  }
+  return best;
+}
+
+function applier(moves) {
+  return () => {
+    for (const idx in moves) state.pieces[idx].cells = moves[idx].map(c => c.slice());
+  };
+}
+
+// back-compat shim for scramble/tests
+function tryMove(pi, anchor, tr, tc, mode) {
+  return planMove(pi, anchor, tr, tc, mode);
+}
+
+// -------------------------------------------------------------- scramble
+function scramble() {
+  const P = PUZZLES[state.idx];
+  state.pieces.forEach((p, i) => {
+    p.cells = P.pieces[i].cells.map(c => c.slice());
+  });
+  // validity check in the 0-indexed frame the scramble works in (before the
+  // free-board shift), so the "not already solved" guard actually fires
+  const solvedAt0 = () => {
+    const occ = occupancy();
+    const g = [];
+    for (let r = 0; r < 4; r++) {
+      let row = '';
+      for (let c = 0; c < 4; c++) {
+        const h = occ.get(key(r, c));
+        if (!h) return false;
+        row += state.pieces[h.pi].letters[h.ci];
+      }
+      g.push(row);
+    }
+    for (let i = 0; i < 4; i++) {
+      if (!WORDSET.has(g[i])) return false;
+      if (!WORDSET.has(g[0][i] + g[1][i] + g[2][i] + g[3][i])) return false;
+    }
+    return true;
+  };
+  let applied = 0, guard = 0;
+  while ((applied < 45 || solvedAt0()) && guard < 6000) {
+    guard++;
+    const pi = Math.floor(Math.random() * state.pieces.length);
+    const anchor = Math.floor(Math.random() * state.pieces[pi].cells.length);
+    const tr = Math.floor(Math.random() * 4), tc = Math.floor(Math.random() * 4);
+    const res = tryMove(pi, anchor, tr, tc, 'strict');
+    if (res.ok) { res.apply(); applied++; }
+  }
+  if (state.mode === 'free') shiftAll(1);
+  state.revealed = false;
+}
+
+function shiftAll(d) {
+  state.pieces.forEach(p => { p.cells = p.cells.map(([r, c]) => [r + d, c + d]); });
+}
+
+// ------------------------------------------------------------ validation
+function currentGrid() {
+  // returns 4x4 letter grid (from inner zone in free mode) or null if incomplete
+  const off = innerOff();
+  const occ = occupancy();
+  const g = [];
+  for (let r = 0; r < 4; r++) {
+    let row = '';
+    for (let c = 0; c < 4; c++) {
+      const hit = occ.get(key(r + off, c + off));
+      if (!hit) return null;
+      row += state.pieces[hit.pi].letters[hit.ci];
+    }
+    g.push(row);
+  }
+  return g;
+}
+
+function gridIsValidCrossword() {
+  const g = currentGrid();
+  if (!g) return false;
+  for (let i = 0; i < 4; i++) {
+    if (!WORDSET.has(g[i])) return false;
+    const col = g[0][i] + g[1][i] + g[2][i] + g[3][i];
+    if (!WORDSET.has(col)) return false;
+  }
+  return true;
+}
+
+// ------------------------------------------------------------- rendering
+function metrics() {
+  const avail = Math.min(560, document.getElementById('boardWrap').clientWidth);
+  S = Math.min(S_MAX, Math.floor((avail - 8) / cols()));
+  GAP = Math.max(2, Math.round(S * 0.045));
+  const size = S * cols();
+  board.style.width = size + 'px';
+  board.style.height = size + 'px';
+  board.style.backgroundImage = 'none';        // outer scratch area is plain
+  // grid lines live only in the inner 4×4 target zone
+  zone.style.left = S + 'px'; zone.style.top = S + 'px';
+  zone.style.width = (S * 4) + 'px'; zone.style.height = (S * 4) + 'px';
+  zone.style.backgroundImage =
+    'linear-gradient(rgba(90,110,130,.16) 1px, transparent 1px),' +
+    'linear-gradient(90deg, rgba(90,110,130,.16) 1px, transparent 1px)';
+  zone.style.backgroundSize = S + 'px ' + S + 'px';
+  // nest the zone's corner concentrically inside the corner tiles (inset by GAP)
+  zone.style.borderRadius = (Math.round(S * 0.17) + GAP) + 'px';
+  board.classList.add('free');
+  state.pieces.forEach(styleTiles);
+}
+
+function buildTiles() {
+  board.querySelectorAll('.tile').forEach(t => t.remove());
+  state.pieces.forEach((p, pi) => {
+    p.tiles = p.cells.map((cell, ci) => {
+      const t = document.createElement('div');
+      t.className = 'tile';
+      t.dataset.pi = pi; t.dataset.ci = ci;
+      t.setAttribute('role', 'button');
+      t.tabIndex = 0;
+      const span = document.createElement('span');
+      span.className = 'letter';
+      span.textContent = p.letters[ci];
+      t.appendChild(span);
+      board.appendChild(t);
+      return t;
+    });
+    styleTiles(p);
+  });
+  positionTiles();
+}
+
+// Static chrome per tile: fused-neighbor bridging, corner radii, seams, edges.
+function styleTiles(p) {
+  if (!p.tiles) return;
+  const rel = normShape2(p.cells);        // relative shape cells as [r,c]
+  const has = (r, c) => rel.some(([rr, cc]) => rr === r && cc === c);
+  const pi = state.pieces.indexOf(p);
+  p.cells.forEach((cell, ci) => {
+    const [R, C] = rel[ci];
+    const t = p.tiles[ci];
+    const up = has(R - 1, C), dn = has(R + 1, C), lf = has(R, C - 1), rt = has(R, C + 1);
+    let w = S - 2 * GAP, h = S - 2 * GAP;
+    if (rt) w += 2 * GAP;
+    if (dn) h += 2 * GAP;
+    t.style.width = w + 'px'; t.style.height = h + 'px';
+    const rad = Math.round(S * 0.17);
+    t.style.borderRadius = [
+      (!up && !lf) ? rad : 0, (!up && !rt) ? rad : 0,
+      (!dn && !rt) ? rad : 0, (!dn && !lf) ? rad : 0,
+    ].map(v => v + 'px').join(' ');
+    t.style.background = p.cells.length > 1 ? p.color : 'var(--tile)';
+    // a fused tile is stretched toward its neighbor; re-center the glyph over
+    // the true cell center with a compensating margin (leaves seams untouched)
+    const letter = t.querySelector('.letter');
+    letter.style.fontSize = Math.round(S * 0.42) + 'px';
+    letter.style.marginRight = rt ? (2 * GAP) + 'px' : '0';
+    letter.style.marginBottom = dn ? (2 * GAP) + 'px' : '0';
+    t.dataset.edges = [!up, !rt, !dn, !lf].map(v => v ? 1 : 0).join('');
+    chrome(t, false);
+    // anchor-highlight geometry: a true square centered on the cell center,
+    // which sits at (S/2 - GAP) from the tile origin on both axes regardless
+    // of how the tile is stretched to fuse with neighbors.
+    const sq = Math.round((S - 2 * GAP) * 0.82);
+    t.style.setProperty('--sq', sq + 'px');
+    t.style.setProperty('--sqoff', ((S / 2 - GAP) - sq / 2) + 'px');
+    // seams between fused cells, centered exactly on the shared boundary
+    t.querySelectorAll('.seam').forEach(s => s.remove());
+    const bnd = (S - GAP - 0.75);           // boundary offset from tile origin, minus half seam
+    if (rt) { const s = document.createElement('i'); s.className = 'seam';
+      s.style.cssText = `top:16%;bottom:16%;width:1.5px;left:${bnd}px`; t.appendChild(s); }
+    if (dn) { const s = document.createElement('i'); s.className = 'seam';
+      s.style.cssText = `left:16%;right:16%;height:1.5px;top:${bnd}px`; t.appendChild(s); }
+  });
+}
+
+function normShape2(cells) {
+  const r0 = Math.min(...cells.map(c => c[0]));
+  const c0 = Math.min(...cells.map(c => c[1]));
+  return cells.map(([r, c]) => [r - r0, c - c0]);
+}
+
+// edge-only borders via inset shadows (so fused pieces read as one silhouette)
+function chrome(t, selected) {
+  const [up, rt, dn, lf] = t.dataset.edges.split('').map(Number);
+  const w = selected ? 2 : 1.25;
+  const col = selected
+    ? 'color-mix(in srgb, var(--ink) 45%, transparent)'
+    : 'var(--tile-line)';
+  const sh = [];
+  if (up) sh.push(`inset 0 ${w}px 0 ${col}`);
+  if (dn) sh.push(`inset 0 -${w}px 0 ${col}`);
+  if (lf) sh.push(`inset ${w}px 0 0 ${col}`);
+  if (rt) sh.push(`inset -${w}px 0 0 ${col}`);
+  t.style.boxShadow = sh.join(',');
+}
+
+function positionTiles() {
+  state.pieces.forEach(p => {
+    p.cells.forEach(([r, c], ci) => {
+      p.tiles[ci].style.transform =
+        `translate(${c * S + GAP}px, ${r * S + GAP}px)`;
+    });
+  });
+}
+
+function setSelected(sel) {
+  state.pieces.forEach((p, pi) => p.tiles && p.tiles.forEach((t, ci) => {
+    const on = sel && sel.pi === pi;
+    t.classList.toggle('sel', !!on);
+    // flag the anchor cell (the one that lands on your tap), including singles
+    t.classList.toggle('anchorsel', !!on && sel.anchor === ci);
+    chrome(t, !!on);
+  }));
+  state.sel = sel;
+}
+
+// --------------------------------------------------------- undo / redo
+function snapshot() {
+  return state.pieces.map(p => p.cells.map(c => c.slice()));
+}
+function restore(snap) {
+  state.pieces.forEach((p, i) => { p.cells = snap[i].map(c => c.slice()); });
+}
+function commit(moves) {          // push history, apply a planned move
+  state.undo.push(snapshot());
+  if (state.undo.length > 100) state.undo.shift();
+  state.redo.length = 0;
+  for (const idx in moves) state.pieces[idx].cells = moves[idx].map(c => c.slice());
+  positionTiles();
+  updateUndoButtons();
+  clearBadges(); clearScribbles();
+}
+function clearHistory() { state.undo.length = 0; state.redo.length = 0; updateUndoButtons(); }
+function updateUndoButtons() {
+  document.getElementById('undoBtn').disabled = state.undo.length === 0;
+  document.getElementById('redoBtn').disabled = state.redo.length === 0;
+}
+function doUndo() {
+  if (!state.undo.length || state.busy) return;
+  state.redo.push(snapshot());
+  restore(state.undo.pop());
+  setSelected(null); clearGhost(); clearBadges(); clearScribbles(); positionTiles(); updateUndoButtons();
+  setMsg('');
+}
+function doRedo() {
+  if (!state.redo.length || state.busy) return;
+  state.undo.push(snapshot());
+  restore(state.redo.pop());
+  setSelected(null); clearGhost(); clearBadges(); clearScribbles(); positionTiles(); updateUndoButtons();
+  setMsg('');
+}
+document.getElementById('undoBtn').addEventListener('click', doUndo);
+document.getElementById('redoBtn').addEventListener('click', doRedo);
+window.addEventListener('keydown', e => {
+  if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'z') {
+    e.preventDefault();
+    e.shiftKey ? doRedo() : doUndo();
+  }
+});
+
+// ------------------------------------------------------------- ghost layer
+let ghostPool = [];
+function clearGhost() { ghostPool.forEach(g => g.style.opacity = '0'); }
+
+// ✓/✗ verdict badges, shown just past the end of each checked word. Shape-based
+// so they read clearly for everyone, including reduced-motion & colorblind players.
+let badgePool = [];
+function clearBadges() { badgePool.forEach(b => { b.style.opacity = '0'; }); }
+
+// hand-drawn scribble struck through a word that's valid but not in the puzzle
+let scribblePool = [];
+function clearScribbles() { scribblePool.forEach(s => s.remove()); scribblePool = []; }
+function scribblePath(x0, y0, x1, y1) {
+  const horiz = Math.abs(x1 - x0) > Math.abs(y1 - y0);
+  const segs = 6;
+  let d = `M ${x0.toFixed(1)} ${y0.toFixed(1)}`;
+  for (let k = 1; k <= segs; k++) {
+    const t = k / segs, pt = (k - 0.5) / segs;
+    const x = x0 + (x1 - x0) * t, y = y0 + (y1 - y0) * t;
+    const mx = x0 + (x1 - x0) * pt, my = y0 + (y1 - y0) * pt;
+    const w = (k % 2 ? -1 : 1) * (S * 0.055);
+    d += ` Q ${(horiz ? mx : mx + w).toFixed(1)} ${(horiz ? my + w : my).toFixed(1)} ` +
+         `${x.toFixed(1)} ${y.toFixed(1)}`;
+  }
+  return d;
+}
+function showScribble(i, off) {
+  const NS = 'http://www.w3.org/2000/svg';
+  const size = S * cols();
+  const svg = document.createElementNS(NS, 'svg');
+  svg.setAttribute('class', 'scribble');
+  svg.setAttribute('viewBox', `0 0 ${size} ${size}`);
+  svg.style.width = size + 'px'; svg.style.height = size + 'px';
+  let x0, y0, x1, y1;
+  if (i < 4) {                                   // row
+    y0 = y1 = (i + off) * S + S / 2;
+    x0 = off * S + GAP * 2; x1 = (off + 4) * S - GAP * 2;
+  } else {                                       // column
+    x0 = x1 = ((i - 4) + off) * S + S / 2;
+    y0 = off * S + GAP * 2; y1 = (off + 4) * S - GAP * 2;
+  }
+  const path = document.createElementNS(NS, 'path');
+  path.setAttribute('class', 'scribble-path');
+  path.setAttribute('d', scribblePath(x0, y0, x1, y1));
+  svg.appendChild(path);
+  board.appendChild(svg);
+  scribblePool.push(svg);
+  drawStroke(path, 420);
+}
+
+// a loose, hand-drawn ellipse lassoing a word that IS in the puzzle.
+// Smooth cubic segments from real ellipse tangents; the "hand-drawn" quality comes
+// from a slight tilt, a low-frequency radius drift, and a small overshoot — not jitter.
+function sketchEllipsePath(cx, cy, rx, ry) {
+  const tilt = -0.045;                      // a few degrees off-axis
+  const start = -0.5, sweep = Math.PI * 2 + 0.42;
+  const segs = 8, dt = sweep / segs;
+  const drift = t => 1 + Math.sin(t * 0.85 + 0.7) * 0.022;   // gentle, not lumpy
+  const rot = (x, y) => [cx + x * Math.cos(tilt) - y * Math.sin(tilt),
+                         cy + x * Math.sin(tilt) + y * Math.cos(tilt)];
+  const pt = t => rot(Math.cos(t) * rx * drift(t), Math.sin(t) * ry * drift(t));
+  const tan = t => {
+    const a = drift(t);
+    const dx = -Math.sin(t) * rx * a, dy = Math.cos(t) * ry * a;
+    return [dx * Math.cos(tilt) - dy * Math.sin(tilt),
+            dx * Math.sin(tilt) + dy * Math.cos(tilt)];
+  };
+  const p0 = pt(start);
+  let d = `M ${p0[0].toFixed(1)} ${p0[1].toFixed(1)}`;
+  for (let k = 1; k <= segs; k++) {
+    const t0 = start + (k - 1) * dt, t1 = start + k * dt;
+    const [x0, y0] = pt(t0), [x1, y1] = pt(t1);
+    const [dx0, dy0] = tan(t0), [dx1, dy1] = tan(t1);
+    const c = dt / 3;
+    d += ` C ${(x0 + dx0 * c).toFixed(1)} ${(y0 + dy0 * c).toFixed(1)},` +
+         ` ${(x1 - dx1 * c).toFixed(1)} ${(y1 - dy1 * c).toFixed(1)},` +
+         ` ${x1.toFixed(1)} ${y1.toFixed(1)}`;
+  }
+  return d;
+}
+function showCircle(i, off) {
+  const NS = 'http://www.w3.org/2000/svg';
+  const size = S * cols();
+  const svg = document.createElementNS(NS, 'svg');
+  svg.setAttribute('class', 'scribble');
+  svg.setAttribute('viewBox', `0 0 ${size} ${size}`);
+  svg.style.width = size + 'px'; svg.style.height = size + 'px';
+  let cx, cy, rx, ry;
+  if (i < 4) {                                   // row
+    cx = (off + 2) * S; cy = (i + off) * S + S / 2;
+    rx = 2 * S - GAP * 1.5; ry = S / 2 - GAP * 1.2;
+  } else {                                       // column
+    cx = ((i - 4) + off) * S + S / 2; cy = (off + 2) * S;
+    rx = S / 2 - GAP * 1.2; ry = 2 * S - GAP * 1.5;
+  }
+  const path = document.createElementNS(NS, 'path');
+  path.setAttribute('class', 'scribble-path circle-path');
+  path.setAttribute('d', sketchEllipsePath(cx, cy, rx, ry));
+  svg.appendChild(path);
+  board.appendChild(svg);
+  scribblePool.push(svg);
+  drawStroke(path, 560);
+}
+
+// shared: animate a path drawing itself
+function drawStroke(path, ms) {
+  const len = path.getTotalLength ? path.getTotalLength() : 400;
+  path.style.strokeDasharray = len;
+  path.style.strokeDashoffset = len;
+  if (path.animate) path.animate(
+    [{ strokeDashoffset: len }, { strokeDashoffset: 0 }],
+    { duration: ms, easing: 'ease-out', fill: 'forwards' });
+  else path.style.strokeDashoffset = 0;
+}
+
+function showBadge(i, kind, off, unique) {
+  let b = badgePool[i];
+  if (!b) { b = document.createElement('div'); board.appendChild(b); badgePool[i] = b; }
+  const size = Math.round(S * 0.5);
+  const r = i < 4 ? i + off : off + 4;          // rows → right margin; cols → bottom margin
+  const c = i < 4 ? off + 4 : (i - 4) + off;
+  b.className = 'verdict-badge ' + kind + (unique ? ' unique' : '');
+  b.textContent = kind === 'star' ? '★' : (kind === 'good' ? '✓' : '✗');
+  b.style.width = size + 'px'; b.style.height = size + 'px';
+  b.style.fontSize = Math.round(size * 0.6) + 'px';
+  b.style.left = (c * S + (S - size) / 2) + 'px';
+  b.style.top = (r * S + (S - size) / 2) + 'px';
+  b.style.opacity = '1';
+  if (b.animate) {
+    const reduce = window.matchMedia &&
+      window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if (reduce) b.animate([{ opacity: 0 }, { opacity: 1 }], { duration: 200, easing: 'ease-out' });
+    else b.animate([
+      { opacity: 0, transform: 'scale(.4)' },
+      { opacity: 1, transform: 'scale(1.15)', offset: 0.7 },
+      { opacity: 1, transform: 'scale(1)' },
+    ], { duration: 320, easing: 'ease-out' });
+  }
+}
+function drawGhost(moves, movedPi, ok) {
+  const PAL = {
+    ok:    { fill: 'color-mix(in srgb, var(--accent) 17%, transparent)',    edge: 'color-mix(in srgb, var(--accent) 68%, transparent)' },
+    nudge: { fill: 'color-mix(in srgb, var(--ink-soft) 15%, transparent)',  edge: 'color-mix(in srgb, var(--ink-soft) 52%, transparent)' },
+    bad:   { fill: 'color-mix(in srgb, var(--bad) 16%, transparent)',       edge: 'color-mix(in srgb, var(--bad) 68%, transparent)' },
+  };
+  let gi = 0;
+  const paint = (cells, kind) => {
+    const set = new Set(cells.map(([r, c]) => r + ',' + c));
+    const has = (r, c) => set.has(r + ',' + c);
+    const { fill, edge } = PAL[kind];
+    const rad = Math.round(S * 0.17);
+    cells.forEach(([r, c]) => {
+      let g = ghostPool[gi];
+      if (!g) { g = document.createElement('div'); board.appendChild(g); ghostPool.push(g); }
+      g.className = 'move-ghost';
+      const up = has(r - 1, c), dn = has(r + 1, c), lf = has(r, c - 1), rt = has(r, c + 1);
+      // full-cell size so adjacent cells touch → contiguous silhouette
+      g.style.width = S + 'px'; g.style.height = S + 'px';
+      g.style.transform = `translate(${c * S}px, ${r * S}px)`;
+      g.style.background = fill;
+      g.style.borderRadius = [
+        (!up && !lf) ? rad : 0, (!up && !rt) ? rad : 0,
+        (!dn && !rt) ? rad : 0, (!dn && !lf) ? rad : 0,
+      ].map(v => v + 'px').join(' ');
+      // draw a 2px border only on outer edges (interior seams stay open)
+      const w = 2, sh = [];
+      if (!up) sh.push(`inset 0 ${w}px 0 ${edge}`);
+      if (!dn) sh.push(`inset 0 -${w}px 0 ${edge}`);
+      if (!lf) sh.push(`inset ${w}px 0 0 ${edge}`);
+      if (!rt) sh.push(`inset -${w}px 0 0 ${edge}`);
+      g.style.boxShadow = sh.join(',');
+      g.style.opacity = '1';
+      gi++;
+    });
+  };
+  if (ok) {
+    for (const idx in moves) paint(moves[idx], +idx === movedPi ? 'ok' : 'nudge');
+  } else {
+    paint(moves[movedPi] || [], 'bad');
+  }
+  for (; gi < ghostPool.length; gi++) ghostPool[gi].style.opacity = '0';
+}
+
+// ------------------------------------------------------------ interaction
+// Shared: convert a client point to a board cell (may be outside the grid).
+function pointToCell(clientX, clientY) {
+  const rect = board.getBoundingClientRect();
+  return [Math.floor((clientY - rect.top) / S), Math.floor((clientX - rect.left) / S)];
+}
+
+// preview a move for the currently-selected/dragged piece landing at (tr,tc)
+function preview(pi, anchor, tr, tc) {
+  const res = planMove(pi, anchor, tr, tc, state.mode);
+  if (res.reason === null && !res.ok) { clearGhost(); return; }  // no-op (same spot)
+  drawGhost(res.moves || {}, pi, res.ok);
+}
+
+const DRAG_THRESHOLD = 4;
+
+board.addEventListener('pointerdown', e => {
+  if (state.busy) return;
+  e.preventDefault();
+  board.setPointerCapture(e.pointerId);
+  const [r, c] = pointToCell(e.clientX, e.clientY);
+  const inside = r >= 0 && c >= 0 && r < cols() && c < cols();
+  const hit = inside ? occupancy().get(key(r, c)) : null;
+  // remember the gesture; DON'T change selection yet (a tap may be a move)
+  state.drag = {
+    pi: hit ? hit.pi : null,
+    anchor: hit ? hit.ci : null,
+    downR: r, downC: c,
+    startX: e.clientX, startY: e.clientY,
+    moved: false, dragging: false,
+  };
+});
+
+board.addEventListener('pointermove', e => {
+  const d = state.drag;
+  if (!d) {                                   // hover preview when something's selected
+    if (state.sel && !state.busy) {
+      const [r, c] = pointToCell(e.clientX, e.clientY);
+      if (r >= 0 && c >= 0 && r < cols() && c < cols())
+        preview(state.sel.pi, state.sel.anchor, r, c);
+      else clearGhost();
+    }
+    return;
+  }
+  if (d.pi === null) return;                   // press began on empty space: no drag
+  const dx = e.clientX - d.startX, dy = e.clientY - d.startY;
+  if (!d.dragging && Math.hypot(dx, dy) < DRAG_THRESHOLD) return;
+  if (!d.dragging) {                            // drag begins → now select the grabbed piece
+    d.dragging = true;
+    setSelected({ pi: d.pi, anchor: d.anchor });
+    board.classList.add('dragging');
+  }
+  const P = state.pieces[d.pi];
+  P.tiles.forEach((tile, ci) => {
+    const [r, c] = P.cells[ci];
+    tile.classList.add('dragging');
+    tile.style.transform = `translate(${c * S + GAP + dx}px, ${r * S + GAP + dy}px)`;
+  });
+  const [ar, ac] = P.cells[d.anchor];
+  const tr = Math.floor((ar * S + S / 2 + dy) / S);
+  const tc = Math.floor((ac * S + S / 2 + dx) / S);
+  preview(d.pi, d.anchor, tr, tc);
+});
+
+function endDrag(e) {
+  const d = state.drag;
+  if (!d) return;
+  state.drag = null;
+  try { board.releasePointerCapture(e.pointerId); } catch (err) {}
+
+  if (d.dragging) {                             // a real drag → commit or snap back
+    board.classList.remove('dragging');
+    const P = state.pieces[d.pi];
+    P.tiles.forEach(t => t.classList.remove('dragging'));
+    const dx = e.clientX - d.startX, dy = e.clientY - d.startY;
+    const [ar, ac] = P.cells[d.anchor];
+    const tr = Math.floor((ar * S + S / 2 + dy) / S);
+    const tc = Math.floor((ac * S + S / 2 + dx) / S);
+    clearGhost();
+    const res = planMove(d.pi, d.anchor, tr, tc, state.mode);
+    if (res.ok) { commit(res.moves); setSelected(null); setMsg(''); }
+    else { positionTiles(); if (res.reason) setMsg(res.reason, 'bad'); setSelected(null); }
+    return;
+  }
+  tapAt(d.downR, d.downC);                       // it was a tap
+}
+board.addEventListener('pointerup', endDrag);
+board.addEventListener('pointercancel', e => {
+  if (!state.drag) return;
+  if (state.drag.dragging) { positionTiles(); setSelected(null); clearGhost(); board.classList.remove('dragging'); }
+  state.drag = null;
+  try { board.releasePointerCapture(e.pointerId); } catch (err) {}
+});
+
+board.addEventListener('keydown', e => {
+  if (e.key !== 'Enter' && e.key !== ' ') return;
+  const t = e.target.closest('.tile');
+  if (!t) return;
+  e.preventDefault();
+  const [r, c] = state.pieces[+t.dataset.pi].cells[+t.dataset.ci];
+  tapAt(r, c);
+});
+
+// One tap resolves against the current selection:
+//  • no selection  → select the piece under the tap
+//  • tapping the selected piece again → deselect
+//  • otherwise      → move the selected piece so its anchor lands on this cell
+//                     (works for empty cells and for swapping onto another piece)
+function resetTap() {
+  if (state.tap.timer) { clearTimeout(state.tap.timer); state.tap.timer = null; }
+  state.tap.count = 0;
+}
+// Double-tap empty space → undo, triple-tap → redo. Only fires on empty cells
+// with nothing selected, so it never interferes with selecting or moving pieces.
+function registerEmptyTap() {
+  state.tap.count++;
+  if (state.tap.timer) clearTimeout(state.tap.timer);
+  const n = state.tap.count;
+  state.tap.timer = setTimeout(() => {
+    state.tap.timer = null; state.tap.count = 0;
+    if (n === 2) { doUndo(); setMsg('Undo', ''); }
+    else if (n >= 3) { doRedo(); setMsg('Redo', ''); }
+  }, 300);
+}
+
+function tapAt(r, c) {
+  const hit = occupancy().get(key(r, c));
+
+  if (state.sel) {
+    resetTap();
+    if (hit && hit.pi === state.sel.pi) {       // tapped selected piece → toggle off
+      setSelected(null); clearGhost(); setMsg('');
+      return;
+    }
+    const res = planMove(state.sel.pi, state.sel.anchor, r, c, state.mode);
+    clearGhost();
+    if (res.ok) { commit(res.moves); setSelected(null); setMsg(''); }
+    else { if (res.reason) setMsg(res.reason, 'bad'); setSelected(null); }
+    return;
+  }
+
+  if (hit) {
+    resetTap();
+    setSelected({ pi: hit.pi, anchor: hit.ci });
+    setMsg(state.pieces[hit.pi].cells.length > 1
+      ? 'Piece selected — drag it, or tap where it should go.'
+      : 'Tile selected — drag it, or tap where it should go.');
+    return;
+  }
+
+  registerEmptyTap();                            // empty space, nothing selected
+}
+
+// ------------------------------------------------------------ Super Check
+// Forming new valid words charges a meter. Spending it sorts the words currently
+// on the board into "appears in a solution" / "doesn't" — judged against every
+// solution, so a confirmed word is never contradicted by a later win.
+function boardWords() {
+  const g = currentGrid();
+  if (!g) return [];
+  const out = [];
+  for (let i = 0; i < 4; i++) out.push(g[i]);
+  for (let i = 0; i < 4; i++) out.push(g[0][i] + g[1][i] + g[2][i] + g[3][i]);
+  return out;
+}
+function meterValue() { return state.hints[state.idx].charge; }
+
+function bumpMeter(points) {
+  const h = state.hints[state.idx];
+  h.charge += points;
+  updateSuper();
+}
+
+function pulseSuper() {
+  const btn = document.getElementById('superBtn');
+  if (btn && btn.animate) btn.animate(
+    [{ transform: 'scale(1)' }, { transform: 'scale(1.22)' }, { transform: 'scale(1)' }],
+    { duration: 300, easing: 'cubic-bezier(.3,1.7,.5,1)' });
+}
+
+// a dot flies from a checkmark badge to the Super Check button (1 per point)
+function flyDot(fromEl, delay) {
+  if (!fromEl) return;
+  setTimeout(() => {
+    const target = document.getElementById('superBtn');
+    if (!target) return;
+    const f = fromEl.getBoundingClientRect(), t = target.getBoundingClientRect();
+    const cx = f.left + f.width / 2, cy = f.top + f.height / 2;
+    const tx = t.left + t.width / 2, ty = t.top + t.height / 2;
+    const el = document.createElement('div');
+    el.className = 'fly-dot';
+    // start at the size of the badge it came from, then shrink as it travels
+    const startSize = Math.max(20, f.width || 24);
+    el.style.width = startSize + 'px'; el.style.height = startSize + 'px';
+    el.style.left = cx + 'px'; el.style.top = cy + 'px';
+    document.body.appendChild(el);
+    const dx = tx - cx, dy = ty - cy;
+    const endScale = 12 / startSize;
+    const done = () => { el.remove(); bumpMeter(1); pulseSuper(); };
+    if (!el.animate) return done();
+    const a = el.animate([
+      { transform: 'translate(-50%,-50%) scale(1)', opacity: 1 },
+      { transform: `translate(calc(-50% + ${dx * 0.5}px), calc(-50% + ${dy * 0.5}px - 30px)) scale(${((1 + endScale) / 2).toFixed(3)})`,
+        opacity: 1, offset: 0.55 },
+      { transform: `translate(calc(-50% + ${dx}px), calc(-50% + ${dy}px)) scale(${endScale.toFixed(3)})`,
+        opacity: 0.95 },
+    ], { duration: 780, easing: 'cubic-bezier(.32,0,.36,1)' });
+    a.onfinish = done; a.oncancel = done;
+  }, delay);
+}
+
+// The drawer's whole top edge is one continuous line: flat, then it flares out
+// (concave) into slanted sides that rise to a convex-cornered tab, then back down.
+// Every blend is a cubic matched to its neighbours' tangents, so the corners and
+// the slants flow into each other with no kinks.
+function drawerTopPath(W, H) {
+  const btn = document.getElementById('drawerTab');
+  const tabW = Math.min(W - 60, Math.max(150, btn.offsetWidth || 190));
+  const slant = 15;                 // sides splay outward toward the base
+  const cx = W / 2;
+  const tL = cx - tabW / 2, tR = cx + tabW / 2;      // tab top edge
+  const bL = tL - slant, bR = tR + slant;           // tab base (wider)
+
+  const len = Math.hypot(slant, H);
+  const uL = [slant / len, -H / len];               // up the left slant
+  const uR = [slant / len,  H / len];               // down the right slant
+  const flat = [1, 0];
+  const RC = 13, RV = 13, DS = 11;                  // concave / convex / along-slant blends
+
+  const f = n => n.toFixed(1);
+  const pt = p => `${f(p[0])} ${f(p[1])}`;
+  // cubic from p0 leaving along t0, arriving at p1 along t1
+  const blend = (p0, t0, p1, t1, k0, k1) =>
+    ` C ${pt([p0[0] + t0[0] * k0, p0[1] + t0[1] * k0])},` +
+    ` ${pt([p1[0] - t1[0] * k1, p1[1] - t1[1] * k1])}, ${pt(p1)}`;
+
+  const A  = [bL - RC, H];                                   // leave the flat line
+  const B  = [bL + uL[0] * DS, H + uL[1] * DS];              // land on the left slant
+  const C  = [tL - uL[0] * DS, -uL[1] * DS];                 // leave the slant near the top
+  const D  = [tL + RV, 0];                                   // land on the tab's top edge
+  const D2 = [tR - RV, 0];                                   // leave the top edge
+  const E  = [tR + uR[0] * DS, uR[1] * DS];                  // land on the right slant
+  const F  = [bR - uR[0] * DS, H - uR[1] * DS];              // leave the right slant
+  const G  = [bR + RC, H];                                   // rejoin the flat line
+
+  let d = `M 0 ${f(H)} L ${pt(A)}`;
+  d += blend(A, flat, B, uL, RC * 0.62, DS * 0.62);          // concave flare up
+  d += ` L ${pt(C)}`;                                        // straight up the slant
+  d += blend(C, uL, D, flat, DS * 0.62, RV * 0.62);          // convex top-left corner
+  d += ` L ${pt(D2)}`;                                       // across the tab top
+  d += blend(D2, flat, E, uR, RV * 0.62, DS * 0.62);         // convex top-right corner
+  d += ` L ${pt(F)}`;                                        // straight down the slant
+  d += blend(F, uR, G, flat, DS * 0.62, RC * 0.62);          // concave flare back down
+  d += ` L ${f(W)} ${f(H)}`;
+  return d;
+}
+function layoutDrawer() {
+  const top = document.getElementById('drawerTop');
+  if (!top || !top.clientWidth) return;
+  const W = top.clientWidth, H = 42;
+  const svg = document.getElementById('drawerTopSvg');
+  svg.setAttribute('viewBox', `0 0 ${W} ${H}`);
+  const d = drawerTopPath(W, H);
+  document.getElementById('drawerFillPath').setAttribute('d', d + ' Z');
+  document.getElementById('drawerEdgePath').setAttribute('d', d);
+}
+
+function renderWordLists(justAdded, newestFirst) {
+  const h = state.hints[state.idx];
+  const el = document.getElementById('wordLists');
+  const order = arr => newestFirst ? arr.slice().reverse() : arr;
+  const mk = (cls, title, arr, id) => arr.length
+    ? `<div class="wl ${cls}" ${id ? 'id="' + id + '"' : ''}><h4>${title}</h4><ul>` +
+      order(arr).map(w => `<li${w === justAdded ? ' data-new="1"' : ''}>${w.toUpperCase()}</li>`).join('') +
+      '</ul></div>'
+    : '';
+  el.innerHTML = mk('in', 'In the puzzle', h.inList, 'wlIn') +
+                 mk('out', 'Not in the puzzle', h.outList, 'wlOut');
+  // the newly banked word drops in at the top of its list
+  const fresh = el.querySelector('[data-new]');
+  if (fresh && fresh.animate) fresh.animate([
+    { transform: 'translateY(-18px)', opacity: 0,
+      backgroundColor: 'color-mix(in srgb, var(--gold) 60%, transparent)' },
+    { transform: 'translateY(0)', opacity: 1,
+      backgroundColor: 'color-mix(in srgb, var(--gold) 60%, transparent)', offset: 0.45 },
+    { transform: 'translateY(0)', opacity: 1, backgroundColor: 'transparent' },
+  ], { duration: 950, easing: 'cubic-bezier(.3,1.2,.5,1)' });
+
+  const total = h.inList.length + h.outList.length;
+  const drawer = document.getElementById('drawer');
+  drawer.classList.toggle('has-words', total > 0);
+  document.body.classList.toggle('has-drawer', total > 0);
+  document.getElementById('drawerTabLabel').textContent =
+    `Word bank · ${h.inList.length} in, ${h.outList.length} out`;
+  layoutDrawer();
+}
+// --------------------------------------------- Check / Super Check button states
+// "Super" and "Check" are split into letters so a Super Check can ripple across the
+// whole phrase — reading as "Super Check", not "Super" then "Check".
+function splitLetters(el) {
+  if (!el) return [];
+  const t = el.textContent;
+  el.textContent = '';
+  [...t].forEach(ch => {
+    const s = document.createElement('span');
+    s.className = 'ltr';
+    s.textContent = ch;
+    el.appendChild(s);
+  });
+  return [...el.querySelectorAll('.ltr')];
+}
+const SUPER_LTRS = splitLetters(document.querySelector('.super-label'));
+const CHECK_LTRS = splitLetters(document.getElementById('checkLabel'));
+
+let btnAnims = [];
+
+// iOS Safari won't reliably apply :active, so drive the pressed look from pointer
+// events. Pressing Check darkens Check; pressing Super darkens the whole control.
+function wirePress(btn, target) {
+  if (!btn || !target || !btn.addEventListener) return;
+  const on = () => { if (!btn.disabled) target.classList.add('pressed'); };
+  const off = () => target.classList.remove('pressed');
+  btn.addEventListener('pointerdown', on);
+  btn.addEventListener('pointerup', off);
+  btn.addEventListener('pointercancel', off);
+  btn.addEventListener('pointerleave', off);
+  btn.addEventListener('blur', off);
+}
+wirePress(document.getElementById('submitBtn'), document.getElementById('submitBtn'));
+wirePress(document.getElementById('superBtn'), document.getElementById('checkGroup'));
+
+function stopBtnAnims() {
+  btnAnims.forEach(a => { try { a.cancel(); } catch (e) {} });
+  btnAnims = [];
+  [...SUPER_LTRS, ...CHECK_LTRS].forEach(el => { el.style.transform = ''; });
+  const lbl = document.getElementById('checkLabel');
+  if (lbl) lbl.style.transform = '';
+}
+// Height over time for a real jump is a parabola: y = -4h·t(1-t). Sampling it and
+// interpolating linearly gives the true curve, rather than approximating with easing.
+function jumpFrames(h, steps) {
+  const out = [];
+  for (let k = 0; k <= steps; k++) {
+    const t = k / steps;
+    out.push({ t, y: -4 * h * t * (1 - t) });
+  }
+  return out;
+}
+
+function setBtnState(mode) {              // '' | 'checking' | 'supering'
+  const g = document.getElementById('checkGroup');
+  g.classList.toggle('checking', mode === 'checking');
+  g.classList.toggle('supering', mode === 'supering');
+  stopBtnAnims();
+  if (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+
+  if (mode === 'checking') {
+    // Check alone is working: the word jumps on a parabolic arc, then lands and rests
+    const lbl = document.getElementById('checkLabel');
+    if (lbl && lbl.animate) {
+      const JUMP = 470, REST = 150, CYCLE = JUMP + REST;
+      const kf = jumpFrames(5, 14).map(f => ({
+        transform: `translateY(${f.y.toFixed(2)}px)`,
+        offset: +((f.t * JUMP) / CYCLE).toFixed(4),
+        easing: 'linear',
+      }));
+      kf.push({ transform: 'translateY(0)', offset: 1, easing: 'linear' });
+      btnAnims.push(lbl.animate(kf, { duration: CYCLE, iterations: Infinity }));
+    }
+  } else if (mode === 'supering') {
+    // ripple every letter of "SuperCheck" in sequence, then pause briefly and repeat
+    const all = [...SUPER_LTRS, ...CHECK_LTRS];
+    const LIFT = 400, STAGGER = 81, PAUSE = 100;      // 80% of the old speed
+    const wave = (all.length - 1) * STAGGER + LIFT;
+    const CYCLE = wave + PAUSE;
+    all.forEach((el, i) => {
+      if (!el.animate) return;
+      const s = i * STAGGER;
+      const kf = [];
+      if (s > 0) kf.push({ transform: 'translateY(0)', offset: 0, easing: 'linear' });
+      jumpFrames(6, 10).forEach(f => kf.push({
+        transform: `translateY(${f.y.toFixed(2)}px)`,
+        offset: +((s + f.t * LIFT) / CYCLE).toFixed(4),
+        easing: 'linear',
+      }));
+      kf.push({ transform: 'translateY(0)', offset: 1, easing: 'linear' });
+      btnAnims.push(el.animate(kf, { duration: CYCLE, iterations: Infinity }));
+    });
+  }
+}
+
+function updateSuper() {
+  const v = meterValue();
+  const stacks = Math.floor(v / HINT_THRESHOLD);
+  const ready = stacks >= 1;
+  document.getElementById('superBtn').disabled = !ready || state.busy;
+  // once charged, Super expands and merges with Check so it reads "Super Check"
+  document.getElementById('checkGroup').classList.toggle('merged', ready);
+  const frac = (v % HINT_THRESHOLD) / HINT_THRESHOLD;
+  const CIRC = 113.1;
+  document.getElementById('superRingFill').style.strokeDashoffset =
+    (CIRC * (1 - frac)).toFixed(1);
+  document.getElementById('superBarFill').style.width = (frac * 100).toFixed(0) + '%';
+  const badge = document.getElementById('superBadge');
+  if (stacks >= 2) { badge.textContent = '×' + stacks; badge.classList.add('show'); }
+  else badge.classList.remove('show');
+  renderWordLists();
+}
+function doSuperCheck() {
+  if (state.busy || meterValue() < HINT_THRESHOLD) return;
+  const words = boardWords().filter(w => WORDSET.has(w));
+  if (!words.length) { setMsg('Make some words on the board first.'); return; }
+  const h = state.hints[state.idx];
+  const unsorted = words.filter(w =>
+    h.inList.indexOf(w) === -1 && h.outList.indexOf(w) === -1);
+  if (!unsorted.length) { setMsg('Those are already sorted — try some new words.'); return; }
+  runCheck(true);
+}
+document.getElementById('superBtn').addEventListener('click', doSuperCheck);
+
+document.getElementById('drawerTab').addEventListener('click', () => {
+  const d = document.getElementById('drawer');
+  d.classList.remove('peek');
+  const open = d.classList.toggle('open');
+  document.getElementById('drawerTab').setAttribute('aria-expanded', open ? 'true' : 'false');
+});
+
+// ---------------------------------------------------------------- submit
+// Verdict animation driven by the Web Animations API, so it replays reliably on
+// every Check (the CSS class + reflow-restart trick silently fails on iOS/WebKit).
+// Reduced-motion users get a gentle opacity pulse instead of a translate.
+function playVerdict(letters, ok) {
+  const reduce = window.matchMedia &&
+    window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  letters.forEach(el => {
+    if (!el || !el.animate) return;
+    if (reduce) {
+      el.animate([{ opacity: 1 }, { opacity: 0.3 }, { opacity: 1 }],
+                 { duration: 440, easing: 'ease-in-out' });
+    } else if (ok) {
+      el.animate([
+        { transform: 'translateY(0)' },
+        { transform: 'translateY(-11px)', offset: 0.3 },
+        { transform: 'translateY(3px)', offset: 0.6 },
+        { transform: 'translateY(0)' },
+      ], { duration: 400, easing: 'ease-in-out' });
+    } else {
+      el.animate([
+        { transform: 'translateX(0)' },
+        { transform: 'translateX(-7px)', offset: 0.2 },
+        { transform: 'translateX(7px)', offset: 0.4 },
+        { transform: 'translateX(-5px)', offset: 0.6 },
+        { transform: 'translateX(5px)', offset: 0.8 },
+        { transform: 'translateX(0)' },
+      ], { duration: 360, easing: 'ease-in-out' });
+    }
+  });
+}
+
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+
+// Shared verdict sequence. Normal Check: words nod/shake, and each NEW word flies
+// into the Super Check meter (worth ×N where N = new words found this check).
+// Super Check: same animation, but words are starred and fly into the word lists.
+async function runCheck(superMode) {
+  if (state.busy) return;
+  setSelected(null); clearGhost(); clearBadges(); clearScribbles();
+
+  if (state.mode === 'free') {
+    const off0 = innerOff();
+    const stray = [];
+    state.pieces.forEach(p => p.cells.forEach(([r, c], ci) => {
+      if (r < off0 || c < off0 || r >= off0 + 4 || c >= off0 + 4) stray.push(p.tiles[ci]);
+    }));
+    if (stray.length) {
+      stray.forEach(t => {
+        t.classList.remove('jolt'); void t.offsetWidth; t.classList.add('jolt');
+        const old = t.style.boxShadow;
+        t.style.boxShadow = 'inset 0 0 0 3px color-mix(in srgb, var(--ink) 55%, transparent)';
+        setTimeout(() => { t.style.boxShadow = old; }, 900);
+      });
+      setMsg(stray.length + (stray.length === 1 ? ' letter is' : ' letters are') +
+             ' outside the grid.', '');
+      return;
+    }
+  }
+
+  const g = currentGrid();
+  if (!g) return;
+  const off = innerOff();
+  const occ = occupancy();
+  const lineLetters = i => {
+    const cells = [];
+    for (let j = 0; j < 4; j++)
+      cells.push(i < 4 ? [i + off, j + off] : [j + off, (i - 4) + off]);
+    return cells.map(([r, c]) => {
+      const h = occ.get(key(r, c));
+      return state.pieces[h.pi].tiles[h.ci].querySelector('.letter');
+    });
+  };
+
+  const h = state.hints[state.idx];
+  const solWords = new Set(PUZZLES[state.idx].solutionWords || []);
+  const words = [];
+  for (let i = 0; i < 8; i++)
+    words.push(i < 4 ? g[i] : g[0][i-4] + g[1][i-4] + g[2][i-4] + g[3][i-4]);
+
+  // words never formed on this puzzle before → they charge the meter, ×N of them
+  const fresh = [];
+  if (!superMode) {
+    const dedupe = new Set();
+    words.forEach(w => {
+      if (WORDSET.has(w) && h.seen.indexOf(w) === -1 && !dedupe.has(w)) {
+        dedupe.add(w); fresh.push(w);
+      }
+    });
+  }
+  // record what happened this check, for the win summary / share text
+  h.history.push({
+    mode: superMode ? 'super' : 'check',
+    marks: words.map(w => {
+      const okw = WORDSET.has(w), inS = solWords.has(w);
+      if (superMode) return inS ? '⭐' : (okw ? '〰️' : '✖️');
+      if (!okw) return '✖️';
+      return fresh.indexOf(w) !== -1 ? '☑️' : '✔️';   // ☑️ = new word for this puzzle
+    }),
+  });
+
+  state.busy = true;
+  updateSuper();
+  setBtnState(superMode ? 'supering' : 'checking');
+
+  let good = 0;
+  const ANIM = 385, PAUSE = 150, STEP = ANIM + PAUSE, FANFARE_PAD = 100;
+  // Super Check paces each word out in three beats so nothing lands on top of anything else
+  const NOD_BEAT = 430, MARK_BEAT = 480, BANK_BEAT = 400;
+  const flown = new Set();
+  const freshBadges = [];        // badges of fresh words found so far *this* check
+
+  for (let i = 0; i < 8; i++) {
+    const word = words[i];
+    const ok = WORDSET.has(word);
+    const inSol = solWords.has(word);
+    if (ok) good++;
+    const letters = lineLetters(i);
+    playVerdict(letters, ok);
+
+    const isFresh = !superMode && ok && fresh.indexOf(word) !== -1 && !flown.has(word);
+    showBadge(i, superMode ? (inSol ? 'star' : (ok ? 'good' : 'bad')) : (ok ? 'good' : 'bad'), off, isFresh);
+    setMsg((i < 4 ? 'Row ' + (i + 1) : 'Column ' + (i - 3)) + ': ' + word.toUpperCase() +
+           (superMode ? (inSol ? ' ★ in the puzzle' : (ok ? ' ✓ not in the puzzle' : ' — not a word'))
+                      : (ok ? ' ✓' : '')), '');
+
+    if (superMode) {
+      // three distinct beats so each moment lands on its own: nod → mark → bank
+      await sleep(NOD_BEAT);
+      if (ok) {
+        inSol ? showCircle(i, off) : showScribble(i, off);
+        await sleep(MARK_BEAT);
+      }
+      if (ok && !flown.has(word) &&
+          h.inList.indexOf(word) === -1 && h.outList.indexOf(word) === -1) {
+        flown.add(word);
+        (inSol ? h.inList : h.outList).push(word);
+        renderWordLists(word, true);             // newest on top, ticker-style
+        const d = document.getElementById('drawer');
+        d.classList.remove('open');
+        d.classList.add('peek');                 // crack it open just enough to see it land
+        await sleep(BANK_BEAT);
+      }
+      if (!ok) await sleep(PAUSE);
+      continue;
+    }
+
+    let fanfare = false;
+    if (isFresh) {
+      flown.add(word);
+      h.seen.push(word);
+      const badge = badgePool[i];
+      // this word's own point (base), plus one bonus point re-fired from each
+      // earlier fresh word this check — so word #N nets exactly N points.
+      flyDot(badge, 0);
+      freshBadges.forEach((prev, k) => flyDot(prev, 70 + k * 60));
+      freshBadges.push(badge);
+      fanfare = true;
+    }
+    await sleep(STEP + (fanfare ? FANFARE_PAD : 0));
+  }
+
+  await sleep(450);
+  state.busy = false;
+  setBtnState('');
+  document.querySelectorAll('.letter').forEach(el => el.classList.remove('nod', 'shake'));
+
+  if (superMode) {
+    h.charge = Math.max(0, h.charge - HINT_THRESHOLD);
+    h.spent++;
+    h.inList.sort(); h.outList.sort();
+    updateSuper();
+    const d = document.getElementById('drawer');
+    d.classList.remove('peek');
+    d.classList.add('open');                     // settle into the full list
+    document.getElementById('drawerTab').setAttribute('aria-expanded', 'true');
+    setMsg('Super Check done — ★ words appear in a solution.', '');
+  } else {
+    updateSuper();
+    const K = freshBadges.length, earned = K * (K + 1) / 2;
+    if (good === 8) onWin(g);
+    else setMsg(good + ' of 8 words check out.' +
+                (K ? ` +${earned} to Super Check.` : ' Keep going!'), '');
+  }
+}
+document.getElementById('submitBtn').addEventListener('click', () => runCheck(false));
+
+// ------------------------------------------------- win summary / share text
+// One line per check: ➡️ four row marks, ⬇️ four column marks. ✔️ valid, ✖️ not a
+// word, and from a Super Check: ⭐ in the puzzle, 〰️ a word but not in the puzzle.
+function shareLines() {
+  const h = state.hints[state.idx];
+  return h.history.map((e, k) => {
+    const solved = e.marks.every(m => m === '✔️' || m === '☑️');
+    return '➡️' + e.marks.slice(0, 4).join('') +
+           '⬇️' + e.marks.slice(4).join('') +
+           (solved && k === h.history.length - 1 ? '🎉' : '');
+  });
+}
+function shareCount() {
+  const h = state.hints[state.idx];
+  const c = h.history.filter(e => e.mode === 'check').length;
+  const s = h.history.filter(e => e.mode === 'super').length;
+  return `${c} Check${c === 1 ? '' : 's'}, ${s} SuperCheck${s === 1 ? '' : 's'}`;
+}
+function shareText() {
+  return `${LABEL} #${state.idx + 1}\n` + shareLines().join('\n') + '\n' + shareCount();
+}
+function renderShare() {
+  const el = document.getElementById('shareBlock');
+  const h = state.hints[state.idx];
+  if (!h.history.length) { el.className = ''; el.innerHTML = ''; return; }
+  el.innerHTML =
+    `<div class="share-title">${LABEL} #${state.idx + 1}</div>` +
+    shareLines().map(l => `<div class="share-line">${l}</div>`).join('') +
+    `<div class="share-count">${shareCount()}</div>`;
+  el.className = 'show';
+  el.querySelectorAll('.share-title, .share-line, .share-count').forEach((n, k) => {
+    if (!n.animate) return;
+    n.style.opacity = '0';
+    n.animate([{ opacity: 0, transform: 'translateY(-7px)' },
+               { opacity: 1, transform: 'translateY(0)' }],
+              { duration: 320, delay: 120 + k * 150, easing: 'cubic-bezier(.3,1.3,.5,1)',
+                fill: 'forwards' });
+  });
+}
+// iPadOS Safari reports itself as "Macintosh", so UA alone isn't enough.
+const IS_TOUCH = (navigator.maxTouchPoints || 0) > 1;
+const IS_MOBILE = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent || '') ||
+                  (IS_TOUCH && /Macintosh/i.test(navigator.userAgent || ''));
+const IS_IOS = /iPhone|iPad|iPod/i.test(navigator.userAgent || '') ||
+               (IS_TOUCH && /Macintosh/i.test(navigator.userAgent || ''));
+
+// Clipboard with a fallback: navigator.clipboard needs a secure context and is
+// blocked in some webviews/iframes, so fall back to a hidden textarea + execCommand.
+// Returns whether the copy actually succeeded (so we never claim a false "Copied!").
+async function copyText(text) {
+  try {
+    if (navigator.clipboard && window.isSecureContext) {
+      await navigator.clipboard.writeText(text);
+      return true;
+    }
+  } catch (e) { /* fall through */ }
+  // execCommand is unreliable on iOS — it can return true without copying — so
+  // callers on iOS should not rely on this path.
+  if (IS_IOS) return false;
+  try {
+    const ta = document.createElement('textarea');
+    ta.value = text;
+    ta.style.cssText = 'position:fixed;left:-9999px;top:50%;width:200px;height:60px;' +
+                       'font-size:16px;opacity:0.01;border:0;padding:0;';
+    document.body.appendChild(ta);
+    ta.focus();
+    ta.select();
+    const ok = document.execCommand('copy');
+    ta.remove();
+    return ok;
+  } catch (e) { return false; }
+}
+
+function flashBtn(btn, msg) {
+  const old = btn.dataset.label || btn.textContent;
+  btn.dataset.label = old;
+  btn.textContent = msg;
+  setTimeout(() => { btn.textContent = btn.dataset.label; }, 1500);
+}
+
+// Last resort when both the share sheet and clipboard are unavailable (common in
+// embedded webviews): show the text selected, so it can be copied by hand.
+function revealForManualCopy(text, why) {
+  const ta = document.getElementById('shareFallback');
+  ta.value = text;
+  ta.classList.add('show');
+  const note = document.getElementById('shareNote');
+  note.textContent = why || '';
+  note.classList.toggle('show', !!why);
+  ta.focus();
+  try { ta.setSelectionRange(0, text.length); } catch (e) {}
+}
+
+async function shareOrCopy(text, btn) {
+  if (IS_MOBILE) {
+    // 1. Native share sheet
+    if (navigator.share) {
+      try {
+        await navigator.share({ text });
+        return;
+      } catch (e) {
+        if (e && e.name === 'AbortError') return;      // user dismissed
+        revealForManualCopy(text, 'share blocked: ' + ((e && e.name) || 'error'));
+        flashBtn(btn, 'Select the text above');
+        return;
+      }
+    }
+    // 2. Clipboard API only — execCommand lies on iOS (returns true, copies nothing)
+    try {
+      if (navigator.clipboard && window.isSecureContext) {
+        await navigator.clipboard.writeText(text);
+        flashBtn(btn, 'Copied!');
+        return;
+      }
+    } catch (e) { /* fall through */ }
+    // 3. Always leave a way out
+    revealForManualCopy(text, window.isSecureContext
+      ? 'sharing unavailable in this browser'
+      : 'needs https — open danagram.fun, not a local file');
+    flashBtn(btn, 'Select the text above');
+    return;
+  }
+  // Desktop: clipboard (with execCommand fallback), then manual
+  if (await copyText(text)) { flashBtn(btn, 'Copied!'); return; }
+  revealForManualCopy(text, 'clipboard blocked here');
+  flashBtn(btn, 'Select the text above');
+}
+
+document.getElementById('shareBtn').addEventListener('click', () => {
+  shareOrCopy(shareText(), document.getElementById('shareBtn'));
+});
+
+// a burst of confetti on a genuine solve
+function confetti() {
+  if (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+  const COLORS = ['var(--gold)', 'var(--accent)', 'var(--good)',
+                  'var(--o1)', 'var(--o2)', 'var(--o4)', 'var(--o6)'];
+  const N = 70;
+  const originX = window.innerWidth / 2;
+  const originY = window.innerHeight * 0.38;
+  for (let i = 0; i < N; i++) {
+    const el = document.createElement('div');
+    el.className = 'confetti';
+    el.style.background = COLORS[i % COLORS.length];
+    const w = (6 + Math.random() * 6) * 0.8;             // 80% of original size
+    el.style.width = w.toFixed(1) + 'px';
+    el.style.height = ((w * 0.45 + Math.random() * 7) * 0.8).toFixed(1) + 'px';
+    if (Math.random() < 0.28) el.style.borderRadius = '50%';
+    el.style.left = (originX + (Math.random() - 0.5) * 90) + 'px';
+    el.style.top = originY + 'px';
+    document.body.appendChild(el);
+    if (!el.animate) { el.remove(); continue; }
+    const ang = Math.random() * Math.PI * 2;
+    const dist = (80 + Math.random() * 240) * 0.8;       // 80% initial velocity
+    const dx = Math.cos(ang) * dist;
+    const dy = Math.sin(ang) * dist - 112;               // biased upward on the burst
+    const fall = window.innerHeight * 0.72 + Math.random() * 220;
+    const rot = (Math.random() - 0.5) * 760;
+    const T = (x, y, r) =>
+      `translate(-50%,-50%) translate(${x.toFixed(0)}px, ${y.toFixed(0)}px) rotate(${r.toFixed(0)}deg)`;
+    const a = el.animate([
+      // burst outward, decelerating hard
+      { transform: T(0, 0, 0), opacity: 1, offset: 0,
+        easing: 'cubic-bezier(.12,.75,.35,1)' },
+      // long, slow drift down — decelerating rather than accelerating
+      { transform: T(dx, dy, rot * 0.4), opacity: 1, offset: 0.2,
+        easing: 'cubic-bezier(.25,.5,.35,1)' },
+      { transform: T(dx * 1.15, dy + fall * 0.86, rot * 0.85), opacity: 1, offset: 0.86 },
+      { transform: T(dx * 1.25, dy + fall, rot), opacity: 0, offset: 1 },
+    ], { duration: 3400 + Math.random() * 1900 });
+    const done = () => el.remove();
+    a.onfinish = done; a.oncancel = done;
+  }
+}
+
+function onWin(g) {
+  const gs = g.join('');
+  const found = state.found[state.idx];
+  const cardT = document.getElementById('cardTitle');
+  const cardB = document.getElementById('cardBody');
+  document.getElementById('cardWords').textContent = '';
+  let celebrate = false;
+
+  if (state.revealed) {
+    cardT.textContent = 'Revealed';
+    cardB.textContent = 'Shuffle and solve it yourself to make it count.';
+  } else if (found.has(gs)) {
+    cardT.textContent = 'Déjà vu!';
+    cardB.textContent = 'You already solved this one.';
+  } else {
+    found.add(gs);
+    cardT.textContent = 'Congratulations!';
+    cardB.textContent = '';
+    celebrate = true;
+  }
+  updateMeta();
+  openRating(true);
+  if (celebrate) confetti();
+}
+
+// -------------------------------------------------------- playtest ratings
+const store = {
+  mem: {},
+  get(k) { try { const v = localStorage.getItem(k); return v ? JSON.parse(v) : null; }
+           catch (e) { return this.mem[k] || null; } },
+  set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); }
+              catch (e) { this.mem[k] = v; } },
+};
+state.ratings = store.get('danagram_ratings') || {};
+
+// build a clickable half-star input (values 0.5 .. 5 in 0.5 steps)
+function buildStars(el) {
+  el.innerHTML = '';
+  for (let i = 0; i < 5; i++) {
+    const s = document.createElement('span');
+    s.className = 'star';
+    s.textContent = '★';
+    const fill = document.createElement('span');
+    fill.className = 'fill'; fill.textContent = '★';
+    s.appendChild(fill);
+    el.appendChild(s);
+  }
+  const paint = v => el.querySelectorAll('.star').forEach((s, i) => {
+    const f = Math.max(0, Math.min(1, v - i));   // 0, .5, or 1 of this star
+    s.querySelector('.fill').style.width = (f * 100) + '%';
+  });
+  paint(+el.dataset.value || 0);
+  el.onpointermove = e => {
+    const r = el.getBoundingClientRect();
+    const v = Math.min(5, Math.ceil(((e.clientX - r.left) / r.width) * 10) / 2);
+    paint(Math.max(0.5, v));
+  };
+  el.onpointerleave = () => paint(+el.dataset.value || 0);
+  el.onclick = e => {
+    const r = el.getBoundingClientRect();
+    const v = Math.max(0.5, Math.min(5, Math.ceil(((e.clientX - r.left) / r.width) * 10) / 2));
+    el.dataset.value = v; paint(v);
+    if (typeof el._onset === 'function') el._onset();
+  };
+  el.set = v => { el.dataset.value = v || 0; paint(v || 0); };
+  return el;
+}
+const diffStars = buildStars(document.getElementById('starsDifficulty'));
+const enjoyStars = buildStars(document.getElementById('starsEnjoy'));
+function ratingReady() {
+  const ok = +diffStars.dataset.value > 0 && +enjoyStars.dataset.value > 0;
+  document.getElementById('rateSubmit').disabled = !ok;
+}
+diffStars._onset = ratingReady;
+enjoyStars._onset = ratingReady;
+
+function showReveal() {
+  const P = PUZZLES[state.idx];
+  const r = state.ratings[state.idx];
+  document.getElementById('rateBlock').style.display = 'none';
+  document.getElementById('revealBlock').style.display = 'block';
+  document.getElementById('rateSubmit').disabled = true;
+  document.getElementById('calcDifficulty').innerHTML =
+    `Our difficulty rating: <b>${'★'.repeat(P.stars)}</b> &nbsp;(${P.difficulty}/100)`;
+  document.getElementById('yourRating').textContent = r
+    ? `You said: difficulty ${r.difficulty}★ · fun ${r.enjoyment}★`
+    : '';
+}
+
+// open the panel: if this puzzle is already rated, jump straight to the reveal
+function openRating(won) {
+  state.drag = null;
+  try { board.releasePointerCapture && board.releasePointerCapture(); } catch (err) {}
+  const fb = document.getElementById('shareFallback');
+  fb.classList.remove('show'); fb.value = '';
+  document.getElementById('shareNote').classList.remove('show');
+  const rated = state.ratings[state.idx];
+  if (won) {
+    renderShare();
+    startCountdown();
+  } else {
+    stopCountdown();
+    document.getElementById('shareBlock').className = '';
+    document.getElementById('cardTitle').textContent = 'Rate this puzzle';
+    document.getElementById('cardWords').textContent = '';
+    document.getElementById('cardBody').textContent = rated
+      ? '' : 'Give it a difficulty and fun score to see how it compares.';
+  }
+  document.getElementById('shareBtn').style.display = won ? '' : 'none';
+  if (rated) {
+    showReveal();
+  } else {
+    document.getElementById('revealBlock').style.display = 'none';
+    document.getElementById('rateBlock').style.display = 'block';
+    diffStars.set(0); enjoyStars.set(0); ratingReady();
+  }
+  document.getElementById('overlay').classList.add('show');
+}
+
+document.getElementById('rateSubmit').addEventListener('click', () => {
+  state.ratings[state.idx] = {
+    difficulty: +diffStars.dataset.value,
+    enjoyment: +enjoyStars.dataset.value,
+    calc: PUZZLES[state.idx].difficulty,
+    calcStars: PUZZLES[state.idx].stars,
+    words: PUZZLES[state.idx].solution.join('/'),
+    ts: Date.now(),
+  };
+  store.set('danagram_ratings', state.ratings);
+  showReveal();
+});
+
+document.getElementById('copyData').addEventListener('click', () => {
+  const blob = JSON.stringify(state.ratings, null, 1);
+  shareOrCopy(blob, document.getElementById('copyData'));
+});
+
+document.getElementById('closeCard').addEventListener('click', () => {
+  document.getElementById('overlay').classList.remove('show');
+  stopCountdown();
+});
+
+// --------------------------------------------------------------- controls
+function updateMeta() {
+  const solved = state.found[state.idx].size > 0;
+  document.getElementById('puzzleLabel').innerHTML =
+    `Puzzle ${state.idx + 1} of ${PUZZLES.length}` + (solved ? ' <span class="solved">✓</span>' : '');
+}
+
+function deepCells(cellsPerPiece) {
+  return cellsPerPiece.map(pc => pc.map(c => c.slice()));
+}
+function saveSession() {
+  if (!state.pieces.length) return;
+  state.sessions[state.idx] = {
+    cells: state.pieces.map(p => p.cells.map(c => c.slice())),
+    undo: state.undo.map(deepCells),
+    redo: state.redo.map(deepCells),
+  };
+}
+
+function loadPuzzle(idx) {
+  saveSession();                                 // preserve the puzzle we're leaving
+  state.idx = (idx + PUZZLES.length) % PUZZLES.length;
+  state.mode = 'free';
+  const P = PUZZLES[state.idx];
+  state.pieces = P.pieces.map((p, i) => ({
+    letters: p.letters,
+    cells: p.cells.map(c => c.slice()),
+    color: OCOLORS[
+      P.pieces.filter((q, j) => j < i && q.letters.length > 1).length % OCOLORS.length],
+  }));
+  setSelected(null); clearGhost(); clearBadges(); clearScribbles();
+
+  const sess = state.sessions[state.idx];
+  if (sess && sess.cells.length === state.pieces.length) {   // returning → restore progress
+    state.pieces.forEach((p, i) => { p.cells = sess.cells[i].map(c => c.slice()); });
+    state.undo = sess.undo.map(deepCells);
+    state.redo = sess.redo.map(deepCells);
+  } else {                                       // first visit → fresh scramble
+    state.undo = []; state.redo = [];
+    scramble();
+  }
+
+  buildTiles();
+  metrics();
+  positionTiles();
+  updateUndoButtons();
+  updateMeta();
+  updateSuper();
+  setMsg('Drag a piece, or tap it then tap a destination. Double-tap empty space to undo.');
+}
+
+document.getElementById('prevBtn').addEventListener('click', () => !state.busy && loadPuzzle(state.idx - 1));
+document.getElementById('nextBtn').addEventListener('click', () => !state.busy && loadPuzzle(state.idx + 1));
+// Shuffle the current arrangement with random legal moves — one undo reverts it.
+function doShuffle() {
+  if (state.busy) return;
+  setSelected(null); clearGhost();
+  const orig = snapshot();
+  scramble();                                    // same packed-into-the-4×4 randomization
+                                                   // used to set up a fresh puzzle
+  const moves = {};
+  state.pieces.forEach((p, i) => { moves[i] = p.cells.map(c => c.slice()); });
+  restore(orig);                                 // rewind, then commit as a single undo step
+  commit(moves);
+  setMsg('Shuffled.');
+}
+document.getElementById('shuffleBtn').addEventListener('click', doShuffle);
+
+// Spread single tiles out to the perimeter, leaving the ominos in the middle.
+function doSpread() {
+  if (state.busy) return;
+  setSelected(null); clearGhost();
+  const N = 6;
+  const isPerim = (r, c) => r === 0 || c === 0 || r === N - 1 || c === N - 1;
+  const perim = [];
+  for (let r = 0; r < N; r++) for (let c = 0; c < N; c++) if (isPerim(r, c)) perim.push([r, c]);
+
+  const used = new Set();
+  state.pieces.forEach(p => { if (p.cells.length > 1) p.cells.forEach(([r, c]) => used.add(key(r, c))); });
+
+  const moves = {};
+  // singles already on the perimeter claim their spot first (they tend to stay),
+  // then inner singles fill the nearest remaining edge cells
+  const order = state.pieces
+    .map((p, i) => ({ p, i }))
+    .filter(o => o.p.cells.length === 1)
+    .sort((a, b) => (isPerim(b.p.cells[0][0], b.p.cells[0][1]) ? 1 : 0) -
+                    (isPerim(a.p.cells[0][0], a.p.cells[0][1]) ? 1 : 0));
+  order.forEach(({ p, i }) => {
+    const [sr, sc] = p.cells[0];
+    let best = null, bd = Infinity;
+    for (const [r, c] of perim) {
+      if (used.has(key(r, c))) continue;
+      const d = Math.abs(r - sr) + Math.abs(c - sc);
+      if (d < bd) { bd = d; best = [r, c]; }
+    }
+    if (!best) best = [sr, sc];
+    used.add(key(best[0], best[1]));
+    moves[i] = [best.slice()];
+  });
+  state.pieces.forEach((p, i) => { if (!(i in moves)) moves[i] = p.cells.map(c => c.slice()); });
+  commit(moves);                                 // current state unchanged → single undo reverts
+  setMsg('Singles pushed to the edges — try placing the ominos first.');
+}
+document.getElementById('spreadBtn').addEventListener('click', doSpread);
+
+// Internal only (no UI): kept so tooling/tests can view the packed 4×4 window.
+function setMode(mode) {
+  if (state.busy || mode === state.mode) return;
+  if (mode === 'strict') {
+    const off = 1;
+    const outside = state.pieces.some(p =>
+      p.cells.some(([r, c]) => r < off || c < off || r >= off + 4 || c >= off + 4));
+    if (outside) return;
+    shiftAll(-1);
+  } else {
+    shiftAll(1);
+  }
+  state.mode = mode;
+  setSelected(null); clearGhost(); clearHistory();
+  metrics(); positionTiles();
+}
+
+window.addEventListener('resize', () => { metrics(); positionTiles(); clearBadges(); clearScribbles(); layoutDrawer(); });
+
+// ------------------------------------------------------------------ the daily
+// Danagram #1. PERMANENT once launched — it defines what "#47" means in every
+// shared result forever. Soft launch as "Danagram Test" (see LABEL) from Oct 8 2026.
+const EPOCH = '2026-10-08';
+const LABEL = 'Danagram Test';   // shown in the header and share text; drop "Test" at full launch
+
+const localMidnight = d =>
+  new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime();
+function epochMs() {
+  const [y, m, d] = EPOCH.split('-').map(Number);
+  return new Date(y, m - 1, d).getTime();
+}
+// Local midnight only: no timezone math, no DST. The device's own date is the input.
+function dayIndex() {
+  return Math.max(0, Math.round((localMidnight(new Date()) - epochMs()) / 86400000));
+}
+function dailyIdx() { return Math.min(dayIndex(), PUZZLES.length - 1); }
+function seasonOver() { return dayIndex() >= PUZZLES.length; }
+
+function renderDaily() {
+  const n = dailyIdx() + 1;
+  const date = new Date().toLocaleDateString(undefined,
+    { weekday: 'long', month: 'long', day: 'numeric' });
+  document.getElementById('dailyLine').innerHTML =
+    `<b>Test #${n}</b> · ${date}` + (seasonOver() ? ' · last one for now' : '');
+}
+
+function msToMidnight() {
+  const now = new Date();
+  const next = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1);
+  return next - now;
+}
+function fmtCountdown(ms) {
+  const s = Math.max(0, Math.floor(ms / 1000));
+  return `${Math.floor(s / 3600)}:${String(Math.floor((s % 3600) / 60)).padStart(2, '0')}` +
+         `:${String(s % 60).padStart(2, '0')}`;
+}
+let countdownTimer = null;
+function startCountdown() {
+  stopCountdown();
+  const el = document.getElementById('nextIn');
+  if (!el) return;
+  const tick = () => {
+    if (seasonOver()) { el.textContent = 'That’s the last puzzle of the season — more soon.'; return; }
+    el.textContent = 'Next Danagram in ' + fmtCountdown(msToMidnight());
+  };
+  tick();
+  el.classList.add('show');
+  countdownTimer = setInterval(tick, 1000);
+}
+function stopCountdown() {
+  if (countdownTimer) { clearInterval(countdownTimer); countdownTimer = null; }
+  const el = document.getElementById('nextIn');
+  if (el) el.classList.remove('show');
+}
+
+// ------------------------------------------------------------- how to play
+const HELP_SEEN = 'danagram_help_seen';
+function showHelp() {
+  document.getElementById('helpOverlay').classList.add('show');
+  document.getElementById('helpPage1').classList.add('active');
+  document.getElementById('helpPage2').classList.remove('active');
+}
+function hideHelp() {
+  document.getElementById('helpOverlay').classList.remove('show');
+  store.set(HELP_SEEN, 1);
+}
+document.getElementById('helpBtn').addEventListener('click', showHelp);
+document.getElementById('closeHelp').addEventListener('click', hideHelp);
+document.getElementById('closeHelp2').addEventListener('click', hideHelp);
+document.getElementById('helpClose').addEventListener('click', hideHelp);
+document.getElementById('toTipsBtn').addEventListener('click', () => {
+  document.getElementById('helpPage1').classList.remove('active');
+  document.getElementById('helpPage2').classList.add('active');
+});
+document.getElementById('toPage1Btn').addEventListener('click', () => {
+  document.getElementById('helpPage2').classList.remove('active');
+  document.getElementById('helpPage1').classList.add('active');
+});
+document.getElementById('helpOverlay').addEventListener('click', (e) => {
+  if (e.target.id === 'helpOverlay') hideHelp();
+});
+
+// --------------------------------------------------------------------- init
+// ?dev=1 keeps the puzzle nav visible for playtesting the whole bank
+const DEV = typeof location !== 'undefined' && /[?&]dev=1/.test(location.search || '');
+if (!DEV) {
+  const nav = document.querySelector('.nav');
+  if (nav) nav.style.display = 'none';
+}
+renderDaily();
+loadPuzzle(DEV ? 0 : dailyIdx());
+if (!store.get(HELP_SEEN)) showHelp();

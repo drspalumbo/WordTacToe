@@ -1,0 +1,5 @@
+# regenerable cache — 9MB, rebuilt by generate.py in ~9s
+tools/grids.pkl
+tools/pool.pkl
+tools/__pycache__/
+.DS_Store
