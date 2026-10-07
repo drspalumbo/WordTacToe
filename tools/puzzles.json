@@ -1,18 +1,14 @@
 [
  {
   "solution": [
-   "coda",
-   "apex",
-   "face",
-   "elks"
+   "bide",
+   "obey",
+   "lice",
+   "asks"
   ],
   "pieces": [
    {
     "cells": [
-     [
-      2,
-      0
-     ],
      [
       3,
       0
@@ -20,9 +16,13 @@
      [
       3,
       1
+     ],
+     [
+      3,
+      2
      ]
     ],
-    "letters": "fel"
+    "letters": "ask"
    },
    {
     "cells": [
@@ -39,7 +39,7 @@
       3
      ]
     ],
-    "letters": "dax"
+    "letters": "dey"
    },
    {
     "cells": [
@@ -52,7 +52,7 @@
       1
      ]
     ],
-    "letters": "op"
+    "letters": "ib"
    },
    {
     "cells": [
@@ -83,136 +83,172 @@
       0
      ]
     ],
+    "letters": "b"
+   },
+   {
+    "cells": [
+     [
+      1,
+      0
+     ]
+    ],
+    "letters": "o"
+   },
+   {
+    "cells": [
+     [
+      2,
+      3
+     ]
+    ],
+    "letters": "e"
+   },
+   {
+    "cells": [
+     [
+      2,
+      1
+     ]
+    ],
+    "letters": "i"
+   },
+   {
+    "cells": [
+     [
+      2,
+      0
+     ]
+    ],
+    "letters": "l"
+   }
+  ],
+  "numSolutions": 1,
+  "solutionWords": [
+   "asks",
+   "bide",
+   "bola",
+   "deck",
+   "eyes",
+   "ibis",
+   "lice",
+   "obey"
+  ],
+  "difficulty": 42,
+  "stars": 3,
+  "difficulty_raw": {
+   "search_info": 5.079,
+   "p_sol": 8.333333333333334e-06,
+   "space": 413280,
+   "branching": 4.918,
+   "formable": 217,
+   "search_norm": 0.511,
+   "lex_norm": 0.284,
+   "exact": false
+  }
+ },
+ {
+  "solution": [
+   "snap",
+   "coma",
+   "arid",
+   "rids"
+  ],
+  "pieces": [
+   {
+    "cells": [
+     [
+      3,
+      0
+     ],
+     [
+      3,
+      1
+     ],
+     [
+      3,
+      2
+     ]
+    ],
+    "letters": "rid"
+   },
+   {
+    "cells": [
+     [
+      0,
+      1
+     ],
+     [
+      0,
+      2
+     ],
+     [
+      0,
+      3
+     ]
+    ],
+    "letters": "nap"
+   },
+   {
+    "cells": [
+     [
+      1,
+      1
+     ],
+     [
+      2,
+      1
+     ]
+    ],
+    "letters": "or"
+   },
+   {
+    "cells": [
+     [
+      1,
+      2
+     ],
+     [
+      1,
+      3
+     ]
+    ],
+    "letters": "ma"
+   },
+   {
+    "cells": [
+     [
+      3,
+      3
+     ]
+    ],
+    "letters": "s"
+   },
+   {
+    "cells": [
+     [
+      1,
+      0
+     ]
+    ],
     "letters": "c"
    },
    {
     "cells": [
      [
-      1,
+      2,
+      2
+     ]
+    ],
+    "letters": "i"
+   },
+   {
+    "cells": [
+     [
+      2,
       0
      ]
     ],
     "letters": "a"
-   },
-   {
-    "cells": [
-     [
-      3,
-      2
-     ]
-    ],
-    "letters": "k"
-   },
-   {
-    "cells": [
-     [
-      2,
-      3
-     ]
-    ],
-    "letters": "e"
-   },
-   {
-    "cells": [
-     [
-      2,
-      1
-     ]
-    ],
-    "letters": "a"
-   }
-  ],
-  "numSolutions": 1,
-  "solutionWords": [
-   "apex",
-   "axes",
-   "cafe",
-   "coda",
-   "deck",
-   "elks",
-   "face",
-   "opal"
-  ],
-  "difficulty": 34,
-  "stars": 2,
-  "difficulty_raw": {
-   "search_info": 5.462,
-   "p_sol": 3.454947484798231e-06,
-   "space": 289440,
-   "branching": 2.459,
-   "formable": 134,
-   "search_norm": 0.566,
-   "lex_norm": 0.0,
-   "exact": true
-  }
- },
- {
-  "solution": [
-   "scan",
-   "cage",
-   "anew",
-   "rest"
-  ],
-  "pieces": [
-   {
-    "cells": [
-     [
-      0,
-      1
-     ],
-     [
-      0,
-      2
-     ],
-     [
-      1,
-      2
-     ],
-     [
-      2,
-      2
-     ]
-    ],
-    "letters": "cage"
-   },
-   {
-    "cells": [
-     [
-      0,
-      3
-     ],
-     [
-      1,
-      3
-     ]
-    ],
-    "letters": "ne"
-   },
-   {
-    "cells": [
-     [
-      1,
-      0
-     ],
-     [
-      1,
-      1
-     ]
-    ],
-    "letters": "ca"
-   },
-   {
-    "cells": [
-     [
-      2,
-      1
-     ],
-     [
-      3,
-      1
-     ]
-    ],
-    "letters": "ne"
    },
    {
     "cells": [
@@ -226,228 +262,66 @@
    {
     "cells": [
      [
-      3,
-      3
-     ]
-    ],
-    "letters": "t"
-   },
-   {
-    "cells": [
-     [
       2,
       3
      ]
     ],
-    "letters": "w"
-   },
-   {
-    "cells": [
-     [
-      2,
-      0
-     ]
-    ],
-    "letters": "a"
-   },
-   {
-    "cells": [
-     [
-      3,
-      0
-     ]
-    ],
-    "letters": "r"
-   },
-   {
-    "cells": [
-     [
-      3,
-      2
-     ]
-    ],
-    "letters": "s"
+    "letters": "d"
    }
   ],
   "numSolutions": 1,
   "solutionWords": [
-   "ages",
-   "anew",
-   "cage",
-   "cane",
-   "newt",
-   "rest",
-   "scan",
-   "scar"
+   "amid",
+   "arid",
+   "coma",
+   "nori",
+   "pads",
+   "rids",
+   "scar",
+   "snap"
   ],
   "difficulty": 46,
   "stars": 3,
   "difficulty_raw": {
-   "search_info": 5.12,
-   "p_sol": 7.589556769884639e-06,
-   "space": 263520,
-   "branching": 5.626,
-   "formable": 104,
-   "search_norm": 0.517,
-   "lex_norm": 0.368,
-   "exact": true
+   "search_info": 5.079,
+   "p_sol": 8.333333333333334e-06,
+   "space": 302400,
+   "branching": 5.724,
+   "formable": 146,
+   "search_norm": 0.511,
+   "lex_norm": 0.379,
+   "exact": false
   }
  },
  {
   "solution": [
-   "stew",
-   "hive",
-   "omen",
-   "test"
+   "flap",
+   "rube",
+   "oxen",
+   "gets"
   ],
   "pieces": [
    {
     "cells": [
      [
-      0,
-      3
-     ],
-     [
-      1,
-      3
-     ],
-     [
       2,
-      3
-     ],
-     [
-      3,
-      3
-     ]
-    ],
-    "letters": "went"
-   },
-   {
-    "cells": [
-     [
-      0,
-      1
-     ],
-     [
-      0,
       2
-     ],
-     [
-      1,
-      1
-     ]
-    ],
-    "letters": "tei"
-   },
-   {
-    "cells": [
-     [
-      2,
-      0
      ],
      [
       3,
       0
-     ]
-    ],
-    "letters": "ot"
-   },
-   {
-    "cells": [
+     ],
      [
       3,
       1
-     ]
-    ],
-    "letters": "e"
-   },
-   {
-    "cells": [
-     [
-      1,
-      0
-     ]
-    ],
-    "letters": "h"
-   },
-   {
-    "cells": [
-     [
-      2,
-      2
-     ]
-    ],
-    "letters": "e"
-   },
-   {
-    "cells": [
-     [
-      0,
-      0
-     ]
-    ],
-    "letters": "s"
-   },
-   {
-    "cells": [
-     [
-      2,
-      1
-     ]
-    ],
-    "letters": "m"
-   },
-   {
-    "cells": [
-     [
-      1,
-      2
-     ]
-    ],
-    "letters": "v"
-   },
-   {
-    "cells": [
+     ],
      [
       3,
       2
      ]
     ],
-    "letters": "s"
-   }
-  ],
-  "numSolutions": 1,
-  "solutionWords": [
-   "eves",
-   "hive",
-   "omen",
-   "shot",
-   "stew",
-   "test",
-   "time",
-   "went"
-  ],
-  "difficulty": 55,
-  "stars": 3,
-  "difficulty_raw": {
-   "search_info": 5.055,
-   "p_sol": 8.818342151675484e-06,
-   "space": 113400,
-   "branching": 7.672,
-   "formable": 121,
-   "search_norm": 0.508,
-   "lex_norm": 0.608,
-   "exact": true
-  }
- },
- {
-  "solution": [
-   "slob",
-   "tone",
-   "arcs",
-   "beet"
-  ],
-  "pieces": [
+    "letters": "eget"
+   },
    {
     "cells": [
      [
@@ -457,62 +331,50 @@
      [
       1,
       0
-     ],
-     [
-      1,
-      1
-     ],
-     [
-      2,
-      1
      ]
     ],
-    "letters": "stor"
-   },
-   {
-    "cells": [
-     [
-      2,
-      2
-     ],
-     [
-      2,
-      3
-     ],
-     [
-      3,
-      3
-     ]
-    ],
-    "letters": "cst"
-   },
-   {
-    "cells": [
-     [
-      2,
-      0
-     ],
-     [
-      3,
-      0
-     ]
-    ],
-    "letters": "ab"
-   },
-   {
-    "cells": [
-     [
-      3,
-      2
-     ]
-    ],
-    "letters": "e"
+    "letters": "fr"
    },
    {
     "cells": [
      [
       0,
+      2
+     ],
+     [
+      0,
       3
+     ]
+    ],
+    "letters": "ap"
+   },
+   {
+    "cells": [
+     [
+      0,
+      1
+     ],
+     [
+      1,
+      1
+     ]
+    ],
+    "letters": "lu"
+   },
+   {
+    "cells": [
+     [
+      2,
+      1
+     ]
+    ],
+    "letters": "x"
+   },
+   {
+    "cells": [
+     [
+      1,
+      2
      ]
     ],
     "letters": "b"
@@ -520,11 +382,140 @@
    {
     "cells": [
      [
+      1,
+      3
+     ]
+    ],
+    "letters": "e"
+   },
+   {
+    "cells": [
+     [
+      3,
+      3
+     ]
+    ],
+    "letters": "s"
+   },
+   {
+    "cells": [
+     [
+      2,
+      3
+     ]
+    ],
+    "letters": "n"
+   },
+   {
+    "cells": [
+     [
+      2,
+      0
+     ]
+    ],
+    "letters": "o"
+   }
+  ],
+  "numSolutions": 1,
+  "solutionWords": [
+   "abet",
+   "flap",
+   "frog",
+   "gets",
+   "luxe",
+   "oxen",
+   "pens",
+   "rube"
+  ],
+  "difficulty": 55,
+  "stars": 3,
+  "difficulty_raw": {
+   "search_info": 5.621,
+   "p_sol": 2.3946360153256704e-06,
+   "space": 417600,
+   "branching": 6.7,
+   "formable": 488,
+   "search_norm": 0.589,
+   "lex_norm": 0.494,
+   "exact": false
+  }
+ },
+ {
+  "solution": [
+   "clog",
+   "ripe",
+   "amen",
+   "gone"
+  ],
+  "pieces": [
+   {
+    "cells": [
+     [
+      2,
+      1
+     ],
+     [
+      2,
+      2
+     ],
+     [
+      3,
+      1
+     ],
+     [
+      3,
+      2
+     ]
+    ],
+    "letters": "meon"
+   },
+   {
+    "cells": [
+     [
       0,
+      1
+     ],
+     [
+      1,
+      0
+     ],
+     [
+      1,
       1
      ]
     ],
-    "letters": "l"
+    "letters": "lri"
+   },
+   {
+    "cells": [
+     [
+      0,
+      3
+     ],
+     [
+      1,
+      3
+     ]
+    ],
+    "letters": "ge"
+   },
+   {
+    "cells": [
+     [
+      2,
+      0
+     ]
+    ],
+    "letters": "a"
+   },
+   {
+    "cells": [
+     [
+      3,
+      0
+     ]
+    ],
+    "letters": "g"
    },
    {
     "cells": [
@@ -533,25 +524,25 @@
       2
      ]
     ],
+    "letters": "p"
+   },
+   {
+    "cells": [
+     [
+      2,
+      3
+     ]
+    ],
     "letters": "n"
    },
    {
     "cells": [
      [
-      3,
-      1
+      0,
+      0
      ]
     ],
-    "letters": "e"
-   },
-   {
-    "cells": [
-     [
-      1,
-      3
-     ]
-    ],
-    "letters": "e"
+    "letters": "c"
    },
    {
     "cells": [
@@ -561,76 +552,76 @@
      ]
     ],
     "letters": "o"
+   },
+   {
+    "cells": [
+     [
+      3,
+      3
+     ]
+    ],
+    "letters": "e"
    }
   ],
   "numSolutions": 1,
   "solutionWords": [
-   "arcs",
-   "beet",
-   "best",
-   "lore",
-   "once",
-   "slob",
-   "stab",
-   "tone"
+   "amen",
+   "clog",
+   "crag",
+   "gene",
+   "gone",
+   "limo",
+   "open",
+   "ripe"
   ],
   "difficulty": 63,
   "stars": 4,
   "difficulty_raw": {
-   "search_info": 4.859,
-   "p_sol": 1.3842746400885937e-05,
-   "space": 72240,
-   "branching": 9.779,
-   "formable": 207,
-   "search_norm": 0.48,
-   "lex_norm": 0.856,
-   "exact": true
+   "search_info": 5.89,
+   "p_sol": 1.2883941455370026e-06,
+   "space": 776160,
+   "branching": 7.812,
+   "formable": 224,
+   "search_norm": 0.627,
+   "lex_norm": 0.625,
+   "exact": false
   }
  },
  {
   "solution": [
-   "last",
-   "arch",
-   "beau",
-   "sang"
+   "chop",
+   "lane",
+   "ales",
+   "west"
   ],
   "pieces": [
+   {
+    "cells": [
+     [
+      2,
+      1
+     ],
+     [
+      2,
+      2
+     ],
+     [
+      3,
+      1
+     ],
+     [
+      3,
+      2
+     ]
+    ],
+    "letters": "lees"
+   },
    {
     "cells": [
      [
       0,
       1
      ],
-     [
-      0,
-      2
-     ],
-     [
-      1,
-      2
-     ],
-     [
-      2,
-      2
-     ]
-    ],
-    "letters": "asca"
-   },
-   {
-    "cells": [
-     [
-      0,
-      3
-     ],
-     [
-      1,
-      3
-     ]
-    ],
-    "letters": "th"
-   },
-   {
-    "cells": [
      [
       1,
       0
@@ -640,26 +631,201 @@
       1
      ]
     ],
-    "letters": "ar"
+    "letters": "hla"
+   },
+   {
+    "cells": [
+     [
+      0,
+      3
+     ],
+     [
+      1,
+      3
+     ]
+    ],
+    "letters": "pe"
    },
    {
     "cells": [
      [
       2,
-      1
+      0
+     ]
+    ],
+    "letters": "a"
+   },
+   {
+    "cells": [
+     [
+      3,
+      0
+     ]
+    ],
+    "letters": "w"
+   },
+   {
+    "cells": [
+     [
+      1,
+      2
+     ]
+    ],
+    "letters": "n"
+   },
+   {
+    "cells": [
+     [
+      2,
+      3
+     ]
+    ],
+    "letters": "s"
+   },
+   {
+    "cells": [
+     [
+      0,
+      0
+     ]
+    ],
+    "letters": "c"
+   },
+   {
+    "cells": [
+     [
+      0,
+      2
+     ]
+    ],
+    "letters": "o"
+   },
+   {
+    "cells": [
+     [
+      3,
+      3
+     ]
+    ],
+    "letters": "t"
+   }
+  ],
+  "numSolutions": 1,
+  "solutionWords": [
+   "ales",
+   "chop",
+   "claw",
+   "hale",
+   "lane",
+   "ones",
+   "pest",
+   "west"
+  ],
+  "difficulty": 70,
+  "stars": 4,
+  "difficulty_raw": {
+   "search_info": 5.89,
+   "p_sol": 1.2883941455370026e-06,
+   "space": 776160,
+   "branching": 9.343,
+   "formable": 312,
+   "search_norm": 0.627,
+   "lex_norm": 0.805,
+   "exact": false
+  }
+ },
+ {
+  "solution": [
+   "slat",
+   "core",
+   "apex",
+   "beat"
+  ],
+  "pieces": [
+   {
+    "cells": [
+     [
+      2,
+      3
+     ],
+     [
+      3,
+      3
+     ]
+    ],
+    "letters": "xt"
+   },
+   {
+    "cells": [
+     [
+      0,
+      0
+     ],
+     [
+      1,
+      0
+     ]
+    ],
+    "letters": "sc"
+   },
+   {
+    "cells": [
+     [
+      3,
+      0
      ],
      [
       3,
       1
      ]
     ],
-    "letters": "ea"
+    "letters": "be"
+   },
+   {
+    "cells": [
+     [
+      1,
+      2
+     ],
+     [
+      2,
+      2
+     ]
+    ],
+    "letters": "re"
+   },
+   {
+    "cells": [
+     [
+      2,
+      1
+     ]
+    ],
+    "letters": "p"
    },
    {
     "cells": [
      [
       0,
-      0
+      2
+     ]
+    ],
+    "letters": "a"
+   },
+   {
+    "cells": [
+     [
+      1,
+      3
+     ]
+    ],
+    "letters": "e"
+   },
+   {
+    "cells": [
+     [
+      0,
+      1
      ]
     ],
     "letters": "l"
@@ -667,20 +833,11 @@
    {
     "cells": [
      [
-      3,
+      0,
       3
      ]
     ],
-    "letters": "g"
-   },
-   {
-    "cells": [
-     [
-      2,
-      3
-     ]
-    ],
-    "letters": "u"
+    "letters": "t"
    },
    {
     "cells": [
@@ -689,16 +846,110 @@
       0
      ]
     ],
-    "letters": "b"
+    "letters": "a"
+   },
+   {
+    "cells": [
+     [
+      1,
+      1
+     ]
+    ],
+    "letters": "o"
+   },
+   {
+    "cells": [
+     [
+      3,
+      2
+     ]
+    ],
+    "letters": "a"
+   }
+  ],
+  "numSolutions": 1,
+  "solutionWords": [
+   "apex",
+   "area",
+   "beat",
+   "core",
+   "lope",
+   "scab",
+   "slat",
+   "text"
+  ],
+  "difficulty": 81,
+  "stars": 5,
+  "difficulty_raw": {
+   "search_info": 7.417,
+   "p_sol": 3.827405447775818e-08,
+   "space": 26127360,
+   "branching": 8.881,
+   "formable": 245,
+   "search_norm": 0.845,
+   "lex_norm": 0.751,
+   "exact": false
+  }
+ },
+ {
+  "solution": [
+   "salt",
+   "oboe",
+   "aloe",
+   "rend"
+  ],
+  "pieces": [
+   {
+    "cells": [
+     [
+      0,
+      3
+     ],
+     [
+      1,
+      3
+     ]
+    ],
+    "letters": "te"
+   },
+   {
+    "cells": [
+     [
+      0,
+      1
+     ],
+     [
+      0,
+      2
+     ]
+    ],
+    "letters": "al"
+   },
+   {
+    "cells": [
+     [
+      1,
+      0
+     ],
+     [
+      2,
+      0
+     ]
+    ],
+    "letters": "oa"
    },
    {
     "cells": [
      [
       3,
       0
+     ],
+     [
+      3,
+      1
      ]
     ],
-    "letters": "s"
+    "letters": "re"
    },
    {
     "cells": [
@@ -708,38 +959,101 @@
      ]
     ],
     "letters": "n"
+   },
+   {
+    "cells": [
+     [
+      1,
+      2
+     ]
+    ],
+    "letters": "o"
+   },
+   {
+    "cells": [
+     [
+      0,
+      0
+     ]
+    ],
+    "letters": "s"
+   },
+   {
+    "cells": [
+     [
+      3,
+      3
+     ]
+    ],
+    "letters": "d"
+   },
+   {
+    "cells": [
+     [
+      2,
+      2
+     ]
+    ],
+    "letters": "o"
+   },
+   {
+    "cells": [
+     [
+      2,
+      1
+     ]
+    ],
+    "letters": "l"
+   },
+   {
+    "cells": [
+     [
+      2,
+      3
+     ]
+    ],
+    "letters": "e"
+   },
+   {
+    "cells": [
+     [
+      1,
+      1
+     ]
+    ],
+    "letters": "b"
    }
   ],
   "numSolutions": 1,
   "solutionWords": [
-   "arch",
-   "area",
-   "beau",
-   "labs",
-   "last",
-   "sang",
-   "scan",
-   "thug"
+   "able",
+   "aloe",
+   "loon",
+   "oboe",
+   "rend",
+   "salt",
+   "soar",
+   "teed"
   ],
-  "difficulty": 69,
-  "stars": 4,
+  "difficulty": 88,
+  "stars": 5,
   "difficulty_raw": {
-   "search_info": 5.722,
-   "p_sol": 1.8973891924711598e-06,
-   "space": 527040,
-   "branching": 9.541,
-   "formable": 252,
-   "search_norm": 0.603,
-   "lex_norm": 0.828,
+   "search_info": 7.864,
+   "p_sol": 1.3672319350378887e-08,
+   "space": 73140480,
+   "branching": 9.58,
+   "formable": 273,
+   "search_norm": 0.909,
+   "lex_norm": 0.833,
    "exact": false
   }
  },
  {
   "solution": [
-   "lash",
-   "orca",
-   "neat",
-   "game"
+   "flab",
+   "lace",
+   "eked",
+   "weds"
   ],
   "pieces": [
    {
@@ -751,57 +1065,48 @@
      [
       3,
       1
-     ]
-    ],
-    "letters": "ga"
-   },
-   {
-    "cells": [
-     [
-      1,
-      3
      ],
      [
-      2,
-      3
-     ]
-    ],
-    "letters": "at"
-   },
-   {
-    "cells": [
-     [
-      0,
-      0
-     ],
-     [
-      1,
-      0
-     ]
-    ],
-    "letters": "lo"
-   },
-   {
-    "cells": [
-     [
-      0,
+      3,
       2
-     ],
+     ]
+    ],
+    "letters": "wed"
+   },
+   {
+    "cells": [
      [
       0,
       3
+     ],
+     [
+      1,
+      3
      ]
     ],
-    "letters": "sh"
+    "letters": "be"
    },
    {
     "cells": [
      [
       0,
       1
+     ],
+     [
+      1,
+      1
      ]
     ],
-    "letters": "a"
+    "letters": "la"
+   },
+   {
+    "cells": [
+     [
+      0,
+      0
+     ]
+    ],
+    "letters": "f"
    },
    {
     "cells": [
@@ -816,315 +1121,10 @@
     "cells": [
      [
       2,
-      2
-     ]
-    ],
-    "letters": "a"
-   },
-   {
-    "cells": [
-     [
-      1,
       1
      ]
     ],
-    "letters": "r"
-   },
-   {
-    "cells": [
-     [
-      2,
-      0
-     ]
-    ],
-    "letters": "n"
-   },
-   {
-    "cells": [
-     [
-      3,
-      3
-     ]
-    ],
-    "letters": "e"
-   },
-   {
-    "cells": [
-     [
-      3,
-      2
-     ]
-    ],
-    "letters": "m"
-   },
-   {
-    "cells": [
-     [
-      2,
-      1
-     ]
-    ],
-    "letters": "e"
-   }
-  ],
-  "numSolutions": 1,
-  "solutionWords": [
-   "area",
-   "game",
-   "hate",
-   "lash",
-   "long",
-   "neat",
-   "orca",
-   "scam"
-  ],
-  "difficulty": 79,
-  "stars": 4,
-  "difficulty_raw": {
-   "search_info": 7.563,
-   "p_sol": 2.7344638700757774e-08,
-   "space": 36570240,
-   "branching": 8.259,
-   "formable": 274,
-   "search_norm": 0.866,
-   "lex_norm": 0.678,
-   "exact": false
-  }
- },
- {
-  "solution": [
-   "from",
-   "limo",
-   "ales",
-   "went"
-  ],
-  "pieces": [
-   {
-    "cells": [
-     [
-      3,
-      0
-     ],
-     [
-      3,
-      1
-     ]
-    ],
-    "letters": "we"
-   },
-   {
-    "cells": [
-     [
-      1,
-      3
-     ],
-     [
-      2,
-      3
-     ]
-    ],
-    "letters": "os"
-   },
-   {
-    "cells": [
-     [
-      0,
-      0
-     ],
-     [
-      1,
-      0
-     ]
-    ],
-    "letters": "fl"
-   },
-   {
-    "cells": [
-     [
-      0,
-      2
-     ],
-     [
-      0,
-      3
-     ]
-    ],
-    "letters": "om"
-   },
-   {
-    "cells": [
-     [
-      0,
-      1
-     ]
-    ],
-    "letters": "r"
-   },
-   {
-    "cells": [
-     [
-      1,
-      2
-     ]
-    ],
-    "letters": "m"
-   },
-   {
-    "cells": [
-     [
-      2,
-      2
-     ]
-    ],
-    "letters": "e"
-   },
-   {
-    "cells": [
-     [
-      1,
-      1
-     ]
-    ],
-    "letters": "i"
-   },
-   {
-    "cells": [
-     [
-      2,
-      0
-     ]
-    ],
-    "letters": "a"
-   },
-   {
-    "cells": [
-     [
-      3,
-      3
-     ]
-    ],
-    "letters": "t"
-   },
-   {
-    "cells": [
-     [
-      3,
-      2
-     ]
-    ],
-    "letters": "n"
-   },
-   {
-    "cells": [
-     [
-      2,
-      1
-     ]
-    ],
-    "letters": "l"
-   }
-  ],
-  "numSolutions": 1,
-  "solutionWords": [
-   "ales",
-   "flaw",
-   "from",
-   "limo",
-   "most",
-   "omen",
-   "rile",
-   "went"
-  ],
-  "difficulty": 87,
-  "stars": 5,
-  "difficulty_raw": {
-   "search_info": 8.165,
-   "p_sol": 6.836159675189443e-09,
-   "space": 146280960,
-   "branching": 8.952,
-   "formable": 354,
-   "search_norm": 0.952,
-   "lex_norm": 0.759,
-   "exact": false
-  }
- },
- {
-  "solution": [
-   "scab",
-   "lava",
-   "akin",
-   "beds"
-  ],
-  "pieces": [
-   {
-    "cells": [
-     [
-      2,
-      0
-     ],
-     [
-      3,
-      0
-     ],
-     [
-      3,
-      1
-     ]
-    ],
-    "letters": "abe"
-   },
-   {
-    "cells": [
-     [
-      0,
-      3
-     ],
-     [
-      1,
-      3
-     ]
-    ],
-    "letters": "ba"
-   },
-   {
-    "cells": [
-     [
-      0,
-      1
-     ],
-     [
-      1,
-      1
-     ]
-    ],
-    "letters": "ca"
-   },
-   {
-    "cells": [
-     [
-      0,
-      0
-     ]
-    ],
-    "letters": "s"
-   },
-   {
-    "cells": [
-     [
-      1,
-      2
-     ]
-    ],
-    "letters": "v"
-   },
-   {
-    "cells": [
-     [
-      2,
-      2
-     ]
-    ],
-    "letters": "i"
+    "letters": "k"
    },
    {
     "cells": [
@@ -1156,8 +1156,8 @@
    {
     "cells": [
      [
-      3,
-      2
+      2,
+      3
      ]
     ],
     "letters": "d"
@@ -1166,42 +1166,42 @@
     "cells": [
      [
       2,
-      3
+      2
      ]
     ],
-    "letters": "n"
+    "letters": "e"
    },
    {
     "cells": [
      [
       2,
-      1
+      0
      ]
     ],
-    "letters": "k"
+    "letters": "e"
    }
   ],
   "numSolutions": 1,
   "solutionWords": [
-   "akin",
-   "avid",
-   "bans",
+   "aced",
    "beds",
-   "cake",
-   "lava",
-   "scab",
-   "slab"
+   "eked",
+   "flab",
+   "flew",
+   "lace",
+   "lake",
+   "weds"
   ],
-  "difficulty": 93,
+  "difficulty": 94,
   "stars": 5,
   "difficulty_raw": {
-   "search_info": 7.894,
-   "p_sol": 1.2758018159252727e-08,
-   "space": 78382080,
-   "branching": 10.542,
-   "formable": 156,
-   "search_norm": 0.913,
-   "lex_norm": 0.946,
+   "search_info": 7.805,
+   "p_sol": 1.5657567740901073e-08,
+   "space": 63866880,
+   "branching": 12.464,
+   "formable": 127,
+   "search_norm": 0.901,
+   "lex_norm": 1.0,
    "exact": false
   }
  }

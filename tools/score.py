@@ -159,9 +159,13 @@ def search_metrics(pieces_cells, pieces_letters, WORDSET, samples=MC_SAMPLES):
 def _clamp01(x): return max(0.0, min(1.0, x))
 def _stars(score): return 1 + min(4, int(score // 20))
 
-def score_puzzle(puzzle, words_path="words4.txt"):
+def score_puzzle(puzzle, words_path=None):
     """Return difficulty fields for one puzzle dict (needs 'solution', 'pieces',
-    'numSolutions')."""
+    'numSolutions'). Scores against the words a player can actually form, so
+    valid4.txt when it exists."""
+    if words_path is None:
+        import os
+        words_path = "valid4.txt" if os.path.exists("valid4.txt") else "words4.txt"
     random.seed(SEED)
     WORDS, WORDSET = _load_words(words_path)
     pieces_cells = [[tuple(c) for c in p["cells"]] for p in puzzle["pieces"]]

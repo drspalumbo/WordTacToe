@@ -1,0 +1,18 @@
+# Puzzles already shown to players (playtest history + first daily set).
+# newpuzzles.py never reuses these grids, their letter sets, or >2 of their words.
+atop lake acre soak
+coda apex face elks
+from limo ales went
+lads area dies yams
+lash orca neat game
+last arch beau sang
+scab lava akin beds
+scan cage anew rest
+scar cage amen nest
+slob pike acre teas
+slob tone arcs beet
+stab pale exec disk
+star lame open bent
+step time edit wets
+stew hive omen test
+wads area sing hate

@@ -6,6 +6,7 @@ Usage:
     python3 pick.py --stars            # one per star category (1..5), ascending
     python3 pick.py --targets 40,60,80 # hit these difficulty scores
     python3 pick.py --floor 0          # allow trivial puzzles
+    python3 pick.py --reuse 1          # no answer word appears in two puzzles
 
 Constraints applied to every pick: exactly one solution, no repeated letter
 multiset, and no answer word reused more than MAX_WORD_REUSE times in the set.
@@ -20,7 +21,7 @@ def flag(name, default=None):
     return args[args.index(name) + 1] if name in args else default
 
 FLOOR = int(flag('--floor', 30))
-MAX_WORD_REUSE = 2
+MAX_WORD_REUSE = int(flag('--reuse', 2))   # --reuse 1: no answer word repeats in the set
 
 if '--stars' in args:
     # Stars are 20-point bands: 1★=0-19, 2★=20-39, 3★=40-59, 4★=60-79, 5★=80-100.

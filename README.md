@@ -57,6 +57,20 @@ silently overwritten.
 
 ## Working on the pipeline (needs Python)
 
+Word lists come from the curator (`wordsort/progress.json`):
+
+```bash
+cd tools
+python build_wordlists.py  # → words4.txt (puzzle words) + valid4.txt (accepted words)
+                           #   minus anything held in hold.txt
+python newpuzzles.py 20261008 150   # seed, seconds → pool.pkl (never reuses retired.txt)
+python pick.py --reuse 1            # 8 puzzles, rising difficulty, no repeated words
+```
+
+Puzzles use only `words4.txt`; uniqueness is checked against `valid4.txt`,
+because the page accepts any arrangement of valid words. After a set ships,
+append its grids to `retired.txt`.
+
 ```bash
 cd tools
 python3 generate.py        # enumerate grids → fuse ominos → score → puzzles.json
