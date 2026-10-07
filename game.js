@@ -1709,8 +1709,8 @@ document.getElementById('spreadBtn').addEventListener('click', doSpread);
 // arrangement rotates in place instead: the band of whole lines at the edge wraps
 // to the far side of the arrangement, snug against it, and the rest steps over to
 // fill in. A piece reaching into the band pulls its other lines into the band too
-// (pieces can't split), so rows/columns move as wholes and no gaps open. The only
-// dead end is when overlapping pieces chain across the whole arrangement. One
+// (pieces can't split), so rows/columns move as wholes and no gaps open. If the
+// pieces chain across the whole arrangement, it falls back to dropEdgePieces. One
 // shift = one undo step.
 function doShiftAll(dr, dc) {
   if (state.busy) return;
@@ -1736,19 +1736,59 @@ function doShiftAll(dr, dc) {
       });
     }
     const first = Math.min(...all);
-    if (start <= first) {
+    if (start > first) {
+      const band = N - start;
+      state.pieces.forEach((p, i) => {
+        const inBand = lines[i][0] >= start;
+        moves[i] = p.cells.map(c => step(c, inBand ? -(start - first) : band));
+      });
+    } else if (!dropEdgePieces(lines, pos, step, horiz, moves)) {
       playVerdict(state.pieces.flatMap(p => p.tiles.map(t => t.querySelector('.letter'))), false);
-      setMsg('These pieces lock together all the way across, so they can’t wrap that way.', '');
+      setMsg('No room to wrap that way.', '');
       return;
     }
-    const band = N - start;
-    state.pieces.forEach((p, i) => {
-      const inBand = lines[i][0] >= start;
-      moves[i] = p.cells.map(c => step(c, inBand ? -(start - first) : band));
-    });
   }
   commit(moves);
   setMsg('');
+}
+
+// Fallback for doShiftAll when the pieces chain all the way across, so whole
+// lines can't rotate: only the pieces touching the edge wrap. Each drops in from
+// the far side until it sits snug against the tiles already in its own rows or
+// columns; everything else stays put. Fills `moves`; false if a piece won't fit.
+function dropEdgePieces(lines, pos, step, horiz, moves) {
+  const N = 6;
+  const lane = ([r, c]) => horiz ? r : c;      // the row/column a tile travels along
+  const wraps = lines.map(ls => Math.max(...ls) === N - 1);
+  const floor = {};                            // lane -> nearest far-side tile that stays
+  const settle = cells => cells.forEach(cell => {
+    const l = lane(cell);
+    floor[l] = Math.min(floor[l] === undefined ? Infinity : floor[l], pos(cell));
+  });
+  state.pieces.forEach((p, i) => {
+    if (wraps[i]) return;
+    settle(p.cells);
+    moves[i] = p.cells.map(c => c.slice());
+  });
+  const ends = Object.values(floor);
+  if (!ends.length) return false;
+  const farEnd = Math.min(...ends);            // for lanes with nothing else in them
+
+  // deepest-reaching pieces first, so shorter ones stack beyond them
+  const order = state.pieces.map((p, i) => i).filter(i => wraps[i])
+    .sort((a, b) => Math.min(...lines[a]) - Math.min(...lines[b]));
+  for (const i of order) {
+    const cells = state.pieces[i].cells;
+    const d = Math.max(...cells.map(cell => {
+      const f = floor[lane(cell)];
+      return pos(cell) - (f === undefined ? farEnd : f) + 1;
+    }));
+    const moved = cells.map(c => step(c, -d));
+    if (moved.some(c => pos(c) < 0)) return false;
+    moves[i] = moved;
+    settle(moved);
+  }
+  return true;
 }
 document.querySelectorAll('.shifts .shift').forEach(b => b.addEventListener('click', () =>
   doShiftAll(+b.dataset.dr, +b.dataset.dc)));
