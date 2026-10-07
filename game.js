@@ -1704,6 +1704,44 @@ function doSpread() {
 }
 document.getElementById('spreadBtn').addEventListener('click', doSpread);
 
+// Shift every piece one step. The 6×6 board wraps at its outer edge, but pieces
+// are rigid, so one that would cross the edge jumps whole to the far side, flush
+// against it. If anything would then land on anything else, nothing moves and the
+// tiles shake. One shift = one undo step.
+function doShiftAll(dr, dc) {
+  if (state.busy) return;
+  setSelected(null); clearGhost();
+  const N = 6;
+  const moves = {};
+  state.pieces.forEach((p, i) => {
+    let cells = p.cells.map(([r, c]) => [r + dr, c + dc]);
+    if (cells.some(([r, c]) => r < 0 || c < 0 || r >= N || c >= N)) {
+      const rs = p.cells.map(([r]) => r), cs = p.cells.map(([, c]) => c);
+      const jr = dr > 0 ? -Math.min(...rs) : dr < 0 ? N - 1 - Math.max(...rs) : 0;
+      const jc = dc > 0 ? -Math.min(...cs) : dc < 0 ? N - 1 - Math.max(...cs) : 0;
+      cells = p.cells.map(([r, c]) => [r + jr, c + jc]);
+    }
+    moves[i] = cells;
+  });
+
+  const taken = new Set();
+  const blocked = Object.values(moves).some(cells => cells.some(([r, c]) => {
+    const k = key(r, c);
+    if (taken.has(k)) return true;
+    taken.add(k);
+    return false;
+  }));
+  if (blocked) {
+    playVerdict(state.pieces.flatMap(p => p.tiles.map(t => t.querySelector('.letter'))), false);
+    setMsg('No room to wrap that way — something’s in the way.', '');
+    return;
+  }
+  commit(moves);
+  setMsg('');
+}
+document.querySelectorAll('.shifts .shift').forEach(b => b.addEventListener('click', () =>
+  doShiftAll(+b.dataset.dr, +b.dataset.dc)));
+
 // Internal only (no UI): kept so tooling/tests can view the packed 4×4 window.
 function setMode(mode) {
   if (state.busy || mode === state.mode) return;

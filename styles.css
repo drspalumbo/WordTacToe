@@ -749,6 +749,8 @@
     display:flex; align-items:center; justify-content:center;
   }
   .btn.icon:not(:disabled):hover{border-color:var(--accent); color:var(--accent);}
+  .shifts{display:flex; gap:7px; margin-top:8px; justify-content:center;}
+  .btn.icon.shift{width:44px; height:34px;}
 
   .tile{cursor:grab; touch-action:none;}
   .tile.dragging{cursor:grabbing; z-index:20; transition:none; filter:brightness(1.03);}
