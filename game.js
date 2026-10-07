@@ -798,7 +798,8 @@ function flyDot(fromEl, delay) {
 // Charging happens the moment any board change lands (a move, Shuffle, Scatter,
 // undo, redo), not on Check. +1 for each valid word on a row or column of the
 // target 4×4 never formed on this puzzle before, and +1 for each new crossing of
-// two valid words. A crossing is the two words plus the letter each one shares,
+// two valid words. A word only counts if every piece in it sits wholly inside
+// the 4×4. A crossing is the two words plus the letter each one shares,
 // so EXIT×AXIS at the X scores once, whichever way round it's laid. Words in the
 // opening scramble aren't scored up front; they count on the first move if they
 // survive it.
@@ -824,13 +825,17 @@ function scoreBoard() {
   const off = innerOff();
   const occ = occupancy();
   const lineCells = i => [0, 1, 2, 3].map(j => i < 4 ? [i, j] : [j, i - 4]);
+  // a piece hanging out of the 4×4 (SOLE whose E drags a Y below the grid)
+  // doesn't make a word — that arrangement can't be part of a solution
+  const inside = state.pieces.map(p => p.cells.every(([r, c]) =>
+    r >= off && c >= off && r < off + 4 && c < off + 4));
   // the 8 lines of the target 4×4; null where a line isn't filled
   const words = [];
   for (let i = 0; i < 8; i++) {
     let w = '';
     for (const [r, c] of lineCells(i)) {
       const hit = occ.get(key(r + off, c + off));
-      if (!hit) { w = null; break; }
+      if (!hit || !inside[hit.pi]) { w = null; break; }
       w += state.pieces[hit.pi].letters[hit.ci];
     }
     words.push(w);
