@@ -1704,37 +1704,48 @@ function doSpread() {
 }
 document.getElementById('spreadBtn').addEventListener('click', doSpread);
 
-// Shift every piece one step. The 6×6 board wraps at its outer edge, but pieces
-// are rigid, so one that would cross the edge jumps whole to the far side, flush
-// against it. If anything would then land on anything else, nothing moves and the
-// tiles shake. One shift = one undo step.
+// Shift every tile one step toward an edge of the 6×6 board. With room to spare,
+// everything just steps over. Once the tiles are against that edge, the
+// arrangement rotates in place instead: the band of whole lines at the edge wraps
+// to the far side of the arrangement, snug against it, and the rest steps over to
+// fill in. A piece reaching into the band pulls its other lines into the band too
+// (pieces can't split), so rows/columns move as wholes and no gaps open. The only
+// dead end is when overlapping pieces chain across the whole arrangement. One
+// shift = one undo step.
 function doShiftAll(dr, dc) {
   if (state.busy) return;
   setSelected(null); clearGhost();
   const N = 6;
+  const horiz = dc !== 0, s = horiz ? dc : dr;
+  // positions along the shift axis, counted so the target edge is N-1
+  const pos = ([r, c]) => { const a = horiz ? c : r; return s > 0 ? a : N - 1 - a; };
+  const step = ([r, c], d) => horiz ? [r, c + d * s] : [r + d * s, c];  // d steps toward the edge
+  const lines = state.pieces.map(p => p.cells.map(pos));
+  const all = lines.flat();
   const moves = {};
-  state.pieces.forEach((p, i) => {
-    let cells = p.cells.map(([r, c]) => [r + dr, c + dc]);
-    if (cells.some(([r, c]) => r < 0 || c < 0 || r >= N || c >= N)) {
-      const rs = p.cells.map(([r]) => r), cs = p.cells.map(([, c]) => c);
-      const jr = dr > 0 ? -Math.min(...rs) : dr < 0 ? N - 1 - Math.max(...rs) : 0;
-      const jc = dc > 0 ? -Math.min(...cs) : dc < 0 ? N - 1 - Math.max(...cs) : 0;
-      cells = p.cells.map(([r, c]) => [r + jr, c + jc]);
-    }
-    moves[i] = cells;
-  });
 
-  const taken = new Set();
-  const blocked = Object.values(moves).some(cells => cells.some(([r, c]) => {
-    const k = key(r, c);
-    if (taken.has(k)) return true;
-    taken.add(k);
-    return false;
-  }));
-  if (blocked) {
-    playVerdict(state.pieces.flatMap(p => p.tiles.map(t => t.querySelector('.letter'))), false);
-    setMsg('No room to wrap that way — something’s in the way.', '');
-    return;
+  if (Math.max(...all) < N - 1) {
+    state.pieces.forEach((p, i) => { moves[i] = p.cells.map(c => step(c, 1)); });
+  } else {
+    let start = N - 1, grew = true;           // band = lines start..N-1
+    while (grew) {
+      grew = false;
+      lines.forEach(ls => {
+        const m = Math.min(...ls);
+        if (Math.max(...ls) >= start && m < start) { start = m; grew = true; }
+      });
+    }
+    const first = Math.min(...all);
+    if (start <= first) {
+      playVerdict(state.pieces.flatMap(p => p.tiles.map(t => t.querySelector('.letter'))), false);
+      setMsg('These pieces lock together all the way across, so they can’t wrap that way.', '');
+      return;
+    }
+    const band = N - start;
+    state.pieces.forEach((p, i) => {
+      const inBand = lines[i][0] >= start;
+      moves[i] = p.cells.map(c => step(c, inBand ? -(start - first) : band));
+    });
   }
   commit(moves);
   setMsg('');
