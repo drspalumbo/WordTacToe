@@ -125,8 +125,9 @@ def fuse(sizes):
     return None
 
 # ---------------------------------------------------------- clean ominos
-# A multi-tile piece shouldn't spell anything rude along any straight run of its
-# tiles (left to right, top to bottom). Blocked runs live in omino_blocklist.txt.
+# A multi-tile piece shouldn't spell anything rude: a straight run of its tiles
+# (left to right, top to bottom) may not read exactly as a word in
+# omino_blocklist.txt. Longer runs that merely contain one (PASS, MASS) are fine.
 BLOCKLIST = [w for w in (l.split('#')[0].strip().lower() for l in
              open(os.path.join(os.path.dirname(os.path.abspath(__file__)), 'omino_blocklist.txt')))
              if w]
@@ -147,8 +148,9 @@ def piece_runs(grid, cells):
     return runs
 
 def pieces_are_clean(grid, pieces):
-    return not any(bad in run for p in pieces if len(p) > 1
-                   for run in piece_runs(grid, p) for bad in BLOCKLIST)
+    blocked = set(BLOCKLIST)
+    return not any(run in blocked for p in pieces if len(p) > 1
+                   for run in piece_runs(grid, p))
 
 # ------------------------------------------------------- solution counting
 def normalize(cells):

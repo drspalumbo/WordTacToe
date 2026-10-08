@@ -1,9 +1,9 @@
-# Letter runs a multi-tile piece (omino) must not spell. A piece is checked along
-# every straight run of its tiles, left to right and top to bottom, so "ass" also
-# catches a piece reading PASS or ASSN. One entry per line; # starts a comment.
-# Used by generate.piece_is_clean() (newpuzzles.py / generate.py).
+# Words a multi-tile piece (omino) must not spell. Each straight run of a piece's
+# tiles (left to right, top to bottom) is compared whole: a piece reading ASS is
+# rejected, one reading PASS or MASS is fine. One entry per line; # starts a comment.
+# Used by generate.pieces_are_clean() (newpuzzles.py, generate.py, pick.py).
 
-# short fragments
+# short words
 ass
 cum
 fag
