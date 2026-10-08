@@ -472,6 +472,10 @@
   .wl.found{flex-basis:100%; max-width:none;}
   .wl.found ul{display:flex; flex-wrap:wrap; gap:0 14px;}
   .wl.found li{color:var(--ink-soft); opacity:.75; font-size:19px;}
+  /* how many words are waiting to be sorted */
+  .wl-count{display:inline-block; min-width:18px; margin-left:5px; padding:1px 5px;
+    border-radius:8px; background:#EEF1F4; color:var(--ink-soft);
+    font-size:10.5px; letter-spacing:0; text-align:center; box-sizing:border-box;}
 
   /* charge bar under the word bank label (full gold = a Grid Check is ready) */
   /* label + chevron on one row, the bar centred under the whole tab */

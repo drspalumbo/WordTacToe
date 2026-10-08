@@ -1042,7 +1042,7 @@ function renderWordLists(justAdded, newestFirst) {
   const total = h.inList.length + h.outList.length;
   // found is already newest-first (scoreBoard unshifts), so it skips order()
   const found = h.found.length
-    ? `<div class="wl found"><h4>Found</h4><ul>` +
+    ? `<div class="wl found"><h4>Found <span class="wl-count">${h.found.length}</span></h4><ul>` +
       h.found.map(w => `<li${w === justAdded ? ' data-new="1"' : ''}>${w.toUpperCase()}</li>`).join('') +
       '</ul></div>'
     : '';
