@@ -5,8 +5,27 @@
     --accent:#2B59C3; --accent-soft:#DFE7F9;
     --good:#2E9E6B; --bad:#D9455C; --gold:#E9C31C; --purple:#7A5AD8;
     --charge:#2B59C3; --charge-press:#16307A;   /* word bank meter + Grid Check */
+    --surface:#fff; --surface-soft:#F6F8FA;       /* cards, drawer, buttons */
+    --track:#EEF1F4; --track-2:#DCE3E9;           /* unfilled meters */
+    --divider:#EEF2F5;
     --o1:#F5C48C; --o2:#A9D9BE; --o3:#B5C7F0; --o4:#DDBEE8; --o5:#EFDE9C; --o6:#E8B3A6;
     --radius:14px;
+  }
+  /* ---------------------------------------------------------------- dark mode
+     Same roles, darker surfaces. Tile tints are the light ones pulled down so
+     letters (now light ink) keep their contrast. Switched on by html.dark. */
+  html.dark{
+    color-scheme:dark;
+    --bg:#12171D; --ink:#E4E9EE; --ink-soft:#97A5B3;
+    --well:#1E262E; --well-outer:#192028; --zone:#232C35;
+    --tile:#2A343E; --tile-line:#3B4854;
+    --accent:#4F7FE0; --accent-soft:#22314F;
+    --good:#3DB57F; --bad:#E55A6F; --purple:#8C6FE6;
+    --charge:#4F7FE0; --charge-press:#3462C4;
+    --o1:#7C5A35; --o2:#335E49; --o3:#3A4B7A; --o4:#5E4470; --o5:#6E6230; --o6:#74443B;
+    --surface:#1B2229; --surface-soft:#222A32;
+    --track:#2A333C; --track-2:#323C46;
+    --divider:#252E37;
   }
   *{box-sizing:border-box; -webkit-tap-highlight-color:transparent;}
   html,body{margin:0; padding:0;}
@@ -22,7 +41,7 @@
   #helpBtn{
     position:fixed; top:12px; right:12px; z-index:45;
     width:34px; height:34px; border-radius:50%; cursor:pointer;
-    border:1px solid var(--tile-line); background:#fff; color:var(--ink-soft);
+    border:1px solid var(--tile-line); background:var(--surface); color:var(--ink-soft);
     font:inherit; font-weight:800; font-size:16px; line-height:1;
     display:flex; align-items:center; justify-content:center;
     touch-action:manipulation;
@@ -54,7 +73,7 @@
   #helpClose{
     position:absolute; top:12px; right:12px; z-index:1;
     width:30px; height:30px; border-radius:50%; cursor:pointer;
-    border:1px solid var(--tile-line); background:#fff; color:var(--ink-soft);
+    border:1px solid var(--tile-line); background:var(--surface); color:var(--ink-soft);
     font:inherit; font-weight:800; font-size:16px; line-height:1;
     display:flex; align-items:center; justify-content:center;
     touch-action:manipulation; padding:0;
@@ -66,7 +85,7 @@
   .help-list{list-style:none; margin:0; padding:0;}
   .help-list li{
     font-size:13.5px; line-height:1.38; color:var(--ink-soft);
-    padding:8px 0; border-top:1px solid #EEF2F5;
+    padding:8px 0; border-top:1px solid var(--divider);
     display:flex; align-items:flex-start; gap:10px;
   }
   #helpPage1 .help-list li{
@@ -75,7 +94,7 @@
   #helpPage1 .help-list li > :first-child{align-self:center;}
   .hk-icon{
     flex:none; width:30px; height:30px; margin-top:1px; border-radius:9px;
-    background:#fff; border:1px solid var(--tile-line); color:var(--ink);
+    background:var(--surface); border:1px solid var(--tile-line); color:var(--ink);
     display:flex; align-items:center; justify-content:center;
   }
   .hk-icon svg{width:15px; height:15px;}
@@ -203,12 +222,12 @@
      can't clip it and the text needs to sit above it in the stack */
   #helpPage1 .help-list li{position:relative;}
   /* opaque + above the check so the charge passes behind the copy */
-  #helpPage1 .help-text{position:relative; z-index:2; background:#fff; text-align:center;}
+  #helpPage1 .help-text{position:relative; z-index:2; background:var(--surface); text-align:center;}
   .help-h{display:block; color:var(--ink); font-weight:800; margin-bottom:2px;}
   /* -------- win condition: a solved 4x4 grid saluting row by row, then column by
      column (all eight words), then a confetti burst. Shares the 12s clock. -------- */
   .win-note{
-    padding-top:10px; border-top:1px solid #EEF2F5;
+    padding-top:10px; border-top:1px solid var(--divider);
     display:flex; align-items:center; justify-content:center; gap:12px;
   }
   .win-demo{position:relative; flex:none; width:56px; height:56px; pointer-events:none;}
@@ -258,12 +277,12 @@
   .bank-demo{
     position:relative; flex:none; display:flex; flex-direction:column; align-items:center;
     gap:4px; padding:6px 20px 8px; border-radius:11px 11px 0 0;
-    background:#fff; border:1px solid var(--tile-line); border-bottom:0;
+    background:var(--surface); border:1px solid var(--tile-line); border-bottom:0;
     animation:bankPop 12s ease-in-out infinite;
   }
   .bd-label{font-size:11px; font-weight:800; color:var(--ink-soft);}
   .bd-bar{position:relative; display:block; width:56px; height:4px; border-radius:2px;
-    background:#DCE3E9; overflow:hidden;}
+    background:var(--track-2); overflow:hidden;}
   .bd-bar i, .gc-fill{position:absolute; left:0; top:0; bottom:0; width:0;
     background:var(--charge); animation:bankFill 12s ease-in-out infinite;}
   @keyframes bankFill{
@@ -286,7 +305,7 @@
   .gc-demo{
     position:relative; overflow:hidden; isolation:isolate;
     display:flex; align-items:center; justify-content:center;
-    width:84px; height:30px; border-radius:9px; background:#EEF1F4;
+    width:84px; height:30px; border-radius:9px; background:var(--track);
     font-size:10.5px; font-weight:800; white-space:nowrap;
     animation:gcText 12s ease-in-out infinite, gcPress 12s ease-in-out infinite;
   }
@@ -340,7 +359,7 @@
   }
   .help-tip{
     font-size:13px; font-style:italic; color:var(--ink-soft);
-    background:#F5F8FA; border-radius:9px; padding:9px 11px; margin:0;
+    background:var(--surface-soft); border-radius:9px; padding:9px 11px; margin:0;
   }
   .help-version{
     text-align:center; font-size:10.5px; font-weight:700; color:var(--tile-line);
@@ -444,7 +463,7 @@
   /* the top edge — including the pull tab — is one continuous drawn shape */
   #drawerTop{position:relative; height:42px;}
   #drawerTopSvg{position:absolute; left:0; top:0; width:100%; height:100%; display:block;}
-  #drawerFillPath{fill:#fff;}
+  #drawerFillPath{fill:var(--surface);}
   #drawerEdgePath{fill:none; stroke:var(--tile-line); stroke-width:1.25;}
   #drawerTab{
     position:absolute; left:50%; top:0; transform:translateX(-50%);
@@ -457,7 +476,7 @@
   #drawerTab .chevron{transition:transform .25s;}
   #drawer.open #drawerTab .chevron{transform:rotate(180deg);}
   #drawerPanel{
-    background:#fff; max-height:0;
+    background:var(--surface); max-height:0;
     overflow:hidden; transition:max-height .3s ease;
   }
   #drawer.open #drawerPanel{max-height:44vh; overflow-y:auto;}
@@ -475,7 +494,7 @@
   .wl.found li{color:var(--ink-soft); opacity:.75; font-size:19px;}
   /* how many words are waiting to be sorted */
   .wl-count{display:inline-block; min-width:18px; margin-left:5px; padding:1px 5px;
-    border-radius:8px; background:#EEF1F4; color:var(--ink-soft);
+    border-radius:8px; background:var(--track); color:var(--ink-soft);
     font-size:10.5px; letter-spacing:0; text-align:center; box-sizing:border-box;}
 
   /* charge bar under the word bank label (full = a Grid Check is ready) */
@@ -494,22 +513,22 @@
   .tc-out::after{content:''; position:absolute; left:0; right:0; top:50%; height:1.5px;
     margin-top:-.75px; border-radius:1px; background:currentColor;}
   .bank-bar-wrap{position:relative; width:84px;}
-  .bank-bar{display:block; height:4px; border-radius:2px; background:#DCE3E9; overflow:hidden;
+  .bank-bar{display:block; height:4px; border-radius:2px; background:var(--track-2); overflow:hidden;
     transition:opacity .2s ease;}
   #bankBarFill{display:block; height:100%; width:0%; background:var(--charge);
     transition:width .4s cubic-bezier(.3,.9,.4,1);}
   #drawer.open .bank-bar{opacity:0;}          /* it became the Grid Check button */
   .bank-badge{position:absolute; min-width:15px; height:15px;
-    padding:0 3px; border-radius:8px; background:var(--ink); color:#fff;
+    padding:0 3px; border-radius:8px; background:var(--ink); color:var(--surface);
     font-size:9.5px; font-weight:800; display:none; align-items:center; justify-content:center;
-    line-height:1; box-shadow:0 0 0 2px #fff; box-sizing:border-box;}
+    line-height:1; box-shadow:0 0 0 2px var(--surface); box-sizing:border-box;}
   .bank-badge.show{display:flex;}
 
   /* the Grid Check lives at the top of the open drawer; it's its own meter too —
      blue fills it left to right as it charges */
   .bank-actions{display:flex; flex-direction:column; align-items:center; gap:5px;
     padding:6px 18px 8px;}
-  .btn.bank-check{position:relative; isolation:isolate; background:#EEF1F4; color:var(--ink);
+  .btn.bank-check{position:relative; isolation:isolate; background:var(--track); color:var(--ink);
     padding:10px 26px;}
   .bank-check-fill{position:absolute; inset:0; border-radius:inherit; overflow:hidden; z-index:-1;}
   #bankCheckFill{position:absolute; left:0; top:0; bottom:0; width:var(--fill, 0%);
@@ -537,7 +556,7 @@
     background:color-mix(in srgb, var(--charge) 14%, transparent);
     box-shadow:inset 0 0 0 2.5px var(--charge);}   /* a ring, so it can't pass for a tile */
   /* the tab's bar growing into the button as the drawer opens */
-  .bar-morph{position:fixed; z-index:60; overflow:hidden; background:#EEF1F4; pointer-events:none;}
+  .bar-morph{position:fixed; z-index:60; overflow:hidden; background:var(--track); pointer-events:none;}
   .bar-morph i{position:absolute; left:0; top:0; bottom:0; background:var(--charge);}
   .bank-hint{font-size:12.5px; font-weight:600; color:var(--ink-soft); min-height:16px;}
   .wl h4{
@@ -586,7 +605,7 @@
   .btn.ghost:hover{color:var(--ink);}
   .btn:disabled{opacity:.35; cursor:default;}
   .btn.icon{
-    background:#fff; color:var(--ink); border:1px solid var(--tile-line);
+    background:var(--surface); color:var(--ink); border:1px solid var(--tile-line);
     padding:0; width:44px; height:44px; font-size:20px; line-height:1;
     display:flex; align-items:center; justify-content:center;
   }
@@ -609,7 +628,7 @@
   }
   .nav{display:flex; align-items:center; gap:6px;}
   .nav button{
-    border:1px solid var(--tile-line); background:#fff; border-radius:8px;
+    border:1px solid var(--tile-line); background:var(--surface); border-radius:8px;
     width:28px; height:28px; cursor:pointer; font-weight:800; color:var(--ink);
     touch-action:manipulation;
   }
@@ -631,7 +650,7 @@
   }
   #overlay.show{display:flex;}
   .card{
-    background:#fff; border-radius:20px; padding:30px 34px; text-align:center; max-width:330px;
+    background:var(--surface); border-radius:20px; padding:30px 34px; text-align:center; max-width:330px;
     animation:pop .35s cubic-bezier(.2,1.4,.4,1) both;
     box-shadow:0 18px 50px rgba(20,32,45,.35);
     max-height:calc(100vh - 40px); overflow-y:auto; -webkit-overflow-scrolling:touch;
@@ -658,7 +677,7 @@
     display:none; width:100%; box-sizing:border-box; margin:8px 0 2px;
     font-family:inherit; font-size:16px; line-height:1.5; text-align:center;
     border:1px solid var(--tile-line); border-radius:10px; padding:8px;
-    background:#F7F9FB; color:var(--ink); resize:none;
+    background:var(--surface-soft); color:var(--ink); resize:none;
   }
   #shareFallback.show{display:block;}
 

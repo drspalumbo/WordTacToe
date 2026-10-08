@@ -2133,6 +2133,8 @@ if (!DEV) {
   const nav = document.querySelector('.nav');
   if (nav) nav.style.display = 'none';
 }
+// dark mode preview while it's being tuned: ?dark=1
+if (/[?&]dark=1/.test(location.search || '')) document.documentElement.classList.add('dark');
 restoreProgress();
 renderDaily();
 loadPuzzle(DEV ? 0 : dailyIdx());
