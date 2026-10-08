@@ -1075,11 +1075,14 @@ function renderWordLists(justAdded, newestFirst) {
   // the drawer is always there; empty, it explains how to fill it
   document.getElementById('drawer').classList.toggle('has-words', total > 0);
   document.body.classList.add('has-drawer');
-  // sorted counts as marks, like the lists: circled = in the puzzle, struck = not
-  document.getElementById('drawerTabLabel').innerHTML = 'Word bank' + (total
-    ? `<span class="tab-counts" aria-label="${h.inList.length} in the puzzle, ${h.outList.length} not">` +
-      `<span class="tc-in">${h.inList.length}</span><span class="tc-dot">·</span>` +
-      `<span class="tc-out">${h.outList.length}</span></span>`
+  // counts as marks, like the drawer's three groups: gray = found but unchecked,
+  // circled = in the puzzle, struck = not in it. Zeros are left out.
+  const nf = h.found.length, ni = h.inList.length, no = h.outList.length;
+  document.getElementById('drawerTabLabel').innerHTML = 'Word bank' + (nf + ni + no
+    ? `<span class="tab-counts" aria-label="${nf} found, ${ni} in the puzzle, ${no} not">` +
+      (nf ? `<span class="tc-found">${nf}</span>` : '') +
+      (ni ? `<span class="tc-in">${ni}</span>` : '') +
+      (no ? `<span class="tc-out">${no}</span>` : '') + '</span>'
     : '');
   layoutDrawer();
 }

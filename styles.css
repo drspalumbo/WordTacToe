@@ -482,13 +482,16 @@
   .tab-text{display:flex; flex-direction:column; align-items:center; gap:4px;}
   .tab-row{display:flex; align-items:center; gap:8px;}
   #drawerTabLabel{display:inline-flex; align-items:center;}
-  .tab-counts{display:inline-flex; align-items:center; gap:4px; margin-left:8px;
+  .tab-counts{display:inline-flex; align-items:center; gap:6px; margin-left:8px;
     font-size:11.5px; font-weight:800; color:var(--ink);}
   .tc-in{display:inline-flex; align-items:center; justify-content:center;
     min-width:17px; height:17px; padding:0 3px; box-sizing:border-box;
     border:1.5px solid var(--ink); border-radius:9px;}
-  .tc-dot{color:var(--ink-soft);}
-  .tc-out{color:var(--ink-soft); text-decoration:line-through; text-decoration-thickness:1.5px;}
+  .tc-found{color:var(--ink-soft); opacity:.8;}
+  /* a drawn line rather than text-decoration, which sits off-centre on digits */
+  .tc-out{position:relative; color:var(--ink-soft); padding:0 2px;}
+  .tc-out::after{content:''; position:absolute; left:0; right:0; top:50%; height:1.5px;
+    margin-top:-.75px; border-radius:1px; background:currentColor;}
   .bank-bar-wrap{position:relative; width:84px;}
   .bank-bar{display:block; height:4px; border-radius:2px; background:#DCE3E9; overflow:hidden;
     transition:opacity .2s ease;}
