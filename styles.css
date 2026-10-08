@@ -633,8 +633,6 @@
     font-size:9.5px; font-weight:800; display:none; align-items:center; justify-content:center;
     line-height:1; box-shadow:0 0 0 2px #fff; box-sizing:border-box;}
   .bank-badge.show{display:flex;}
-  .bank-bar-wrap .bank-badge{right:-22px; top:-6px;}
-  #drawer.open .tab-text .bank-badge{display:none;}
 
   /* the Grid Check lives at the top of the open drawer; it's its own meter too —
      gold fills it left to right as it charges */

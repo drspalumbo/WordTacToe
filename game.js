@@ -1152,8 +1152,8 @@ function setBtnState(mode) {              // '' | 'checking' | 'supering'
 }
 
 // The bar under the word bank label fills toward the next Grid Check and is full
-// gold once one is ready, with ×N when several are banked. The Grid Check button
-// in the drawer shows the same fill and count.
+// gold once one is ready. The Grid Check button in the drawer shows the same fill,
+// plus ×N when several are banked.
 function updateSuper() {
   const v = meterValue();
   const stacks = Math.floor(v / HINT_THRESHOLD);
@@ -1161,11 +1161,9 @@ function updateSuper() {
   const pct = ((ready ? 1 : (v % HINT_THRESHOLD) / HINT_THRESHOLD) * 100).toFixed(0) + '%';
   document.getElementById('bankBarFill').style.width = pct;
   document.getElementById('drawerTab').classList.toggle('charged', ready);
-  ['bankBadge', 'bankCheckBadge'].forEach(id => {
-    const el = document.getElementById(id);
-    el.textContent = '×' + stacks;
-    el.classList.toggle('show', stacks >= 2);
-  });
+  const badge = document.getElementById('bankCheckBadge');   // ×N lives on the button only
+  badge.textContent = '×' + stacks;
+  badge.classList.toggle('show', stacks >= 2);
   const btn = document.getElementById('bankCheckBtn');
   btn.disabled = !ready || state.busy;
   btn.style.setProperty('--fill', pct);
