@@ -64,11 +64,15 @@
     <button id="drawerTab" aria-expanded="false">
       <!-- label with its charge bar underneath; full bar = a Grid Check is ready -->
       <span class="tab-text">
-        <span id="drawerTabLabel">Word bank</span>
-        <span class="bank-bar" id="bankBar" aria-hidden="true"><span id="bankBarFill"></span></span>
-        <span class="bank-badge" id="bankBadge"></span>
+        <span class="tab-row">
+          <span id="drawerTabLabel">Word bank</span>
+          <svg class="chevron" viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+        </span>
+        <span class="bank-bar-wrap" aria-hidden="true">
+          <span class="bank-bar" id="bankBar"><span id="bankBarFill"></span></span>
+          <span class="bank-badge" id="bankBadge"></span>
+        </span>
       </span>
-      <svg class="chevron" viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
     </button>
   </div>
   <div id="drawerPanel">

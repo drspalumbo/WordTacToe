@@ -939,13 +939,12 @@ function scoreBoard() {
     setMsg(parts.join(' · ') + ` — +${sources.length} charge.`, '');
   }
 
-  // solved: finish without needing Check, once the dots have landed (their charge
-  // counts toward the hints-left stars in the summary)
+  // solved: finish without needing Check, once the dots have landed
   if (valid.every(Boolean)) {
     const g = words.slice(0, 4);
     h.history.push({ mode: 'solve', marks: words.map(() => '✔️') });
     state.busy = true;
-    setTimeout(() => { state.busy = false; onWin(g); },
+    setTimeout(() => { state.busy = false; updateSuper(); onWin(g); },
                sources.length ? 780 + sources.length * 70 + 200 : 250);
   }
 }
@@ -1227,10 +1226,12 @@ function morphBarIntoButton(from) {
   const a = ghost.animate([Object.assign(box(from), { borderRadius: '2px' }),
                            Object.assign(box(to), { borderRadius: '12px' })],
                           { duration: 380, easing: 'cubic-bezier(.3,.9,.4,1)', fill: 'forwards' });
+  // show the real button underneath first, then fade the stand-in off it, so
+  // nothing shows through in between
   const done = () => {
-    ghost.remove();
     btn.style.opacity = '';
-    btn.animate([{ opacity: 0 }, { opacity: 1 }], { duration: 120 });
+    const out = ghost.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 120, fill: 'forwards' });
+    out.onfinish = out.oncancel = () => ghost.remove();
   };
   a.onfinish = done; a.oncancel = done;
 }
@@ -1413,19 +1414,18 @@ document.getElementById('submitBtn').addEventListener('click', () => runCheck(fa
 // ------------------------------------------------- win summary / share text
 // One line per Grid Check used, then the solving line: ➡️ four row marks, ⬇️ four
 // column marks. Grid Check marks: ⭐ in the puzzle, 〰️ a word but not in the
-// puzzle, ✖️ not a word; the solving line is all ✔️ and ends 🎉. Then the count of
-// Grid Checks and the ones still banked, as stars. The summary is made once, at
+// puzzle, ✖️ not a word; the solving line is all ✔️, with 🎉 on its own line.
+// Then the count of Grid Checks and of words found. The summary is made once, at
 // the first solve, and stays as it was however the puzzle is played after that.
 function buildSummary() {
   const h = state.hints[state.idx];
   const line = e => '➡️' + e.marks.slice(0, 4).join('') + '⬇️' + e.marks.slice(4).join('');
   const lines = h.history.filter(e => e.mode === 'super').map(line);
   const last = h.history[h.history.length - 1];
-  if (last && last.marks.every(m => m === '✔️')) lines.push(line(last) + '🎉');
+  if (last && last.marks.every(m => m === '✔️')) lines.push(line(last), '🎉');
   const s = h.history.filter(e => e.mode === 'super').length;
-  const left = Math.floor(meterValue() / HINT_THRESHOLD);
-  return { lines, count: `${s} Grid Check${s === 1 ? '' : 's'}` +
-                         (left ? ` · ${'⭐'.repeat(left)} left` : '') };
+  const n = h.seen.length;                 // every distinct word made on this puzzle
+  return { lines, count: `${s} Grid Check${s === 1 ? '' : 's'} · ${n} word${n === 1 ? '' : 's'} found` };
 }
 function summary() {
   const h = state.hints[state.idx];

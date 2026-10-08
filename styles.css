@@ -619,7 +619,10 @@
   .wl.found li{color:var(--ink-soft); opacity:.75; font-size:19px;}
 
   /* charge bar under the word bank label (full gold = a Grid Check is ready) */
-  .tab-text{position:relative; display:flex; flex-direction:column; align-items:stretch; gap:4px;}
+  /* label + chevron on one row, the bar centred under the whole tab */
+  .tab-text{display:flex; flex-direction:column; align-items:center; gap:4px;}
+  .tab-row{display:flex; align-items:center; gap:8px;}
+  .bank-bar-wrap{position:relative; width:84px;}
   .bank-bar{display:block; height:4px; border-radius:2px; background:#DCE3E9; overflow:hidden;
     transition:opacity .2s ease;}
   #bankBarFill{display:block; height:100%; width:0%; background:var(--gold);
@@ -630,7 +633,7 @@
     font-size:9.5px; font-weight:800; display:none; align-items:center; justify-content:center;
     line-height:1; box-shadow:0 0 0 2px #fff; box-sizing:border-box;}
   .bank-badge.show{display:flex;}
-  .tab-text .bank-badge{right:-20px; bottom:-6px;}
+  .bank-bar-wrap .bank-badge{right:-22px; top:-6px;}
   #drawer.open .tab-text .bank-badge{display:none;}
 
   /* the Grid Check lives at the top of the open drawer; it's its own meter too —
