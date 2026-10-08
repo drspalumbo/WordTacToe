@@ -1,62 +1,71 @@
 [
  {
   "solution": [
-   "grok",
-   "earn",
-   "mice",
-   "slaw"
+   "ache",
+   "shoe",
+   "kill",
+   "says"
   ],
   "pieces": [
    {
     "cells": [
      [
-      2,
-      1
-     ],
-     [
-      2,
-      2
-     ],
-     [
-      3,
-      1
-     ],
-     [
-      3,
-      2
-     ]
-    ],
-    "letters": "icla"
-   },
-   {
-    "cells": [
-     [
       0,
       1
      ],
      [
-      1,
-      0
+      0,
+      2
      ],
-     [
-      1,
-      1
-     ]
-    ],
-    "letters": "rea"
-   },
-   {
-    "cells": [
      [
       0,
       3
      ],
      [
       1,
+      2
+     ]
+    ],
+    "letters": "cheo"
+   },
+   {
+    "cells": [
+     [
+      1,
+      1
+     ],
+     [
+      2,
+      1
+     ]
+    ],
+    "letters": "hi"
+   },
+   {
+    "cells": [
+     [
+      2,
+      2
+     ],
+     [
+      3,
+      2
+     ]
+    ],
+    "letters": "ly"
+   },
+   {
+    "cells": [
+     [
+      1,
+      3
+     ],
+     [
+      2,
       3
      ]
     ],
-    "letters": "kn"
+    "letters": "el"
    },
    {
     "cells": [
@@ -65,7 +74,43 @@
       0
      ]
     ],
-    "letters": "m"
+    "letters": "k"
+   },
+   {
+    "cells": [
+     [
+      3,
+      3
+     ]
+    ],
+    "letters": "s"
+   },
+   {
+    "cells": [
+     [
+      0,
+      0
+     ]
+    ],
+    "letters": "a"
+   },
+   {
+    "cells": [
+     [
+      1,
+      0
+     ]
+    ],
+    "letters": "s"
+   },
+   {
+    "cells": [
+     [
+      3,
+      1
+     ]
+    ],
+    "letters": "a"
    },
    {
     "cells": [
@@ -75,75 +120,30 @@
      ]
     ],
     "letters": "s"
-   },
-   {
-    "cells": [
-     [
-      1,
-      2
-     ]
-    ],
-    "letters": "r"
-   },
-   {
-    "cells": [
-     [
-      2,
-      3
-     ]
-    ],
-    "letters": "e"
-   },
-   {
-    "cells": [
-     [
-      0,
-      0
-     ]
-    ],
-    "letters": "g"
-   },
-   {
-    "cells": [
-     [
-      0,
-      2
-     ]
-    ],
-    "letters": "o"
-   },
-   {
-    "cells": [
-     [
-      3,
-      3
-     ]
-    ],
-    "letters": "w"
    }
   ],
   "numSolutions": 1,
   "solutionWords": [
-   "earn",
-   "gems",
-   "grok",
-   "knew",
-   "mice",
-   "orca",
-   "rail",
-   "slaw"
+   "ache",
+   "asks",
+   "chia",
+   "eels",
+   "holy",
+   "kill",
+   "says",
+   "shoe"
   ],
-  "difficulty": 60,
-  "stars": 4,
+  "difficulty": 46,
+  "stars": 3,
   "difficulty_raw": {
-   "search_info": 5.89,
-   "p_sol": 1.2883941455370026e-06,
-   "space": 776160,
-   "branching": 7.282,
-   "formable": 403,
-   "search_norm": 0.627,
-   "lex_norm": 0.563,
-   "exact": false
+   "search_info": 4.565,
+   "p_sol": 2.7233115468409585e-05,
+   "space": 36720,
+   "branching": 6.641,
+   "formable": 138,
+   "search_norm": 0.438,
+   "lex_norm": 0.487,
+   "exact": true
   }
  },
  {
