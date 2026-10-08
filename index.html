@@ -79,8 +79,13 @@
     <div class="bank-actions">
       <button class="btn bank-check" id="bankCheckBtn" disabled>
         <span class="bank-check-fill" aria-hidden="true"><i id="bankCheckFill"></i></span>
-        <span id="bankCheckLabel">Grid Check</span>
-        <span id="bankSolveLabel">Show solution</span>
+        <span class="lbl lbl-check" id="bankCheckLabel">Grid Check</span>
+        <span class="lbl lbl-solve">Show solution</span>
+        <!-- the same label in white, clipped to the fill, so it reads on both colours -->
+        <span class="bank-check-over" aria-hidden="true">
+          <span class="lbl lbl-check" id="bankCheckLabelOver">Grid Check</span>
+          <span class="lbl lbl-solve">Show solution</span>
+        </span>
         <span class="bank-badge" id="bankCheckBadge"></span>
       </button>
       <div class="bank-hint" id="bankHint"></div>

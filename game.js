@@ -779,7 +779,7 @@ function bumpMeter(points, idx = state.idx) {
 }
 
 // A Grid Check was just earned: peek the drawer up to the button, let it fill the
-// last stretch of gold, then give it a small pop so players know it's there.
+// last stretch of blue, then give it a small pop so players know it's there.
 function celebrateCharge(fromFrac) {
   const d = document.getElementById('drawer');
   const btn = document.getElementById('bankCheckBtn');
@@ -798,7 +798,7 @@ function celebrateCharge(fromFrac) {
     if (!btn.animate) return;
     btn.animate([{ transform: 'scale(1)', boxShadow: '0 0 0 0 rgba(0,0,0,0)' },
                  { transform: 'scale(1.09)', offset: 0.45,
-                   boxShadow: '0 0 0 6px color-mix(in srgb, var(--gold) 45%, transparent)' },
+                   boxShadow: '0 0 0 6px color-mix(in srgb, var(--charge) 35%, transparent)' },
                  { transform: 'scale(1)', boxShadow: '0 0 0 0 rgba(0,0,0,0)' }],
                 { duration: 520, delay: 380, easing: 'cubic-bezier(.3,1.5,.5,1)' });
   }, 320);
@@ -1057,12 +1057,12 @@ function renderWordLists(justAdded, newestFirst) {
       fresh.animate([{ transform: 'translateY(-8px)', opacity: 0 }, { transform: 'none', opacity: 1 }],
                     { duration: 450, easing: 'ease-out' });
     } else {
-      // a word a grid check just sorted: drops in with a gold flash
+      // a word a grid check just sorted: drops in with a blue flash
       fresh.animate([
         { transform: 'translateY(-18px)', opacity: 0,
-          backgroundColor: 'color-mix(in srgb, var(--gold) 60%, transparent)' },
+          backgroundColor: 'color-mix(in srgb, var(--charge) 30%, transparent)' },
         { transform: 'translateY(0)', opacity: 1,
-          backgroundColor: 'color-mix(in srgb, var(--gold) 60%, transparent)', offset: 0.45 },
+          backgroundColor: 'color-mix(in srgb, var(--charge) 30%, transparent)', offset: 0.45 },
         { transform: 'translateY(0)', opacity: 1, backgroundColor: 'transparent' },
       ], { duration: 950, easing: 'cubic-bezier(.3,1.2,.5,1)' });
     }
@@ -1101,6 +1101,7 @@ function splitLetters(el) {
   return [...el.querySelectorAll('.ltr')];
 }
 const BANK_LTRS = splitLetters(document.getElementById('bankCheckLabel'));
+const BANK_LTRS_OVER = splitLetters(document.getElementById('bankCheckLabelOver'));  // its white copy
 const CHECK_LTRS = splitLetters(document.getElementById('checkLabel'));
 
 let btnAnims = [];
@@ -1123,7 +1124,7 @@ wirePress(document.getElementById('bankCheckBtn'), document.getElementById('bank
 function stopBtnAnims() {
   btnAnims.forEach(a => { try { a.cancel(); } catch (e) {} });
   btnAnims = [];
-  [...BANK_LTRS, ...CHECK_LTRS].forEach(el => { el.style.transform = ''; });
+  [...BANK_LTRS, ...BANK_LTRS_OVER, ...CHECK_LTRS].forEach(el => { el.style.transform = ''; });
   const lbl = document.getElementById('checkLabel');
   if (lbl) lbl.style.transform = '';
 }
@@ -1175,7 +1176,10 @@ function setBtnState(mode) {              // '' | 'checking' | 'supering'
         easing: 'linear',
       }));
       kf.push({ transform: 'translateY(0)', offset: 1, easing: 'linear' });
-      btnAnims.push(el.animate(kf, { duration: CYCLE, iterations: Infinity }));
+      // the white copy of the label ripples in step
+      [el, BANK_LTRS_OVER[i]].forEach(l => {
+        if (l) btnAnims.push(l.animate(kf, { duration: CYCLE, iterations: Infinity }));
+      });
     });
   }
 }

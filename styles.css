@@ -4,6 +4,7 @@
     --tile:#FCFDFC; --tile-line:#B9C6D0;
     --accent:#2B59C3; --accent-soft:#DFE7F9;
     --good:#2E9E6B; --bad:#D9455C; --gold:#E9C31C; --purple:#7A5AD8;
+    --charge:#2B59C3; --charge-press:#16307A;   /* word bank meter + Grid Check */
     --o1:#F5C48C; --o2:#A9D9BE; --o3:#B5C7F0; --o4:#DDBEE8; --o5:#EFDE9C; --o6:#E8B3A6;
     --radius:14px;
   }
@@ -83,7 +84,7 @@
      animation below shares the same clock and is keyed by percentage:
         0-22%  scrambled RDWO at rest
        22-37%  RD lifts out, W/O shuffle left, RD drops -> WORD
-       41-46%  WORD is a word: letters nod, gold check badge (no button needed)
+       41-46%  WORD is a word: letters nod, blue check badge (no button needed)
        52-60%  the check funnels into the word bank tab; its bar fills
        60-63%  bar full: the tab pops. The Grid Check button (row 3) fills with it
        74-84%  Grid Check pressed -> WORD gets circled
@@ -134,7 +135,7 @@
     opacity:0; z-index:1;
   }
   .vb-check{
-    color:#fff; background:var(--gold);
+    color:#fff; background:var(--charge);
     --fx:-62px; --fy:81px;            /* measured badge centre -> word bank bar centre */
     animation:vbCheck 12s ease-in-out infinite;
   }
@@ -184,7 +185,7 @@
     94.5%{transform:translate(0,0); opacity:0;}
     96.7%,100%{transform:translate(0,0); opacity:1;}
   }
-  /* the gold check appears, holds, then funnels down into the word bank bar */
+  /* the check appears, holds, then funnels down into the word bank bar */
   @keyframes vbCheck{
     0%,45.2%{opacity:0; transform:translate(0,0) scale(.4);}
     46.5%,51.7%{opacity:1; transform:translate(0,0) scale(1);}
@@ -198,7 +199,7 @@
     94.1%{stroke-dashoffset:var(--len); opacity:0;}
     96.7%,100%{stroke-dashoffset:var(--len); opacity:.8;}
   }
-  /* the gold check falls past this row's text into the word bank below, so the row
+  /* the check falls past this row's text into the word bank below, so the row
      can't clip it and the text needs to sit above it in the stack */
   #helpPage1 .help-list li{position:relative;}
   /* opaque + above the check so the charge passes behind the copy */
@@ -264,7 +265,7 @@
   .bd-bar{position:relative; display:block; width:56px; height:4px; border-radius:2px;
     background:#DCE3E9; overflow:hidden;}
   .bd-bar i, .gc-fill{position:absolute; left:0; top:0; bottom:0; width:0;
-    background:var(--gold); animation:bankFill 12s ease-in-out infinite;}
+    background:var(--charge); animation:bankFill 12s ease-in-out infinite;}
   @keyframes bankFill{
     0%,55.5%{width:0;}
     58%{width:40%;}
@@ -292,7 +293,7 @@
   .gc-fill{z-index:-1;}
   @keyframes gcText{
     0%,59%{color:var(--ink-soft);}
-    61%,91.7%{color:var(--ink);}
+    61%,91.7%{color:#fff;}
     95%,100%{color:var(--ink-soft);}
   }
   /* pressing it is what reveals the word */
@@ -415,7 +416,7 @@
   /* flying word clone (board → meter, or board → word list) */
   .fly-dot{
     position:fixed; z-index:60; pointer-events:none; border-radius:50%;
-    width:9px; height:9px; background:var(--gold);
+    width:9px; height:9px; background:var(--charge);
     transform:translate(-50%,-50%); box-shadow:0 3px 10px rgba(20,32,45,.28);
   }
 
@@ -477,7 +478,7 @@
     border-radius:8px; background:#EEF1F4; color:var(--ink-soft);
     font-size:10.5px; letter-spacing:0; text-align:center; box-sizing:border-box;}
 
-  /* charge bar under the word bank label (full gold = a Grid Check is ready) */
+  /* charge bar under the word bank label (full = a Grid Check is ready) */
   /* label + chevron on one row, the bar centred under the whole tab */
   .tab-text{display:flex; flex-direction:column; align-items:center; gap:4px;}
   .tab-row{display:flex; align-items:center; gap:8px;}
@@ -495,7 +496,7 @@
   .bank-bar-wrap{position:relative; width:84px;}
   .bank-bar{display:block; height:4px; border-radius:2px; background:#DCE3E9; overflow:hidden;
     transition:opacity .2s ease;}
-  #bankBarFill{display:block; height:100%; width:0%; background:var(--gold);
+  #bankBarFill{display:block; height:100%; width:0%; background:var(--charge);
     transition:width .4s cubic-bezier(.3,.9,.4,1);}
   #drawer.open .bank-bar{opacity:0;}          /* it became the Grid Check button */
   .bank-badge{position:absolute; min-width:15px; height:15px;
@@ -505,32 +506,39 @@
   .bank-badge.show{display:flex;}
 
   /* the Grid Check lives at the top of the open drawer; it's its own meter too —
-     gold fills it left to right as it charges */
+     blue fills it left to right as it charges */
   .bank-actions{display:flex; flex-direction:column; align-items:center; gap:5px;
     padding:6px 18px 8px;}
   .btn.bank-check{position:relative; isolation:isolate; background:#EEF1F4; color:var(--ink);
     padding:10px 26px;}
   .bank-check-fill{position:absolute; inset:0; border-radius:inherit; overflow:hidden; z-index:-1;}
   #bankCheckFill{position:absolute; left:0; top:0; bottom:0; width:var(--fill, 0%);
-    background:var(--gold); transition:width .4s cubic-bezier(.3,.9,.4,1), background .12s ease;}
+    background:var(--charge); transition:width .4s cubic-bezier(.3,.9,.4,1), background .12s ease;}
   .bank-check.no-anim #bankCheckFill{transition:none;}
   .btn.bank-check:disabled{opacity:1; color:var(--ink-soft);}
-  .btn.bank-check.pressed #bankCheckFill{background:#C6A310;}
+  .btn.bank-check.pressed #bankCheckFill{background:var(--charge-press);}
+  /* white copy of the label, clipped to the fill: white on blue, dark on gray */
+  .bank-check-over{position:absolute; inset:0; display:flex; align-items:center;
+    justify-content:center; color:#fff; pointer-events:none;
+    clip-path:inset(0 calc(100% - var(--fill, 0%)) 0 0);
+    transition:clip-path .4s cubic-bezier(.3,.9,.4,1);}
+  .bank-check.no-anim .bank-check-over{transition:none;}
   .bank-check .bank-badge{top:-6px; right:-6px;}
   /* once the puzzle is solved, the button becomes Show solution (purple) */
-  #bankSolveLabel{display:none;}
-  .bank-check.solution #bankCheckLabel{display:none;}
-  .bank-check.solution #bankSolveLabel{display:inline;}
+  .bank-check .lbl-solve{display:none;}
+  .bank-check.solution .lbl-check{display:none;}
+  .bank-check.solution .lbl-solve{display:inline;}
   .btn.bank-check.solution{color:#fff;}
   .bank-check.solution #bankCheckFill{background:var(--purple);}
   .btn.bank-check.solution.pressed #bankCheckFill{background:#5E43B4;}
   #drawerTab.solved #bankBarFill{background:var(--purple);}
   /* Grid Check couldn't run: the empty squares of the 4×4 blink */
   .empty-flash{position:absolute; z-index:1; pointer-events:none;
-    background:color-mix(in srgb, var(--gold) 55%, transparent);}
+    background:color-mix(in srgb, var(--charge) 14%, transparent);
+    box-shadow:inset 0 0 0 2.5px var(--charge);}   /* a ring, so it can't pass for a tile */
   /* the tab's bar growing into the button as the drawer opens */
   .bar-morph{position:fixed; z-index:60; overflow:hidden; background:#EEF1F4; pointer-events:none;}
-  .bar-morph i{position:absolute; left:0; top:0; bottom:0; background:var(--gold);}
+  .bar-morph i{position:absolute; left:0; top:0; bottom:0; background:var(--charge);}
   .bank-hint{font-size:12.5px; font-weight:600; color:var(--ink-soft); min-height:16px;}
   .wl h4{
     margin:0 0 6px; font-size:11px; letter-spacing:.1em; text-transform:uppercase;
