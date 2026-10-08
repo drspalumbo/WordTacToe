@@ -17,14 +17,17 @@ function loadDraft() {
 // typed[i]: the player entered it (Fill in keeps it); otherwise Fill in chose it
 const draft = loadDraft() ||
   { letters: Array(16).fill(''), typed: Array(16).fill(false), joins: [], step: 'letters' };
+const newId = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+if (!draft.id) draft.id = newId();                // which My puzzles entry this draft is
 const saveDraft = () => { try { localStorage.setItem(DRAFT_KEY, JSON.stringify(draft)); } catch (e) {} };
 const joins = () => new Set(draft.joins);
 
 // ------------------------------------------------------------------ steps
 function showStep(step) {
-  if (step !== 'letters' && !lettersReady()) step = 'letters';
-  draft.step = step; saveDraft();
-  ['letters', 'pieces', 'share'].forEach(s => {
+  if (step !== 'letters' && step !== 'mine' && !lettersReady()) step = 'letters';
+  if (step !== 'mine') { draft.step = step; saveDraft(); }
+  $('myBtn').hidden = step === 'mine';
+  ['letters', 'pieces', 'share', 'mine'].forEach(s => {
     $('step' + s[0].toUpperCase() + s.slice(1)).hidden = s !== step;
   });
   const order = ['letters', 'pieces', 'share'];
@@ -36,6 +39,8 @@ function showStep(step) {
   if (step === 'letters') renderLetters();
   if (step === 'pieces') renderPieces();
   if (step === 'share') renderShare();
+  if (step === 'mine') renderMine();
+  window.scrollTo(0, 0);
 }
 
 // ------------------------------------------------------------ 1. letters
@@ -364,7 +369,8 @@ function renderShare() {
   $('shareSummary').textContent = `Your Danagram: ${multi} piece${multi === 1 ? '' : 's'} and ` +
     `${16 - groups.filter(g => g.length > 1).reduce((s, g) => s + g.length, 0)} single tiles, ` +
     (n === 1 && !res.timedOut ? 'with exactly one solution.' : 'with more than one possible solution.') +
-    ' Anyone with the link can play it.';
+    ' Anyone with the link can play it. It’s saved in My puzzles.';
+  remember(n, res.capped || res.timedOut, multi);
 }
 $('shareBtn').addEventListener('click', async () => {
   const url = $('shareUrl').value;
@@ -383,10 +389,111 @@ $('shareBtn').addEventListener('click', async () => {
   $('shareNote').textContent = 'Copy the link above.';
 });
 $('backToPieces').addEventListener('click', () => showStep('pieces'));
-$('startOver').addEventListener('click', e => confirmTap(e.currentTarget, 'Start a new one', () => {
-  draft.letters = Array(16).fill(''); draft.typed = Array(16).fill(false); draft.joins = [];
+function newPuzzle() {
+  Object.assign(draft, { id: newId(), letters: Array(16).fill(''), typed: Array(16).fill(false), joins: [] });
   cursor = 0; across = true; showStep('letters');
-}));
+}
+// it's saved in My puzzles by now, so no need to confirm
+$('startOver').addEventListener('click', newPuzzle);
+
+// ------------------------------------------------------------ My puzzles
+// Every puzzle that reaches the Share step is kept here, on this device only
+// (newest first). Editing one and sharing again updates the same entry.
+const MINE_KEY = 'danagram_my_puzzles';
+function loadMine() {
+  try { const a = JSON.parse(localStorage.getItem(MINE_KEY)); if (Array.isArray(a)) return a; } catch (e) {}
+  return [];
+}
+const saveMine = list => { try { localStorage.setItem(MINE_KEY, JSON.stringify(list)); } catch (e) {} };
+function remember(nSolutions, more, pieces) {
+  const list = loadMine(), code = shareCode(), now = Date.now();
+  const old = list.find(e => e.id === draft.id);
+  if (old && old.code === code) return;
+  const entry = { id: draft.id, code, letters: draft.letters.slice(), typed: draft.typed.slice(),
+                  joins: draft.joins.slice(), solutions: nSolutions, more, pieces,
+                  created: old ? old.created : now, updated: now };
+  saveMine([entry, ...list.filter(e => e.id !== draft.id)]);
+  renderMyCount();
+}
+function renderMyCount() {
+  const n = loadMine().length;
+  $('myBtn').textContent = n ? `My puzzles (${n})` : 'My puzzles';
+}
+let returnStep = 'letters';
+$('myBtn').addEventListener('click', () => { returnStep = draft.step; showStep('mine'); });
+$('mineBack').addEventListener('click', () => showStep(returnStep));
+$('mineNew').addEventListener('click', newPuzzle);
+
+const fmtDate = t => new Date(t).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
+function miniGrid(e) {
+  const groups = Solver.piecesFrom(new Set(e.joins));
+  let colour = 0;
+  const colours = groups.map(g => g.length > 1 ? OCOLORS[colour++ % OCOLORS.length] : 'var(--tile)');
+  const bg = Array(16);
+  groups.forEach((g, p) => g.forEach(i => { bg[i] = colours[p]; }));
+  return '<div class="mini" aria-hidden="true">' +
+    e.letters.map((ch, i) => `<span style="background:${bg[i]}">${ch.toUpperCase()}</span>`).join('') + '</div>';
+}
+function renderMine() {
+  const list = loadMine();
+  renderMyCount();
+  $('mineEmpty').hidden = list.length > 0;
+  $('mineList').innerHTML = list.map(e => {
+    const sol = e.solutions === 1 && !e.more ? 'one solution'
+              : `${e.more ? e.solutions + '+' : e.solutions} solutions`;
+    return `<li data-id="${e.id}">${miniGrid(e)}<div class="mine-body">` +
+      `<div class="mine-meta">${fmtDate(e.updated)}${e.id === draft.id ? ' · <b>editing</b>' : ''}</div>` +
+      `<div class="mine-sub">${e.pieces} piece${e.pieces === 1 ? '' : 's'} · ${sol}</div>` +
+      `<div class="mine-acts">` +
+      `<a class="mlink" href="${new URL('../?p=' + e.code, location.href).href}">Play</a>` +
+      `<button class="mlink" data-act="share">Share</button>` +
+      `<button class="mlink" data-act="edit">Edit</button>` +
+      `<button class="mlink del" data-act="delete">Delete</button>` +
+      `</div></div></li>`;
+  }).join('');
+}
+// two taps for anything that throws work away
+function armed(b, label, prompt) {
+  if (b.dataset.armed) return true;
+  b.dataset.armed = '1'; b.textContent = prompt;
+  setTimeout(() => { if (b.isConnected) { delete b.dataset.armed; b.textContent = label; } }, 2500);
+  return false;
+}
+$('mineList').addEventListener('click', async ev => {
+  const b = ev.target.closest('button[data-act]');
+  if (!b) return;
+  const id = b.closest('li').dataset.id, e = loadMine().find(x => x.id === id);
+  if (!e) return;
+  const act = b.dataset.act;
+  if (act === 'delete') {
+    if (!armed(b, 'Delete', 'Tap again')) return;
+    saveMine(loadMine().filter(x => x.id !== id));
+    if (draft.id === id) { draft.id = newId(); saveDraft(); }   // the draft lives on as a new puzzle
+    renderMine();
+  }
+  if (act === 'edit') {
+    // a draft that never reached Share isn't in the list: confirm before replacing it
+    const unsaved = draft.id !== id && draft.letters.some(Boolean) &&
+                    !loadMine().some(x => x.id === draft.id);
+    if (unsaved && !armed(b, 'Edit', 'Replace draft?')) return;
+    Object.assign(draft, { id: e.id, letters: e.letters.slice(), typed: e.typed.slice(), joins: e.joins.slice() });
+    cursor = 0; across = true; lastSolve = null;
+    showStep('pieces');
+  }
+  if (act === 'share') {
+    const url = new URL('../?p=' + e.code, location.href).href;
+    if (navigator.share) {
+      try { await navigator.share({ title: 'Danagram', text: 'Try the Danagram I made!', url }); return; }
+      catch (err) { if (err && err.name === 'AbortError') return; }
+    }
+    try {
+      if (navigator.clipboard && window.isSecureContext) {
+        await navigator.clipboard.writeText(url); b.textContent = 'Copied!'; return;
+      }
+    } catch (err) {}
+    window.prompt('Copy this link:', url);
+  }
+});
 
 window.addEventListener('resize', () => {
   if (draft.step === 'letters') placeMarks(Solver.lineStatus(draft.letters));
@@ -394,3 +501,4 @@ window.addEventListener('resize', () => {
 });
 showStep(draft.step || 'letters');
 renderCursor();
+renderMyCount();

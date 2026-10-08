@@ -8,7 +8,12 @@ html body.create{position:static !important; overflow:visible !important;
 #stepLetters .next{margin-top:10px;}
 #stepLetters .cactions{margin-top:10px;}
 #stepLetters .issues{margin-top:8px;}
-.back-link{display:inline-block; margin-bottom:6px; font-size:13px; font-weight:700;
+.head-row{display:flex; justify-content:space-between; align-items:center; width:100%; max-width:360px;
+  margin:0 auto 6px;}
+.my-btn{border:0; background:transparent; padding:0; font-family:inherit; cursor:pointer; color:var(--accent);
+  touch-action:manipulation;}
+.my-btn[hidden]{display:none;}
+.back-link{display:inline-block; font-size:13px; font-weight:700;
   color:var(--ink-soft); text-decoration:none;}
 .back-link:hover{color:var(--accent);}
 .create-head h1{font-size:clamp(26px, 6.5vw, 36px);}
@@ -97,3 +102,22 @@ html.dark .piece-info .warn{color:#E5B85A;}
   -webkit-tap-highlight-color:transparent;}
 .key.wide{flex:1.6 1 0; max-width:66px; font-size:18px;}
 .key.pressed{background:var(--accent-soft);}
+
+/* My puzzles */
+.mine-title{font-size:22px; margin:4px 0 6px;}
+.mine-list{list-style:none; margin:4px 0 0; padding:0; width:100%;}
+.mine-list li{display:flex; gap:12px; align-items:center; padding:10px 4px;
+  border-bottom:1px solid var(--divider);}
+.mini{display:grid; grid-template-columns:repeat(4, 15px); grid-auto-rows:15px; gap:1px; padding:3px;
+  border-radius:6px; background:var(--well); flex:none;}
+.mini span{border-radius:3px; font:800 9px/15px 'Archivo', sans-serif; text-align:center; color:var(--ink);}
+.mine-body{flex:1; min-width:0;}
+.mine-meta{font-size:13.5px; font-weight:700; color:var(--ink);}
+.mine-meta b{color:var(--accent);}
+.mine-sub{font-size:12.5px; color:var(--ink-soft); margin-top:1px;}
+.mine-acts{display:flex; gap:14px; margin-top:5px; flex-wrap:wrap;}
+.mlink{border:0; background:transparent; padding:2px 0; font:inherit; font-size:13.5px; font-weight:800;
+  color:var(--accent); text-decoration:none; cursor:pointer; touch-action:manipulation;}
+.mlink.del{color:var(--ink-soft);}
+.mlink.del[data-armed]{color:var(--bad);}
+.mine-note{color:var(--ink-soft); font-weight:600; font-size:12px; text-align:center;}

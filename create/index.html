@@ -29,7 +29,10 @@
 <body class="create">
 
 <header class="create-head">
-  <a class="back-link" href="../">‹ Today’s puzzle</a>
+  <div class="head-row">
+    <a class="back-link" href="../">‹ Today’s puzzle</a>
+    <button class="back-link my-btn" id="myBtn">My puzzles</button>
+  </div>
   <h1>Create a <span class="dana">Dana</span>gram</h1>
   <ol class="steps" aria-label="Steps">
     <li data-step="letters">Letters</li>
@@ -73,6 +76,18 @@
     <button class="btn ghost" id="startOver">Start a new one</button>
   </div>
   <p class="share-note" id="shareNote"></p>
+</section>
+
+<!-- My puzzles: everything you've made, saved on this device -->
+<section class="step" id="stepMine" hidden>
+  <h2 class="mine-title">My puzzles</h2>
+  <p class="step-hint" id="mineEmpty">Puzzles you make are saved here once you reach the Share step.</p>
+  <ul class="mine-list" id="mineList"></ul>
+  <div class="cactions">
+    <button class="btn ghost" id="mineBack">‹ Back</button>
+    <button class="btn primary" id="mineNew">+ New puzzle</button>
+  </div>
+  <p class="share-note mine-note">Saved in this browser only. Clearing Safari’s website data removes them.</p>
 </section>
 
 <script src="../data/words.js"></script>
