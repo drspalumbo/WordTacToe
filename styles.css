@@ -434,8 +434,8 @@
     pointer-events:none; z-index:8; opacity:0;
     color:var(--ink); background:transparent;
   }
-  .verdict-badge.star{background:var(--gold); color:var(--ink);}
-  .verdict-badge.good.unique{background:var(--gold); color:#fff;}
+  .verdict-badge.star{background:var(--charge); color:#fff;}      /* Grid Check: in the puzzle */
+  .verdict-badge.good.unique{background:var(--charge); color:#fff;}
 
   /* hand-drawn scribble across a word that's valid but not in the puzzle */
   .scribble{position:absolute; left:0; top:0; pointer-events:none; z-index:7;}
