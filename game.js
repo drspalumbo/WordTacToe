@@ -13,7 +13,8 @@ const CUSTOM_IDX = (() => {
   const d = Solver.decode(CUSTOM_CODE);
   if (!d) return -1;
   const rows = [0, 1, 2, 3].map(r => d.letters.slice(r * 4, r * 4 + 4).join(''));
-  if (!Solver.wordsOf(rows).every(w => WORDSET.has(w))) return -1;
+  // a creator may use a non-word (say, a name): it counts as a word in their puzzle
+  Solver.wordsOf(rows).forEach(w => { if (!WORDSET.has(w)) { WORDSET.add(w); WORDS.push(w); } });
   const groups = new Map();
   d.pieceOf.forEach((p, i) => { if (!groups.has(p)) groups.set(p, []); groups.get(p).push(i); });
   const connected = g => {                       // every piece one orthogonally joined shape

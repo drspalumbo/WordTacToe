@@ -21,6 +21,15 @@ const Solver = (() => {
     return hit;
   }
 
+  // Extra words that count as words for solving and scoring (not for lineStatus):
+  // a creator may use a name like MARY in their own puzzle.
+  let extra = new Set();
+  function allowWords(list) {
+    const next = new Set(list.filter(w => !WORDSET.has(w)));
+    if ([...next].join() !== [...extra].join()) { extra = next; solutions.prefixes = null; }
+  }
+  const isWord = w => WORDSET.has(w) || extra.has(w);
+
   // Per line: 'ok' (a word), 'empty', 'partial' (some word still fits),
   // 'notword' (full but not a word) or 'nofit' (no word fits what's typed).
   function lineStatus(grid) {
@@ -106,7 +115,7 @@ const Solver = (() => {
   function solutions(pieces, { limit = 50, nodeLimit = 600000 } = {}) {
     const prefixes = solutions.prefixes || (solutions.prefixes = (() => {
       const s = new Set(['']);
-      WORDS.forEach(w => { for (let k = 1; k <= 4; k++) s.add(w.slice(0, k)); });
+      [...WORDS, ...extra].forEach(w => { for (let k = 1; k <= 4; k++) s.add(w.slice(0, k)); });
       return s;
     })());
     // normalise each piece; its anchor is its top-most, then left-most cell
@@ -124,7 +133,7 @@ const Solver = (() => {
     const lineOk = idx => {                      // a line's leading letters must start a word
       let s = '';
       for (const i of idx) { if (!grid[i]) break; s += grid[i]; }
-      return s.length === 4 ? WORDSET.has(s) : prefixes.has(s);
+      return s.length === 4 ? isWord(s) : prefixes.has(s);
     };
     function rec() {
       if (found.size >= limit || timedOut) return;
@@ -200,8 +209,8 @@ const Solver = (() => {
     const cell = Array(16);
     const solved = () => {
       for (let i = 0; i < 4; i++) {
-        if (!WORDSET.has(cell[i * 4] + cell[i * 4 + 1] + cell[i * 4 + 2] + cell[i * 4 + 3])) return false;
-        if (!WORDSET.has(cell[i] + cell[4 + i] + cell[8 + i] + cell[12 + i])) return false;
+        if (!isWord(cell[i * 4] + cell[i * 4 + 1] + cell[i * 4 + 2] + cell[i * 4 + 3])) return false;
+        if (!isWord(cell[i] + cell[4 + i] + cell[8 + i] + cell[12 + i])) return false;
       }
       return true;
     };
@@ -273,5 +282,5 @@ const Solver = (() => {
     return { letters, pieceOf };
   }
 
-  return { LINES, lineStatus, fill, piecesFrom, solutions, difficulty, wordsOf, encode, decode };
+  return { LINES, allowWords, lineStatus, fill, piecesFrom, solutions, difficulty, wordsOf, encode, decode };
 })();

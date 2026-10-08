@@ -146,36 +146,41 @@ function gridWords() {
 }
 function lettersReady() {
   if (draft.letters.some(ch => !ch)) return false;
-  const ws = gridWords();
-  return ws.every(w => WORDSET.has(w)) && new Set(ws).size === 8;
+  return new Set(gridWords()).size === 8;          // non-words are allowed (with a warning)
 }
 
 const LINE_NAME = k => k < 4 ? `Row ${k + 1}` : `Column ${k - 3}`;
 function renderLetters() {
   const status = Solver.lineStatus(draft.letters);
-  const bad = new Set();
+  const bad = new Set(), warn = new Set();
   tiles.forEach((t, i) => {
     t.textContent = draft.letters[i] ? draft.letters[i].toUpperCase() : '';
     t.classList.toggle('filled', !!draft.letters[i] && !draft.typed[i]);
   });
-  status.forEach((s, k) => { if (s === 'notword' || s === 'nofit') Solver.LINES[k].forEach(i => bad.add(i)); });
-  tiles.forEach((t, i) => t.classList.toggle('bad', bad.has(i)));
+  status.forEach((s, k) => {
+    if (s === 'nofit') Solver.LINES[k].forEach(i => bad.add(i));
+    if (s === 'notword') Solver.LINES[k].forEach(i => warn.add(i));
+  });
+  tiles.forEach((t, i) => {
+    t.classList.toggle('bad', bad.has(i));
+    t.classList.toggle('warn', !bad.has(i) && warn.has(i));
+  });
   placeMarks(status);
 
   const issues = [];
   status.forEach((s, k) => {
     const word = Solver.LINES[k].map(i => draft.letters[i]).join('').toUpperCase();
-    if (s === 'notword') issues.push(['bad', `${LINE_NAME(k)}: “${word}” isn’t in the word list.`]);
+    if (s === 'notword') issues.push(['warn', `${LINE_NAME(k)}: “${word}” isn’t in the word list, but it will still count in your puzzle.`]);
     if (s === 'nofit') issues.push(['bad', `${LINE_NAME(k)}: no word fits these letters.`]);
   });
   const full = draft.letters.every(Boolean);
-  if (!issues.length && full) {
-    const ws = gridWords();
-    if (new Set(ws).size < 8) issues.push(['bad', 'Each row and column needs a different word.']);
-    else issues.push(['good', 'All 8 are words. Nice!']);
+  const onlyWarnings = issues.every(([cls]) => cls === 'warn');
+  if (onlyWarnings && full) {
+    if (new Set(gridWords()).size < 8) issues.push(['bad', 'Each row and column needs a different word.']);
+    else if (!issues.length) issues.push(['good', 'All 8 are words. Nice!']);
   }
   // (a typed non-word line doesn't stop this: Fill in keeps it and fills around it)
-  if (issues.every(([, t]) => /isn’t in the word list/.test(t)) && !full && draft.letters.some(Boolean)) {
+  if (onlyWarnings && !full && draft.letters.some(Boolean)) {
     // can what's here still become a full grid? (quick, and only a hint)
     const base = draft.letters.map((ch, i) => draft.typed[i] ? ch : '');
     const res = Solver.fill(base, { random: false, nodeLimit: 120000 });
@@ -200,8 +205,8 @@ function placeMarks(status) {
     const show = s === 'ok' || s === 'notword' || s === 'nofit';
     m.hidden = !show;
     if (!show) return;
-    m.className = 'lmark ' + (s === 'ok' ? 'ok' : 'bad');
-    m.textContent = s === 'ok' ? '✓' : '✗';
+    m.className = 'lmark ' + { ok: 'ok', notword: 'warn', nofit: 'bad' }[s];
+    m.textContent = { ok: '✓', notword: '!', nofit: '✗' }[s];
     const end = cells[Solver.LINES[k][3]];
     if (k < 4) { m.style.left = (end.x + end.w - 9) + 'px'; m.style.top = (end.y + end.w / 2 - 9) + 'px'; }
     else { m.style.left = (end.x + end.w / 2 - 9) + 'px'; m.style.top = (end.y + end.w - 9) + 'px'; }
@@ -338,6 +343,7 @@ function puzzlePieces(groups) {
 let lastSolve = null;
 function renderPieceInfo(groups) {
   const multi = groups.filter(g => g.length > 1).length, singles = groups.length - multi;
+  Solver.allowWords(gridWords());                // a name like MARY counts in this puzzle
   const res = Solver.solutions(puzzlePieces(groups), { limit: 20 });
   lastSolve = res;
   const n = res.grids.length;
@@ -374,6 +380,7 @@ function renderShare() {
   $('shareNote').textContent = '';
   const groups = Solver.piecesFrom(joins());
   const multi = groups.filter(g => g.length > 1).length;
+  Solver.allowWords(gridWords());
   const res = lastSolve || Solver.solutions(puzzlePieces(groups), { limit: 20 });
   const n = res.grids.length;
   $('shareSummary').textContent = `Your Danagram: ${multi} piece${multi === 1 ? '' : 's'} and ` +
@@ -492,6 +499,7 @@ function parseImport(hash) {
     const pieces = groups.map(g => ({ cells: g.map(i => [Math.floor(i / 4), i % 4]),
                                       letters: g.map(i => d.letters[i]).join('') }));
     const rows = [0, 1, 2, 3].map(r => d.letters.slice(r * 4, r * 4 + 4).join(''));
+    Solver.allowWords(Solver.wordsOf(rows));
     const res = Solver.solutions(pieces, { limit: 20 });
     const diff = Solver.difficulty(rows, pieces, Math.max(1, res.grids.length));
     return { id: newId() + Math.random().toString(36).slice(2, 5), code: part.slice(0, 33),
