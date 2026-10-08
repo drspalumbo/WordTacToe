@@ -546,7 +546,8 @@
   #bankCheckFill{position:absolute; left:0; top:0; bottom:0; width:var(--fill, 0%);
     background:var(--charge); transition:width .4s cubic-bezier(.3,.9,.4,1), background .12s ease;}
   .bank-check.no-anim #bankCheckFill{transition:none;}
-  .btn.bank-check:disabled{opacity:1; color:var(--ink-soft);}
+  .btn.bank-check:disabled, .btn.bank-check.uncharged{opacity:1; color:var(--ink-soft);}
+  .btn.bank-check.uncharged{cursor:pointer;}
   .btn.bank-check.pressed #bankCheckFill{background:var(--charge-press);}
   /* white copy of the label, clipped to the fill: white on blue, dark on gray */
   .bank-check-over{position:absolute; inset:0; display:flex; align-items:center;

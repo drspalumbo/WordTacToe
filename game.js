@@ -1202,20 +1202,29 @@ function updateSuper() {
   badge.classList.toggle('show', stacks >= 2 && !solved);
   const btn = document.getElementById('bankCheckBtn');
   btn.classList.toggle('solution', solved);
-  btn.disabled = (!ready && !solved) || state.busy;
+  // uncharged still takes a tap (it shakes and explains); only a running check blocks it
+  btn.disabled = state.busy;
+  btn.classList.toggle('uncharged', !ready && !solved);
+  btn.setAttribute('aria-disabled', !ready && !solved ? 'true' : 'false');
   btn.style.setProperty('--fill', pct);
-  document.getElementById('bankHint').textContent = solved
-    ? 'Puts every piece back where it belongs.'
-    : ready ? 'Sorts the words on your board into in / not in the puzzle.'
-    : `Make new words to charge it (${v % HINT_THRESHOLD} of ${HINT_THRESHOLD}).`;
+  if (ready || solved) setBankHint('');        // a hint about charging is stale now
   renderWordLists();
 }
+// The line under Grid Check stays empty until a tap needs explaining.
+function setBankHint(t) { document.getElementById('bankHint').textContent = t; }
+
 // Grid Check (was Super Check). Its feedback goes in the drawer, since
 // the open drawer covers the message line.
 function doSuperCheck() {
   if (isSolved()) { showSolution(); return; }
-  if (state.busy || meterValue() < HINT_THRESHOLD) return;
-  const say = t => { document.getElementById('bankHint').textContent = t; };
+  if (state.busy) return;
+  const v = meterValue();
+  if (v < HINT_THRESHOLD) {                   // not charged yet: shake, then say why
+    shakeButton(document.getElementById('bankCheckBtn'));
+    setBankHint(`Make new words to charge it (${v} of ${HINT_THRESHOLD}).`);
+    return;
+  }
+  const say = setBankHint;
   if (!currentGrid()) {                       // gaps in the 4×4: show where
     say('Fill the 4×4 first.');
     flashEmptySquares();
@@ -1230,6 +1239,16 @@ function doSuperCheck() {
   runCheck(true);
 }
 document.getElementById('bankCheckBtn').addEventListener('click', doSuperCheck);
+
+function shakeButton(el) {
+  if (!el.animate) return;
+  const reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  el.animate(reduce ? [{ opacity: 1 }, { opacity: .5 }, { opacity: 1 }]
+                    : [{ transform: 'translateX(0)' }, { transform: 'translateX(-7px)', offset: .2 },
+                       { transform: 'translateX(7px)', offset: .4 }, { transform: 'translateX(-5px)', offset: .6 },
+                       { transform: 'translateX(5px)', offset: .8 }, { transform: 'translateX(0)' }],
+             { duration: 360, easing: 'ease-in-out' });
+}
 
 // Lower the drawer so the board shows, then blink the empty squares of the 4×4.
 function flashEmptySquares() {
@@ -1278,6 +1297,7 @@ document.getElementById('drawerTab').addEventListener('click', () => {
   const open = d.classList.toggle('open');
   if (open) {
     document.getElementById('drawerPanel').scrollTop = 0;     // start at the Grid Check
+    setBankHint('');
     if (!wasPeeking) morphBarIntoButton(barRect);
   }
   document.getElementById('drawerTab').setAttribute('aria-expanded', open ? 'true' : 'false');
