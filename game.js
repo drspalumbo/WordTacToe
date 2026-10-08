@@ -1763,7 +1763,7 @@ function onWin(g) {
   }
   // freeze the success summary at the first real solve
   const h = state.hints[state.idx];
-  if (!state.revealed) timerStop(state.lastMoveMs);
+  if (!state.revealed) { timerStop(state.lastMoveMs); sendStat('finish'); }
   if (!h.summary && !state.revealed) h.summary = buildSummary();
   updateMeta();
   updateSuper();                       // Grid Check → Show solution
@@ -1868,6 +1868,55 @@ if (darkQuery) {
 }
 applyTheme();
 
+// ---------------------------------------------------------- anonymous stats
+// Two events per puzzle per device, each sent at most once: 'start' (first move)
+// and 'finish' (first real solve). They go to a Google Sheet through an Apps
+// Script web app (tools/stats_apps_script.gs). No IDs or cookies, and the puzzle
+// is named by a short hash, never its answer. Off while STATS_URL is empty;
+// opening the page with ?notrack=1 turns it off for that browser (our own devices).
+let STATS_URL = '';
+const STATS_SENT_KEY = 'danagram_stats_sent', NOTRACK_KEY = 'danagram_notrack';
+if (/[?&]notrack=1/.test(location.search || '')) store.set(NOTRACK_KEY, true);
+const versionEl = document.querySelector('.help-version');
+const APP_VERSION = versionEl ? versionEl.textContent.trim() : '';
+
+function puzzleHash(idx) {                     // FNV-1a of the answer, as 8 hex digits
+  let h = 0x811c9dc5;
+  for (const ch of puzzleKey(idx)) { h ^= ch.charCodeAt(0); h = Math.imul(h, 0x01000193) >>> 0; }
+  return h.toString(16).padStart(8, '0');
+}
+function sendStat(event) {
+  if (!STATS_URL || store.get(NOTRACK_KEY)) return;
+  const pid = puzzleHash(state.idx);
+  const sent = store.get(STATS_SENT_KEY) || {};
+  if (sent[pid + ':' + event]) return;          // once per puzzle per device
+  sent[pid + ':' + event] = 1;
+  store.set(STATS_SENT_KEY, sent);
+  const h = state.hints[state.idx], t = timerOf(state.idx), d = new Date();
+  const two = n => String(n).padStart(2, '0');
+  const body = JSON.stringify({
+    event, test: state.idx + 1, puzzle: pid,
+    day: `${d.getFullYear()}-${two(d.getMonth() + 1)}-${two(d.getDate())}`,
+    yesterday: !!(state.dayBack && dailyIdx() > 0),
+    seconds: event === 'finish' ? Math.round(t.ms / 1000) : 0,
+    moves: h.moves || 0, shuffles: h.shuffles || 0,
+    words: h.seen.length, crossings: h.crossings.length,
+    grid_checks: h.history.filter(e => e.mode === 'super').length,
+    app: !!((window.matchMedia && matchMedia('(display-mode: standalone)').matches) || navigator.standalone),
+    dark: document.documentElement.classList.contains('dark'),
+    version: APP_VERSION,
+  });
+  // text/plain keeps it a "simple" request (no CORS preflight); sendBeacon survives
+  // the page closing right after a solve
+  try {
+    if (navigator.sendBeacon && navigator.sendBeacon(STATS_URL, new Blob([body], { type: 'text/plain' }))) return;
+  } catch (e) {}
+  try {
+    fetch(STATS_URL, { method: 'POST', mode: 'no-cors', keepalive: true,
+                       headers: { 'Content-Type': 'text/plain' }, body });
+  } catch (e) {}
+}
+
 // ------------------------------------------------------------- solve timer
 // Active play time: starts with the first move, pauses while the page is hidden
 // or another puzzle is on screen, and stops at the move that places the last
@@ -1894,7 +1943,12 @@ function timerResume() {
 function timerOnMove() {
   const t = timerOf(state.idx);
   if (t.done || isSolved()) return;
-  if (!t.started) { t.started = true; timerResume(); renderTimer(); }   // the pill starts ticking
+  const h = state.hints[state.idx];
+  h.moves = (h.moves || 0) + 1;                // every board change until it's solved
+  if (!t.started) {
+    t.started = true; timerResume(); renderTimer();   // the pill starts ticking
+    sendStat('start');
+  }
   state.lastMoveMs = timerNow();
 }
 function timerStop(atMs) {
@@ -2017,6 +2071,7 @@ document.getElementById('nextBtn').addEventListener('click', () => !state.busy &
 function doShuffle() {
   if (state.busy) return;
   setSelected(null); clearGhost();
+  if (!isSolved()) { const h = state.hints[state.idx]; h.shuffles = (h.shuffles || 0) + 1; }
   const orig = snapshot();
   scramble();                                    // same packed-into-the-4×4 randomization
                                                    // used to set up a fresh puzzle

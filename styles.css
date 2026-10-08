@@ -400,6 +400,7 @@
   .hk{
     display:inline-block; min-width:64px; font-weight:800; color:var(--ink);
   }
+  .help-tip.stats-note{margin-top:12px; font-size:12px; font-style:normal;}
   .help-tip{
     font-size:13px; font-style:italic; color:var(--ink-soft);
     background:var(--surface-soft); border-radius:9px; padding:9px 11px; margin:0;
