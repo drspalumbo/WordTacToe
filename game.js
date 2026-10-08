@@ -1763,7 +1763,7 @@ function onWin(g) {
   }
   // freeze the success summary at the first real solve
   const h = state.hints[state.idx];
-  if (!state.revealed) { timerStop(state.lastMoveMs); sendStat('finish'); }
+  if (!state.revealed) { timerStop(state.lastMoveMs); sendPlay(true); }
   if (!h.summary && !state.revealed) h.summary = buildSummary();
   updateMeta();
   updateSuper();                       // Grid Check → Show solution
@@ -1869,14 +1869,17 @@ if (darkQuery) {
 applyTheme();
 
 // ---------------------------------------------------------- anonymous stats
-// Two events per puzzle per device, each sent at most once: 'start' (first move)
-// and 'finish' (first real solve). They go to a Google Sheet through an Apps
-// Script web app (tools/stats_apps_script.gs). No IDs or cookies, and the puzzle
-// is named by a short hash, never its answer. Off if STATS_URL is empty;
-// opening the page with ?notrack=1 turns it off for that browser (our own devices).
+// One row per play in a Google Sheet, via an Apps Script web app
+// (tools/stats_apps_script.gs). Each play gets a random id, fresh for every
+// puzzle, so plays can't be linked to each other or to anyone. The row is made on
+// the first move and updated whenever the player leaves the page, switches puzzle,
+// or finishes — so a give-up still records how far it got. The puzzle is named by
+// a short hash, never its answer. Off if STATS_URL is empty; opening the page with
+// ?notrack=1 turns it off for that browser (our own devices).
 let STATS_URL = 'https://script.google.com/macros/s/AKfycbyuqYGR6T8Lah9ln1DV__2aXI-b7f2ipVJx62r5kS4WSvIfMJoHsajgcSFRDoKlktfs/exec';
-const STATS_SENT_KEY = 'danagram_stats_sent', NOTRACK_KEY = 'danagram_notrack';
+const NOTRACK_KEY = 'danagram_notrack';
 if (/[?&]notrack=1/.test(location.search || '')) store.set(NOTRACK_KEY, true);
+try { localStorage.removeItem('danagram_stats_sent'); } catch (e) {}   // from the start/finish version
 const versionEl = document.querySelector('.help-version');
 const APP_VERSION = versionEl ? versionEl.textContent.trim() : '';
 
@@ -1885,20 +1888,28 @@ function puzzleHash(idx) {                     // FNV-1a of the answer, as 8 hex
   for (const ch of puzzleKey(idx)) { h ^= ch.charCodeAt(0); h = Math.imul(h, 0x01000193) >>> 0; }
   return h.toString(16).padStart(8, '0');
 }
-function sendStat(event) {
-  if (!STATS_URL || store.get(NOTRACK_KEY)) return;
-  const pid = puzzleHash(state.idx);
-  const sent = store.get(STATS_SENT_KEY) || {};
-  if (sent[pid + ':' + event]) return;          // once per puzzle per device
-  sent[pid + ':' + event] = 1;
-  store.set(STATS_SENT_KEY, sent);
-  const h = state.hints[state.idx], t = timerOf(state.idx), d = new Date();
+function randomHex(bytes) {
+  const a = new Uint8Array(bytes);
+  if (window.crypto && crypto.getRandomValues) crypto.getRandomValues(a);
+  else for (let i = 0; i < bytes; i++) a[i] = Math.floor(Math.random() * 256);
+  return [...a].map(x => x.toString(16).padStart(2, '0')).join('');
+}
+function localDay(d = new Date()) {
   const two = n => String(n).padStart(2, '0');
+  return `${d.getFullYear()}-${two(d.getMonth() + 1)}-${two(d.getDate())}`;
+}
+// Send (or update) this puzzle's row. finished=true once, at the first real solve.
+function sendPlay(finished = false, idx = state.idx) {
+  if (!STATS_URL || store.get(NOTRACK_KEY)) return;
+  const h = state.hints[idx], t = timerOf(idx);
+  if (!t.started || h.statsDone) return;       // nothing played yet / final row already sent
+  if (t.done && !finished) return;
+  if (!h.play) { h.play = randomHex(8); h.playDay = localDay(); }
   const body = JSON.stringify({
-    event, test: state.idx + 1, puzzle: pid,
-    day: `${d.getFullYear()}-${two(d.getMonth() + 1)}-${two(d.getDate())}`,
-    yesterday: !!(state.dayBack && dailyIdx() > 0),
-    seconds: event === 'finish' ? Math.round(t.ms / 1000) : 0,
+    play: h.play, status: finished ? 'finished' : 'playing',
+    test: idx + 1, puzzle: puzzleHash(idx), day: h.playDay,
+    yesterday: dailyIdx() > 0 && idx === dailyIdx() - 1,
+    seconds: Math.round(timerNow(idx) / 1000),
     moves: h.moves || 0, shuffles: h.shuffles || 0,
     words: h.seen.length, crossings: h.crossings.length,
     grid_checks: h.history.filter(e => e.mode === 'super').length,
@@ -1906,8 +1917,12 @@ function sendStat(event) {
     dark: document.documentElement.classList.contains('dark'),
     version: APP_VERSION,
   });
-  // text/plain keeps it a "simple" request (no CORS preflight); sendBeacon survives
-  // the page closing right after a solve
+  if (body === h.statsLast) return;            // nothing new since the last update
+  h.statsLast = body;
+  if (finished) h.statsDone = true;
+  saveProgress(idx);
+  // text/plain keeps it a "simple" request (no CORS preflight); sendBeacon still
+  // goes through when the page is being hidden or closed
   try {
     if (navigator.sendBeacon && navigator.sendBeacon(STATS_URL, new Blob([body], { type: 'text/plain' }))) return;
   } catch (e) {}
@@ -1916,6 +1931,9 @@ function sendStat(event) {
                        headers: { 'Content-Type': 'text/plain' }, body });
   } catch (e) {}
 }
+// leaving the page is the moment a give-up happens, so record progress then
+document.addEventListener('visibilitychange', () => { if (document.hidden) sendPlay(); });
+window.addEventListener('pagehide', () => sendPlay());
 
 // ------------------------------------------------------------- solve timer
 // Active play time: starts with the first move, pauses while the page is hidden
@@ -1947,7 +1965,7 @@ function timerOnMove() {
   h.moves = (h.moves || 0) + 1;                // every board change until it's solved
   if (!t.started) {
     t.started = true; timerResume(); renderTimer();   // the pill starts ticking
-    sendStat('start');
+    sendPlay();                                 // the play's row starts here
   }
   state.lastMoveMs = timerNow();
 }
@@ -2029,6 +2047,7 @@ function saveSession() {
 }
 
 function loadPuzzle(idx) {
+  if (state.pieces.length) sendPlay();           // update the row of the puzzle we're leaving
   saveSession();                                 // preserve the puzzle we're leaving
   cancelScore();                                 // a pending score belongs to that puzzle
   timerPause();                                  // and so does the running clock
