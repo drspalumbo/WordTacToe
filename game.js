@@ -1075,8 +1075,12 @@ function renderWordLists(justAdded, newestFirst) {
   // the drawer is always there; empty, it explains how to fill it
   document.getElementById('drawer').classList.toggle('has-words', total > 0);
   document.body.classList.add('has-drawer');
-  document.getElementById('drawerTabLabel').textContent = total
-    ? `Word bank · ${h.inList.length} in, ${h.outList.length} out` : 'Word bank';
+  // sorted counts as marks, like the lists: circled = in the puzzle, struck = not
+  document.getElementById('drawerTabLabel').innerHTML = 'Word bank' + (total
+    ? `<span class="tab-counts" aria-label="${h.inList.length} in the puzzle, ${h.outList.length} not">` +
+      `<span class="tc-in">${h.inList.length}</span><span class="tc-dot">·</span>` +
+      `<span class="tc-out">${h.outList.length}</span></span>`
+    : '');
   layoutDrawer();
 }
 // ------------------------------------------ Check / grid check button states

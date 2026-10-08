@@ -481,6 +481,14 @@
   /* label + chevron on one row, the bar centred under the whole tab */
   .tab-text{display:flex; flex-direction:column; align-items:center; gap:4px;}
   .tab-row{display:flex; align-items:center; gap:8px;}
+  #drawerTabLabel{display:inline-flex; align-items:center;}
+  .tab-counts{display:inline-flex; align-items:center; gap:4px; margin-left:8px;
+    font-size:11.5px; font-weight:800; color:var(--ink);}
+  .tc-in{display:inline-flex; align-items:center; justify-content:center;
+    min-width:17px; height:17px; padding:0 3px; box-sizing:border-box;
+    border:1.5px solid var(--ink); border-radius:9px;}
+  .tc-dot{color:var(--ink-soft);}
+  .tc-out{color:var(--ink-soft); text-decoration:line-through; text-decoration-thickness:1.5px;}
   .bank-bar-wrap{position:relative; width:84px;}
   .bank-bar{display:block; height:4px; border-radius:2px; background:#DCE3E9; overflow:hidden;
     transition:opacity .2s ease;}
