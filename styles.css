@@ -618,33 +618,37 @@
   .wl.found ul{display:flex; flex-wrap:wrap; gap:0 14px;}
   .wl.found li{color:var(--ink-soft); opacity:.75; font-size:19px;}
 
-  /* charge meter on the word bank tab (gold = a grid check is ready) */
-  .bank-meter{position:relative; width:26px; height:26px; flex:none;
-    display:flex; align-items:center; justify-content:center;}
-  .bank-meter .ring{position:absolute; top:50%; left:50%;
-    transform:translate(-50%,-50%) rotate(-90deg);}
-  .bank-meter .ring-track{stroke:#DCE3E9;}
-  .bank-meter .ring-fill{stroke:var(--gold); stroke-dasharray:66; stroke-dashoffset:66;
-    transition:stroke-dashoffset .4s cubic-bezier(.3,.9,.4,1);}
-  .bank-star{color:var(--ink-soft); position:relative; transition:color .3s ease;}
-  #drawerTab.charged .bank-star{color:var(--gold);}
-  .bank-badge{position:absolute; top:-5px; right:-7px; min-width:15px; height:15px;
+  /* charge bar under the word bank label (full gold = a Grid Check is ready) */
+  .tab-text{position:relative; display:flex; flex-direction:column; align-items:stretch; gap:4px;}
+  .bank-bar{display:block; height:4px; border-radius:2px; background:#DCE3E9; overflow:hidden;
+    transition:opacity .2s ease;}
+  #bankBarFill{display:block; height:100%; width:0%; background:var(--gold);
+    transition:width .4s cubic-bezier(.3,.9,.4,1);}
+  #drawer.open .bank-bar{opacity:0;}          /* it became the Grid Check button */
+  .bank-badge{position:absolute; min-width:15px; height:15px;
     padding:0 3px; border-radius:8px; background:var(--ink); color:#fff;
     font-size:9.5px; font-weight:800; display:none; align-items:center; justify-content:center;
     line-height:1; box-shadow:0 0 0 2px #fff; box-sizing:border-box;}
   .bank-badge.show{display:flex;}
+  .tab-text .bank-badge{right:-20px; bottom:-6px;}
+  #drawer.open .tab-text .bank-badge{display:none;}
 
-  /* the grid check lives at the top of the open drawer */
+  /* the Grid Check lives at the top of the open drawer; it's its own meter too —
+     gold fills it left to right as it charges */
   .bank-actions{display:flex; flex-direction:column; align-items:center; gap:5px;
     padding:6px 18px 8px;}
-  /* the button is its own meter: gold fills it left to right as it charges */
-  .btn.bank-check{position:relative; overflow:hidden; isolation:isolate;
-    background:#EEF1F4; color:var(--ink); padding:10px 22px;}
-  .btn.bank-check::before{content:''; position:absolute; left:0; top:0; bottom:0; z-index:-1;
-    width:var(--fill, 0%); background:var(--gold);
-    transition:width .4s cubic-bezier(.3,.9,.4,1), background .12s ease;}
+  .btn.bank-check{position:relative; isolation:isolate; background:#EEF1F4; color:var(--ink);
+    padding:10px 26px;}
+  .bank-check-fill{position:absolute; inset:0; border-radius:inherit; overflow:hidden; z-index:-1;}
+  #bankCheckFill{position:absolute; left:0; top:0; bottom:0; width:var(--fill, 0%);
+    background:var(--gold); transition:width .4s cubic-bezier(.3,.9,.4,1), background .12s ease;}
+  .bank-check.no-anim #bankCheckFill{transition:none;}
   .btn.bank-check:disabled{opacity:1; color:var(--ink-soft);}
-  .btn.bank-check.pressed::before{background:#C6A310;}
+  .btn.bank-check.pressed #bankCheckFill{background:#C6A310;}
+  .bank-check .bank-badge{top:-6px; right:-6px;}
+  /* the tab's bar growing into the button as the drawer opens */
+  .bar-morph{position:fixed; z-index:60; overflow:hidden; background:#EEF1F4; pointer-events:none;}
+  .bar-morph i{position:absolute; left:0; top:0; bottom:0; background:var(--gold);}
   .bank-hint{font-size:12.5px; font-weight:600; color:var(--ink-soft); min-height:16px;}
   .wl h4{
     margin:0 0 6px; font-size:11px; letter-spacing:.1em; text-transform:uppercase;

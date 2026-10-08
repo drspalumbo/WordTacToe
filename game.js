@@ -763,12 +763,43 @@ function meterValue() { return state.hints[state.idx].charge; }
 
 function bumpMeter(points, idx = state.idx) {
   const h = state.hints[idx];
+  const before = h.charge;
   h.charge += points;
   updateSuper();
+  // just earned a Grid Check on the puzzle being played → show it off
+  if (idx === state.idx &&
+      Math.floor(h.charge / HINT_THRESHOLD) > Math.floor(before / HINT_THRESHOLD))
+    celebrateCharge(before < HINT_THRESHOLD ? (before % HINT_THRESHOLD) / HINT_THRESHOLD : 1);
+}
+
+// A Grid Check was just earned: peek the drawer up to the button, let it fill the
+// last stretch of gold, then give it a small pop so players know it's there.
+function celebrateCharge(fromFrac) {
+  const d = document.getElementById('drawer');
+  const btn = document.getElementById('bankCheckBtn');
+  if (!d.classList.contains('open')) {
+    clearTimeout(peekTimer);
+    d.classList.add('peek');
+    document.getElementById('drawerPanel').scrollTop = 0;     // the button is at the top
+    peekTimer = setTimeout(() => { if (!state.busy) d.classList.remove('peek'); }, 2400);
+  }
+  btn.classList.add('no-anim');
+  btn.style.setProperty('--fill', (fromFrac * 100).toFixed(0) + '%');
+  void btn.offsetWidth;
+  btn.classList.remove('no-anim');
+  setTimeout(() => {
+    btn.style.setProperty('--fill', '100%');
+    if (!btn.animate) return;
+    btn.animate([{ transform: 'scale(1)', boxShadow: '0 0 0 0 rgba(0,0,0,0)' },
+                 { transform: 'scale(1.09)', offset: 0.45,
+                   boxShadow: '0 0 0 6px color-mix(in srgb, var(--gold) 45%, transparent)' },
+                 { transform: 'scale(1)', boxShadow: '0 0 0 0 rgba(0,0,0,0)' }],
+                { duration: 520, delay: 380, easing: 'cubic-bezier(.3,1.5,.5,1)' });
+  }, 320);
 }
 
 function pulseSuper() {
-  const btn = document.getElementById('bankMeter');
+  const btn = document.getElementById('bankBar');
   if (btn && btn.animate) btn.animate(
     [{ transform: 'scale(1)' }, { transform: 'scale(1.22)' }, { transform: 'scale(1)' }],
     { duration: 300, easing: 'cubic-bezier(.3,1.7,.5,1)' });
@@ -779,7 +810,7 @@ function flyDot(fromEl, delay) {
   if (!fromEl) return;
   const idx = state.idx;             // the point belongs to this puzzle even if you switch mid-flight
   setTimeout(() => {
-    const target = document.getElementById('bankMeter');
+    const target = document.getElementById('bankBar');
     if (!target) return;
     const f = fromEl.getBoundingClientRect(), t = target.getBoundingClientRect();
     const cx = f.left + f.width / 2, cy = f.top + f.height / 2;
@@ -993,7 +1024,7 @@ function renderWordLists(justAdded, newestFirst) {
     : '';
   el.innerHTML = total || h.found.length
     ? found + mk('in', 'In the puzzle', h.inList, 'wlIn') + mk('out', 'Not in the puzzle', h.outList, 'wlOut')
-    : '<p class="wl-empty">Find new words to charge up a check. Use Check current grid to see ' +
+    : '<p class="wl-empty">Find new words to charge up a Grid Check. Use it to see ' +
       'if any of the words on your board are in today’s puzzle, and if you’re on the right track.</p>';
   const fresh = el.querySelector('[data-new]');
   if (fresh && fresh.animate) {
@@ -1097,7 +1128,7 @@ function setBtnState(mode) {              // '' | 'checking' | 'supering'
       btnAnims.push(lbl.animate(kf, { duration: CYCLE, iterations: Infinity }));
     }
   } else if (mode === 'supering') {
-    // ripple every letter of "Check current grid" in sequence, then pause briefly and repeat
+    // ripple every letter of "Grid Check" in sequence, then pause briefly and repeat
     const all = BANK_LTRS;
     const LIFT = 400, STAGGER = 81, PAUSE = 100;      // 80% of the old speed
     const wave = (all.length - 1) * STAGGER + LIFT;
@@ -1118,27 +1149,30 @@ function setBtnState(mode) {              // '' | 'checking' | 'supering'
   }
 }
 
-// The word bank tab's ring fills toward the next grid check; gold once one is
-// ready, with ×N when several are banked. The drawer's button spends one.
+// The bar under the word bank label fills toward the next Grid Check and is full
+// gold once one is ready, with ×N when several are banked. The Grid Check button
+// in the drawer shows the same fill and count.
 function updateSuper() {
   const v = meterValue();
   const stacks = Math.floor(v / HINT_THRESHOLD);
   const ready = stacks >= 1;
-  const frac = ready ? 1 : (v % HINT_THRESHOLD) / HINT_THRESHOLD;
-  document.getElementById('bankRingFill').style.strokeDashoffset = (66 * (1 - frac)).toFixed(1);
+  const pct = ((ready ? 1 : (v % HINT_THRESHOLD) / HINT_THRESHOLD) * 100).toFixed(0) + '%';
+  document.getElementById('bankBarFill').style.width = pct;
   document.getElementById('drawerTab').classList.toggle('charged', ready);
-  const badge = document.getElementById('bankBadge');
-  if (stacks >= 2) { badge.textContent = '×' + stacks; badge.classList.add('show'); }
-  else badge.classList.remove('show');
+  ['bankBadge', 'bankCheckBadge'].forEach(id => {
+    const el = document.getElementById(id);
+    el.textContent = '×' + stacks;
+    el.classList.toggle('show', stacks >= 2);
+  });
   const btn = document.getElementById('bankCheckBtn');
   btn.disabled = !ready || state.busy;
-  btn.style.setProperty('--fill', (frac * 100).toFixed(0) + '%');   // gold fills left→right
+  btn.style.setProperty('--fill', pct);
   document.getElementById('bankHint').textContent = ready
     ? 'Sorts the words on your board into in / not in the puzzle.'
     : `Make new words to charge it (${v % HINT_THRESHOLD} of ${HINT_THRESHOLD}).`;
   renderWordLists();
 }
-// "Check current grid" (was Super Check). Its feedback goes in the drawer, since
+// Grid Check (was Super Check). Its feedback goes in the drawer, since
 // the open drawer covers the message line.
 function doSuperCheck() {
   if (state.busy || meterValue() < HINT_THRESHOLD) return;
@@ -1156,11 +1190,50 @@ document.getElementById('bankCheckBtn').addEventListener('click', doSuperCheck);
 document.getElementById('drawerTab').addEventListener('click', () => {
   const d = document.getElementById('drawer');
   clearTimeout(peekTimer);
+  const wasPeeking = d.classList.contains('peek');
+  const barRect = document.getElementById('bankBar').getBoundingClientRect();
   d.classList.remove('peek');
   const open = d.classList.toggle('open');
-  if (open) document.getElementById('drawerPanel').scrollTop = 0;   // start at the check button
+  if (open) {
+    document.getElementById('drawerPanel').scrollTop = 0;     // start at the Grid Check
+    if (!wasPeeking) morphBarIntoButton(barRect);
+  }
   document.getElementById('drawerTab').setAttribute('aria-expanded', open ? 'true' : 'false');
 });
+
+// Opening the drawer: the tab's charge bar grows into the Grid Check button.
+// A stand-in flies from the bar's spot to where the button will settle once the
+// drawer has finished opening, and the real button appears as it arrives.
+function morphBarIntoButton(from) {
+  if (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+  const panel = document.getElementById('drawerPanel');
+  const btn = document.getElementById('bankCheckBtn');
+  if (!btn.animate || !from.width) return;
+  // measure the button's final spot with the drawer fully open, then let it open
+  panel.style.transition = 'none';
+  const to = btn.getBoundingClientRect();
+  panel.style.maxHeight = '0px';
+  void panel.offsetHeight;
+  panel.style.transition = ''; panel.style.maxHeight = '';
+
+  const ghost = document.createElement('div');
+  ghost.className = 'bar-morph';
+  const fill = document.createElement('i');
+  fill.style.width = document.getElementById('bankBarFill').style.width || '0%';
+  ghost.appendChild(fill);
+  document.body.appendChild(ghost);
+  const box = r => ({ left: r.left + 'px', top: r.top + 'px', width: r.width + 'px', height: r.height + 'px' });
+  btn.style.opacity = '0';
+  const a = ghost.animate([Object.assign(box(from), { borderRadius: '2px' }),
+                           Object.assign(box(to), { borderRadius: '12px' })],
+                          { duration: 380, easing: 'cubic-bezier(.3,.9,.4,1)', fill: 'forwards' });
+  const done = () => {
+    ghost.remove();
+    btn.style.opacity = '';
+    btn.animate([{ opacity: 0 }, { opacity: 1 }], { duration: 120 });
+  };
+  a.onfinish = done; a.oncancel = done;
+}
 
 // Crack the closed drawer open for a moment so a newly found word can be seen landing.
 let peekTimer = null;
@@ -1338,10 +1411,10 @@ async function runCheck(superMode) {
 document.getElementById('submitBtn').addEventListener('click', () => runCheck(false));
 
 // ------------------------------------------------- win summary / share text
-// One line per SuperCheck used, then the solving line: ➡️ four row marks, ⬇️ four
-// column marks. SuperCheck marks: ⭐ in the puzzle, 〰️ a word but not in the
+// One line per Grid Check used, then the solving line: ➡️ four row marks, ⬇️ four
+// column marks. Grid Check marks: ⭐ in the puzzle, 〰️ a word but not in the
 // puzzle, ✖️ not a word; the solving line is all ✔️ and ends 🎉. Then the count of
-// SuperChecks and the hints still banked, as stars. The summary is made once, at
+// Grid Checks and the ones still banked, as stars. The summary is made once, at
 // the first solve, and stays as it was however the puzzle is played after that.
 function buildSummary() {
   const h = state.hints[state.idx];
@@ -1351,7 +1424,7 @@ function buildSummary() {
   if (last && last.marks.every(m => m === '✔️')) lines.push(line(last) + '🎉');
   const s = h.history.filter(e => e.mode === 'super').length;
   const left = Math.floor(meterValue() / HINT_THRESHOLD);
-  return { lines, count: `${s} SuperCheck${s === 1 ? '' : 's'}` +
+  return { lines, count: `${s} Grid Check${s === 1 ? '' : 's'}` +
                          (left ? ` · ${'⭐'.repeat(left)} left` : '') };
 }
 function summary() {

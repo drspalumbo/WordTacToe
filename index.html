@@ -62,24 +62,22 @@
       <path id="drawerEdgePath"/>
     </svg>
     <button id="drawerTab" aria-expanded="false">
-      <!-- charge meter: fills as you make new words; full = a grid check is ready -->
-      <span class="bank-meter" id="bankMeter" aria-hidden="true">
-        <svg class="ring" viewBox="0 0 26 26" width="26" height="26">
-          <circle class="ring-track" cx="13" cy="13" r="10.5" fill="none" stroke-width="2.5"/>
-          <circle class="ring-fill" id="bankRingFill" cx="13" cy="13" r="10.5" fill="none" stroke-width="2.5" stroke-linecap="round"/>
-        </svg>
-        <svg class="bank-star" viewBox="0 0 24 24" width="12" height="12" fill="currentColor">
-          <path d="M12 2.4l2.9 6.7 7.2.8-5.4 4.9 1.5 7.2-6.2-3.7-6.2 3.7 1.5-7.2-5.4-4.9 7.2-.8z"/>
-        </svg>
+      <!-- label with its charge bar underneath; full bar = a Grid Check is ready -->
+      <span class="tab-text">
+        <span id="drawerTabLabel">Word bank</span>
+        <span class="bank-bar" id="bankBar" aria-hidden="true"><span id="bankBarFill"></span></span>
         <span class="bank-badge" id="bankBadge"></span>
       </span>
-      <span id="drawerTabLabel">Word bank</span>
       <svg class="chevron" viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
     </button>
   </div>
   <div id="drawerPanel">
     <div class="bank-actions">
-      <button class="btn bank-check" id="bankCheckBtn" disabled><span id="bankCheckLabel">Check current grid</span></button>
+      <button class="btn bank-check" id="bankCheckBtn" disabled>
+        <span class="bank-check-fill" aria-hidden="true"><i id="bankCheckFill"></i></span>
+        <span id="bankCheckLabel">Grid Check</span>
+        <span class="bank-badge" id="bankCheckBadge"></span>
+      </button>
       <div class="bank-hint" id="bankHint"></div>
     </div>
     <div id="wordLists"></div>
@@ -154,7 +152,7 @@
               <svg class="mw-circle" viewBox="0 0 48 22"><path class="mwc-path" d="M 42.3 6.1 C 45.3 8.0, 46.2 10.6, 44.3 13.0 C 42.4 15.3, 38.1 17.5, 32.6 18.6 C 27.1 19.8, 20.6 20.0, 15.2 19.2 C 9.8 18.4, 5.8 16.5, 4.0 14.3 C 2.2 12.1, 3.2 9.6, 6.1 7.4 C 9.1 5.3, 14.2 3.7, 19.9 3.0 C 25.5 2.3, 31.6 2.6, 36.2 3.8 C 40.8 5.0, 44.2 7.1, 44.7 9.4"/></svg>
             </span>
           </span>
-          <span class="help-text"><b class="help-h">Check your grid to sort your word bank</b>Once it’s charged, open the word bank and tap Check current grid to see which words on your board are in today’s puzzle…and which aren’t!</span>
+          <span class="help-text"><b class="help-h">Check your grid to sort your word bank</b>Once it’s charged, open the word bank and tap Grid Check to see which words on your board are in today’s puzzle…and which aren’t!</span>
         </li>
       </ul>
       <div class="win-note">
