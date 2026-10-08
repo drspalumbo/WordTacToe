@@ -229,6 +229,7 @@ function gridIsValidCrossword() {
 // ------------------------------------------------------------- rendering
 function metrics() {
   const avail = Math.min(560, document.getElementById('boardWrap').clientWidth);
+  if (avail < 8 * cols()) return;          // not laid out yet (0px wide); a resize will redo this
   S = Math.min(S_MAX, Math.floor((avail - 8) / cols()));
   GAP = Math.max(2, Math.round(S * 0.045));
   const size = S * cols();
@@ -370,6 +371,7 @@ function commit(moves, scoreDelay) {   // push history, apply a planned move
   updateUndoButtons();
   clearBadges(); clearScribbles();
   scheduleScore(scoreDelay);
+  saveProgress();
 }
 function clearHistory() { state.undo.length = 0; state.redo.length = 0; updateUndoButtons(); }
 function updateUndoButtons() {
@@ -383,6 +385,7 @@ function doUndo() {
   setSelected(null); clearGhost(); clearBadges(); clearScribbles(); positionTiles(); updateUndoButtons();
   setMsg('');
   scheduleScore();
+  saveProgress();
 }
 function doRedo() {
   if (!state.redo.length || state.busy) return;
@@ -391,6 +394,7 @@ function doRedo() {
   setSelected(null); clearGhost(); clearBadges(); clearScribbles(); positionTiles(); updateUndoButtons();
   setMsg('');
   scheduleScore();
+  saveProgress();
 }
 document.getElementById('undoBtn').addEventListener('click', doUndo);
 document.getElementById('redoBtn').addEventListener('click', doRedo);
@@ -767,6 +771,7 @@ function bumpMeter(points, idx = state.idx) {
   const before = h.charge;
   h.charge += points;
   updateSuper();
+  saveProgress(idx);
   // just earned a Grid Check on the puzzle being played → show it off
   if (idx === state.idx && !isSolved(idx) &&
       Math.floor(h.charge / HINT_THRESHOLD) > Math.floor(before / HINT_THRESHOLD))
@@ -929,6 +934,7 @@ function scoreBoard() {
   }
 
   sources.forEach((s, k) => flyDot(s, k * 70));    // each dot adds 1 when it lands
+  if (newWords.length || sources.length) saveProgress();
   if (newWords.length) {
     // new words go in the bank quietly (gray, unsorted); the drawer peeks so you see them land
     newWords.forEach(w => h.found.unshift(w));
@@ -1444,6 +1450,7 @@ async function runCheck(superMode) {
   await sleep(450);
   state.busy = false;
   setBtnState('');
+  saveProgress();
   document.querySelectorAll('.letter').forEach(el => el.classList.remove('nod', 'shake'));
 
   if (superMode) {
@@ -1669,6 +1676,7 @@ function onWin(g) {
   if (!h.summary && !state.revealed) h.summary = buildSummary();
   updateMeta();
   updateSuper();                       // Grid Check → Show solution
+  saveProgress();
   openWinCard();
   if (celebrate) confetti();
 }
@@ -1681,6 +1689,65 @@ const store = {
   set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); }
               catch (e) { this.mem[k] = v; } },
 };
+
+// ------------------------------------------------------------ saved progress
+// Each puzzle's progress is kept in localStorage so a reload, a closed tab or a
+// phone killing the page doesn't lose it: the board and its undo/redo, the word
+// bank, charge, check history, solved grids and the frozen success summary.
+// Entries are keyed by the puzzle's answer, not its number, so regenerating the
+// puzzle bank can't attach old progress to a different puzzle. Only the most
+// recently played puzzles are kept.
+const PROGRESS_KEY = 'danagram_progress_v1';
+const PROGRESS_KEEP = 30;
+const UNDO_KEEP = 30;                  // undo/redo steps kept per puzzle across reloads
+const puzzleKey = idx => PUZZLES[idx].solution.join('');
+const dirtyPuzzles = new Set();
+let progressTimer = null;
+
+function saveProgress(idx = state.idx) {
+  dirtyPuzzles.add(idx);
+  clearTimeout(progressTimer);
+  progressTimer = setTimeout(flushProgress, 250);
+}
+function flushProgress() {
+  clearTimeout(progressTimer); progressTimer = null;
+  if (!dirtyPuzzles.size) return;
+  saveSession();                               // the puzzle on screen
+  const all = store.get(PROGRESS_KEY) || {};
+  dirtyPuzzles.forEach(idx => {
+    const sess = state.sessions[idx];
+    all[puzzleKey(idx)] = {
+      t: Date.now(),
+      cells: sess ? sess.cells : null,
+      undo: sess ? sess.undo.slice(-UNDO_KEEP) : [],
+      redo: sess ? sess.redo.slice(-UNDO_KEEP) : [],
+      hints: state.hints[idx],
+      solved: [...state.found[idx]],
+    };
+  });
+  dirtyPuzzles.clear();
+  const keys = Object.keys(all).sort((a, b) => all[b].t - all[a].t);
+  keys.slice(PROGRESS_KEEP).forEach(k => { delete all[k]; });
+  store.set(PROGRESS_KEY, all);
+}
+function restoreProgress() {
+  const all = store.get(PROGRESS_KEY) || {};
+  PUZZLES.forEach((P, idx) => {
+    const e = all[puzzleKey(idx)];
+    if (!e) return;
+    // only trust boards whose pieces still match this puzzle's pieces
+    const fits = cells => Array.isArray(cells) && cells.length === P.pieces.length &&
+      cells.every((cs, i) => Array.isArray(cs) && cs.length === P.pieces[i].cells.length);
+    if (fits(e.cells)) state.sessions[idx] = {
+      cells: e.cells, undo: (e.undo || []).filter(fits), redo: (e.redo || []).filter(fits),
+    };
+    if (e.hints) Object.assign(state.hints[idx], e.hints);
+    if (Array.isArray(e.solved)) state.found[idx] = new Set(e.solved);
+  });
+}
+// phones can kill a backgrounded page without warning, so write on the way out
+document.addEventListener('visibilitychange', () => { if (document.hidden) flushProgress(); });
+window.addEventListener('pagehide', flushProgress);
 
 // ------------------------------------------------------------ success card
 function openWinCard() {
@@ -1740,6 +1807,7 @@ function loadPuzzle(idx) {
   } else {                                       // first visit → fresh scramble
     state.undo = []; state.redo = [];
     scramble();
+    saveProgress();
   }
 
   buildTiles();
@@ -2040,6 +2108,7 @@ if (!DEV) {
   const nav = document.querySelector('.nav');
   if (nav) nav.style.display = 'none';
 }
+restoreProgress();
 renderDaily();
 loadPuzzle(DEV ? 0 : dailyIdx());
 if (!store.get(HELP_SEEN)) showHelp();
