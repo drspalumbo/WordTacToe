@@ -1842,6 +1842,7 @@ function applyTheme() {
   const pick = store.get(THEME_KEY);
   const dark = pick ? pick === 'dark' : !!(darkQuery && darkQuery.matches);
   document.documentElement.classList.toggle('dark', dark);
+  document.getElementById('themeColor').setAttribute('content', dark ? '#12171D' : '#EDF1F4');
   const b = document.getElementById('themeBtn');
   b.setAttribute('aria-label', dark ? 'Switch to light mode' : 'Switch to dark mode');
   b.title = dark ? 'Light mode' : 'Dark mode';
