@@ -13,7 +13,8 @@
   }
   /* ---------------------------------------------------------------- dark mode
      Same roles, darker surfaces. Tile tints are the light ones pulled down so
-     letters (now light ink) keep their contrast. Switched on by html.dark. */
+     letters (now light ink) keep their contrast. Switched on by html.dark, set
+     before first paint by the snippet in index.html's <head>. */
   html.dark{
     color-scheme:dark;
     --bg:#12171D; --ink:#E4E9EE; --ink-soft:#97A5B3;
@@ -47,6 +48,17 @@
     touch-action:manipulation;
   }
   #helpBtn:hover{color:var(--ink); border-color:var(--ink-soft);}
+  /* light/dark switch, mirroring ? in the other corner: shows where it will take you */
+  #themeBtn{
+    position:fixed; top:12px; left:12px; z-index:45;
+    width:34px; height:34px; border-radius:50%; cursor:pointer; padding:0;
+    border:1px solid var(--tile-line); background:var(--surface); color:var(--ink-soft);
+    display:flex; align-items:center; justify-content:center; touch-action:manipulation;
+  }
+  #themeBtn:hover{color:var(--ink); border-color:var(--ink-soft);}
+  #themeBtn .icon-sun{display:none;}
+  html.dark #themeBtn .icon-sun{display:block;}
+  html.dark #themeBtn .icon-moon{display:none;}
   #dailyLine{
     margin-top:5px; font-size:12.5px; font-weight:700; color:var(--ink-soft);
     letter-spacing:.03em;

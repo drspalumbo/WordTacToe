@@ -1774,6 +1774,32 @@ function restoreProgress() {
 document.addEventListener('visibilitychange', () => { if (document.hidden) flushProgress(); });
 window.addEventListener('pagehide', flushProgress);
 
+// ---------------------------------------------------------------- theme
+// Follows the phone's light/dark setting until the player picks one with the
+// sun/moon button; their pick is remembered. (index.html applies it pre-paint.)
+const THEME_KEY = 'danagram_theme';
+const darkQuery = window.matchMedia ? matchMedia('(prefers-color-scheme: dark)') : null;
+function applyTheme() {
+  const pick = store.get(THEME_KEY);
+  const dark = pick ? pick === 'dark' : !!(darkQuery && darkQuery.matches);
+  document.documentElement.classList.toggle('dark', dark);
+  const b = document.getElementById('themeBtn');
+  b.setAttribute('aria-label', dark ? 'Switch to light mode' : 'Switch to dark mode');
+  b.title = dark ? 'Light mode' : 'Dark mode';
+}
+document.getElementById('themeBtn').addEventListener('click', () => {
+  store.set(THEME_KEY, document.documentElement.classList.contains('dark') ? 'light' : 'dark');
+  applyTheme();
+});
+if (darkQuery) {
+  const follow = () => { if (!store.get(THEME_KEY)) applyTheme(); };
+  if (darkQuery.addEventListener) darkQuery.addEventListener('change', follow);
+  else if (darkQuery.addListener) darkQuery.addListener(follow);    // older Safari
+  // switching modes in Settings usually happens with the page in the background
+  document.addEventListener('visibilitychange', () => { if (!document.hidden) follow(); });
+}
+applyTheme();
+
 // ------------------------------------------------------------ success card
 function openWinCard() {
   state.drag = null;
@@ -2133,8 +2159,6 @@ if (!DEV) {
   const nav = document.querySelector('.nav');
   if (nav) nav.style.display = 'none';
 }
-// dark mode preview while it's being tuned: ?dark=1
-if (/[?&]dark=1/.test(location.search || '')) document.documentElement.classList.add('dark');
 restoreProgress();
 renderDaily();
 loadPuzzle(DEV ? 0 : dailyIdx());
