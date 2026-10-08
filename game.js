@@ -760,6 +760,7 @@ function boardWords() {
   return out;
 }
 function meterValue() { return state.hints[state.idx].charge; }
+function isSolved(idx = state.idx) { return state.found[idx].size > 0; }
 
 function bumpMeter(points, idx = state.idx) {
   const h = state.hints[idx];
@@ -767,7 +768,7 @@ function bumpMeter(points, idx = state.idx) {
   h.charge += points;
   updateSuper();
   // just earned a Grid Check on the puzzle being played → show it off
-  if (idx === state.idx &&
+  if (idx === state.idx && !isSolved(idx) &&
       Math.floor(h.charge / HINT_THRESHOLD) > Math.floor(before / HINT_THRESHOLD))
     celebrateCharge(before < HINT_THRESHOLD ? (before % HINT_THRESHOLD) / HINT_THRESHOLD : 1);
 }
@@ -866,6 +867,7 @@ function cellSpot(r, c, off) {
 
 function scoreBoard() {
   scoreTimer = null;
+  if (state.quietSolve) { state.quietSolve = false; return; }   // Show solution
   const h = state.hints[state.idx];
   const off = innerOff();
   const occ = occupancy();
@@ -1156,29 +1158,40 @@ function setBtnState(mode) {              // '' | 'checking' | 'supering'
 // plus ×N when several are banked.
 function updateSuper() {
   const v = meterValue();
+  const solved = isSolved();
   const stacks = Math.floor(v / HINT_THRESHOLD);
   const ready = stacks >= 1;
-  const pct = ((ready ? 1 : (v % HINT_THRESHOLD) / HINT_THRESHOLD) * 100).toFixed(0) + '%';
+  // solved: the bar and button turn purple and the button becomes Show solution
+  const pct = ((ready || solved ? 1 : (v % HINT_THRESHOLD) / HINT_THRESHOLD) * 100).toFixed(0) + '%';
   document.getElementById('bankBarFill').style.width = pct;
-  document.getElementById('drawerTab').classList.toggle('charged', ready);
+  document.getElementById('drawerTab').classList.toggle('charged', ready && !solved);
+  document.getElementById('drawerTab').classList.toggle('solved', solved);
   const badge = document.getElementById('bankCheckBadge');   // ×N lives on the button only
   badge.textContent = '×' + stacks;
-  badge.classList.toggle('show', stacks >= 2);
+  badge.classList.toggle('show', stacks >= 2 && !solved);
   const btn = document.getElementById('bankCheckBtn');
-  btn.disabled = !ready || state.busy;
+  btn.classList.toggle('solution', solved);
+  btn.disabled = (!ready && !solved) || state.busy;
   btn.style.setProperty('--fill', pct);
-  document.getElementById('bankHint').textContent = ready
-    ? 'Sorts the words on your board into in / not in the puzzle.'
+  document.getElementById('bankHint').textContent = solved
+    ? 'Puts every piece back where it belongs.'
+    : ready ? 'Sorts the words on your board into in / not in the puzzle.'
     : `Make new words to charge it (${v % HINT_THRESHOLD} of ${HINT_THRESHOLD}).`;
   renderWordLists();
 }
 // Grid Check (was Super Check). Its feedback goes in the drawer, since
 // the open drawer covers the message line.
 function doSuperCheck() {
+  if (isSolved()) { showSolution(); return; }
   if (state.busy || meterValue() < HINT_THRESHOLD) return;
   const say = t => { document.getElementById('bankHint').textContent = t; };
+  if (!currentGrid()) {                       // gaps in the 4×4: show where
+    say('Fill the 4×4 first.');
+    flashEmptySquares();
+    return;
+  }
   const words = boardWords().filter(w => WORDSET.has(w));
-  if (!words.length) { say('Fill the 4×4 with some words first.'); return; }
+  if (!words.length) { say('Make some words in the 4×4 first.'); return; }
   const h = state.hints[state.idx];
   const unsorted = words.filter(w =>
     h.inList.indexOf(w) === -1 && h.outList.indexOf(w) === -1);
@@ -1186,6 +1199,44 @@ function doSuperCheck() {
   runCheck(true);
 }
 document.getElementById('bankCheckBtn').addEventListener('click', doSuperCheck);
+
+// Lower the drawer so the board shows, then blink the empty squares of the 4×4.
+function flashEmptySquares() {
+  const d = document.getElementById('drawer');
+  d.classList.remove('open', 'peek');
+  document.getElementById('drawerTab').setAttribute('aria-expanded', 'false');
+  const off = innerOff(), occ = occupancy();
+  const size = S - 2 * GAP;
+  for (let r = 0; r < 4; r++) for (let c = 0; c < 4; c++) {
+    if (occ.has(key(r + off, c + off))) continue;
+    const el = document.createElement('div');
+    el.className = 'empty-flash';
+    Object.assign(el.style, { left: ((c + off) * S + GAP) + 'px', top: ((r + off) * S + GAP) + 'px',
+      width: size + 'px', height: size + 'px', borderRadius: Math.round(S * 0.17) + 'px', opacity: 0 });
+    board.appendChild(el);
+    if (!el.animate) { setTimeout(() => el.remove(), 900); continue; }
+    const a = el.animate([{ opacity: 0 }, { opacity: 1 }, { opacity: 0 }, { opacity: 1 }, { opacity: 0 }],
+                         { duration: 1100, delay: 250, easing: 'ease-in-out' });
+    a.onfinish = a.oncancel = () => el.remove();
+  }
+}
+
+// After solving, the drawer button puts the pieces back into the solution. It's
+// an ordinary undoable move, but it doesn't score or replay the win.
+function showSolution() {
+  if (state.busy) return;
+  const P = PUZZLES[state.idx], off = innerOff();
+  const moves = {};
+  P.pieces.forEach((p, i) => { moves[i] = p.cells.map(([r, c]) => [r + off, c + off]); });
+  const d = document.getElementById('drawer');
+  d.classList.remove('open', 'peek');
+  document.getElementById('drawerTab').setAttribute('aria-expanded', 'false');
+  if (JSON.stringify(moves) === JSON.stringify(state.pieces.map(p => p.cells))) return;
+  setSelected(null); clearGhost();
+  state.quietSolve = true;
+  commit(moves);
+  setMsg('Here’s the solution.', '');
+}
 
 document.getElementById('drawerTab').addEventListener('click', () => {
   const d = document.getElementById('drawer');
@@ -1219,7 +1270,9 @@ function morphBarIntoButton(from) {
   const ghost = document.createElement('div');
   ghost.className = 'bar-morph';
   const fill = document.createElement('i');
-  fill.style.width = document.getElementById('bankBarFill').style.width || '0%';
+  const barFill = document.getElementById('bankBarFill');
+  fill.style.width = barFill.style.width || '0%';
+  fill.style.background = getComputedStyle(barFill).backgroundColor;
   ghost.appendChild(fill);
   document.body.appendChild(ghost);
   const box = r => ({ left: r.left + 'px', top: r.top + 'px', width: r.width + 'px', height: r.height + 'px' });
@@ -1615,11 +1668,12 @@ function onWin(g) {
   const h = state.hints[state.idx];
   if (!h.summary && !state.revealed) h.summary = buildSummary();
   updateMeta();
-  openRating(true);
+  updateSuper();                       // Grid Check → Show solution
+  openWinCard();
   if (celebrate) confetti();
 }
 
-// -------------------------------------------------------- playtest ratings
+// -------------------------------------------------------------- storage
 const store = {
   mem: {},
   get(k) { try { const v = localStorage.getItem(k); return v ? JSON.parse(v) : null; }
@@ -1627,109 +1681,18 @@ const store = {
   set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); }
               catch (e) { this.mem[k] = v; } },
 };
-state.ratings = store.get('danagram_ratings') || {};
 
-// build a clickable half-star input (values 0.5 .. 5 in 0.5 steps)
-function buildStars(el) {
-  el.innerHTML = '';
-  for (let i = 0; i < 5; i++) {
-    const s = document.createElement('span');
-    s.className = 'star';
-    s.textContent = '★';
-    const fill = document.createElement('span');
-    fill.className = 'fill'; fill.textContent = '★';
-    s.appendChild(fill);
-    el.appendChild(s);
-  }
-  const paint = v => el.querySelectorAll('.star').forEach((s, i) => {
-    const f = Math.max(0, Math.min(1, v - i));   // 0, .5, or 1 of this star
-    s.querySelector('.fill').style.width = (f * 100) + '%';
-  });
-  paint(+el.dataset.value || 0);
-  el.onpointermove = e => {
-    const r = el.getBoundingClientRect();
-    const v = Math.min(5, Math.ceil(((e.clientX - r.left) / r.width) * 10) / 2);
-    paint(Math.max(0.5, v));
-  };
-  el.onpointerleave = () => paint(+el.dataset.value || 0);
-  el.onclick = e => {
-    const r = el.getBoundingClientRect();
-    const v = Math.max(0.5, Math.min(5, Math.ceil(((e.clientX - r.left) / r.width) * 10) / 2));
-    el.dataset.value = v; paint(v);
-    if (typeof el._onset === 'function') el._onset();
-  };
-  el.set = v => { el.dataset.value = v || 0; paint(v || 0); };
-  return el;
-}
-const diffStars = buildStars(document.getElementById('starsDifficulty'));
-const enjoyStars = buildStars(document.getElementById('starsEnjoy'));
-function ratingReady() {
-  const ok = +diffStars.dataset.value > 0 && +enjoyStars.dataset.value > 0;
-  document.getElementById('rateSubmit').disabled = !ok;
-}
-diffStars._onset = ratingReady;
-enjoyStars._onset = ratingReady;
-
-function showReveal() {
-  const P = PUZZLES[state.idx];
-  const r = state.ratings[state.idx];
-  document.getElementById('rateBlock').style.display = 'none';
-  document.getElementById('revealBlock').style.display = 'block';
-  document.getElementById('rateSubmit').disabled = true;
-  document.getElementById('calcDifficulty').innerHTML =
-    `Our difficulty rating: <b>${'★'.repeat(P.stars)}</b> &nbsp;(${P.difficulty}/100)`;
-  document.getElementById('yourRating').textContent = r
-    ? `You said: difficulty ${r.difficulty}★ · fun ${r.enjoyment}★`
-    : '';
-}
-
-// open the panel: if this puzzle is already rated, jump straight to the reveal
-function openRating(won) {
+// ------------------------------------------------------------ success card
+function openWinCard() {
   state.drag = null;
   try { board.releasePointerCapture && board.releasePointerCapture(); } catch (err) {}
   const fb = document.getElementById('shareFallback');
   fb.classList.remove('show'); fb.value = '';
   document.getElementById('shareNote').classList.remove('show');
-  const rated = state.ratings[state.idx];
-  if (won) {
-    renderShare();
-    startCountdown();
-  } else {
-    stopCountdown();
-    document.getElementById('shareBlock').className = '';
-    document.getElementById('cardTitle').textContent = 'Rate this puzzle';
-    document.getElementById('cardWords').textContent = '';
-    document.getElementById('cardBody').textContent = rated
-      ? '' : 'Give it a difficulty and fun score to see how it compares.';
-  }
-  document.getElementById('shareBtn').style.display = won ? '' : 'none';
-  if (rated) {
-    showReveal();
-  } else {
-    document.getElementById('revealBlock').style.display = 'none';
-    document.getElementById('rateBlock').style.display = 'block';
-    diffStars.set(0); enjoyStars.set(0); ratingReady();
-  }
+  renderShare();
+  startCountdown();
   document.getElementById('overlay').classList.add('show');
 }
-
-document.getElementById('rateSubmit').addEventListener('click', () => {
-  state.ratings[state.idx] = {
-    difficulty: +diffStars.dataset.value,
-    enjoyment: +enjoyStars.dataset.value,
-    calc: PUZZLES[state.idx].difficulty,
-    calcStars: PUZZLES[state.idx].stars,
-    words: PUZZLES[state.idx].solution.join('/'),
-    ts: Date.now(),
-  };
-  store.set('danagram_ratings', state.ratings);
-  showReveal();
-});
-
-document.getElementById('copyData').addEventListener('click', () => {
-  const blob = JSON.stringify(state.ratings, null, 1);
-  shareOrCopy(blob, document.getElementById('copyData'));
-});
 
 document.getElementById('closeCard').addEventListener('click', () => {
   document.getElementById('overlay').classList.remove('show');
@@ -1992,13 +1955,27 @@ function dayIndex() {
 function dailyIdx() { return Math.min(dayIndex(), PUZZLES.length - 1); }
 function seasonOver() { return dayIndex() >= PUZZLES.length; }
 
+// Today's puzzle, or yesterday's: the chevrons step one day back and return.
+function shownDayIdx() { return dailyIdx() - (state.dayBack && dailyIdx() > 0 ? 1 : 0); }
 function renderDaily() {
-  const n = dailyIdx() + 1;
-  const date = new Date().toLocaleDateString(undefined,
-    { weekday: 'long', month: 'long', day: 'numeric' });
+  const back = state.dayBack && dailyIdx() > 0;
+  const day = new Date();
+  if (back) day.setDate(day.getDate() - 1);
+  const date = day.toLocaleDateString(undefined, { weekday: 'long', month: 'long', day: 'numeric' });
   document.getElementById('dailyLine').innerHTML =
-    `<b>Test #${n}</b> · ${date}` + (seasonOver() ? ' · last one for now' : '');
+    (!back && dailyIdx() > 0
+      ? '<button class="day-nav" id="dayPrev" aria-label="Play yesterday’s puzzle">‹</button>' : '') +
+    `<b>Test #${shownDayIdx() + 1}</b> · ${date}` +
+    (!back && seasonOver() ? ' · last one for now' : '') +
+    (back ? '<button class="day-nav" id="dayNext" aria-label="Back to today’s puzzle">›</button>' : '');
 }
+document.getElementById('dailyLine').addEventListener('click', e => {
+  const b = e.target.closest('.day-nav');
+  if (!b || state.busy) return;
+  state.dayBack = b.id === 'dayPrev';
+  renderDaily();
+  loadPuzzle(shownDayIdx());
+});
 
 function msToMidnight() {
   const now = new Date();

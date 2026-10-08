@@ -3,7 +3,7 @@
     --well:#D8E0E7; --well-outer:#CBD5DD; --zone:#E6ECF1;
     --tile:#FCFDFC; --tile-line:#B9C6D0;
     --accent:#2B59C3; --accent-soft:#DFE7F9;
-    --good:#2E9E6B; --bad:#D9455C; --gold:#E9C31C;
+    --good:#2E9E6B; --bad:#D9455C; --gold:#E9C31C; --purple:#7A5AD8;
     --o1:#F5C48C; --o2:#A9D9BE; --o3:#B5C7F0; --o4:#DDBEE8; --o5:#EFDE9C; --o6:#E8B3A6;
     --radius:14px;
   }
@@ -32,6 +32,11 @@
     letter-spacing:.03em;
   }
   #dailyLine b{color:var(--accent);}
+  /* ‹ yesterday's puzzle / › back to today */
+  .day-nav{border:0; background:transparent; color:var(--ink-soft); font:inherit;
+    font-size:17px; font-weight:800; line-height:1; padding:2px 8px; margin:-4px 2px;
+    cursor:pointer; touch-action:manipulation; vertical-align:middle;}
+  .day-nav:hover{color:var(--accent);}
 
 #helpOverlay{
     position:fixed; inset:0; background:rgba(28,40,54,.45); display:none;
@@ -647,6 +652,17 @@
   .btn.bank-check:disabled{opacity:1; color:var(--ink-soft);}
   .btn.bank-check.pressed #bankCheckFill{background:#C6A310;}
   .bank-check .bank-badge{top:-6px; right:-6px;}
+  /* once the puzzle is solved, the button becomes Show solution (purple) */
+  #bankSolveLabel{display:none;}
+  .bank-check.solution #bankCheckLabel{display:none;}
+  .bank-check.solution #bankSolveLabel{display:inline;}
+  .btn.bank-check.solution{color:#fff;}
+  .bank-check.solution #bankCheckFill{background:var(--purple);}
+  .btn.bank-check.solution.pressed #bankCheckFill{background:#5E43B4;}
+  #drawerTab.solved #bankBarFill{background:var(--purple);}
+  /* Grid Check couldn't run: the empty squares of the 4×4 blink */
+  .empty-flash{position:absolute; z-index:1; pointer-events:none;
+    background:color-mix(in srgb, var(--gold) 55%, transparent);}
   /* the tab's bar growing into the button as the drawer opens */
   .bar-morph{position:fixed; z-index:60; overflow:hidden; background:#EEF1F4; pointer-events:none;}
   .bar-morph i{position:absolute; left:0; top:0; bottom:0; background:var(--gold);}
@@ -735,23 +751,6 @@
   #reveal{margin-top:0;}
 
   /* rating widget */
-  #rateBlock, #revealBlock{margin:6px 0 4px;}
-  #revealBlock{display:none;}
-  .rate-row{display:flex; align-items:center; justify-content:space-between;
-    gap:12px; margin:10px 2px;}
-  .rate-label{font-size:14px; font-weight:600; color:var(--ink);}
-  .stars-input{display:inline-flex; position:relative; cursor:pointer; user-select:none; touch-action:manipulation;}
-  .stars-input .star{
-    position:relative; width:26px; height:26px; font-size:24px; line-height:26px;
-    text-align:center; color:var(--tile-line);
-  }
-  .stars-input .star .fill{
-    position:absolute; left:0; top:0; height:100%; overflow:hidden; width:0;
-    color:var(--gold); white-space:nowrap;
-  }
-  .calc{font-weight:800; font-size:15px; color:var(--ink); margin:6px 0 4px;}
-  .calc b{color:var(--accent);}
-  .yours{font-size:13px; color:var(--ink-soft); margin-bottom:6px;}
 
   #overlay{
     position:fixed; inset:0; background:rgba(28,40,54,.45); display:none;

@@ -79,6 +79,7 @@
       <button class="btn bank-check" id="bankCheckBtn" disabled>
         <span class="bank-check-fill" aria-hidden="true"><i id="bankCheckFill"></i></span>
         <span id="bankCheckLabel">Grid Check</span>
+        <span id="bankSolveLabel">Show solution</span>
         <span class="bank-badge" id="bankCheckBadge"></span>
       </button>
       <div class="bank-hint" id="bankHint"></div>
@@ -278,27 +279,9 @@
   <div id="shareNote"></div>
   <textarea id="shareFallback" readonly rows="5"></textarea>
 
-  <div id="rateBlock">
-    <div class="rate-row">
-      <span class="rate-label">How hard was it?</span>
-      <div class="stars-input" id="starsDifficulty" data-value="0"></div>
-    </div>
-    <div class="rate-row">
-      <span class="rate-label">How fun was it?</span>
-      <div class="stars-input" id="starsEnjoy" data-value="0"></div>
-    </div>
-  </div>
-
-  <div id="revealBlock">
-    <div class="calc" id="calcDifficulty"></div>
-    <div class="yours" id="yourRating"></div>
-  </div>
-
   <div class="card-actions">
-    <button class="btn primary" id="rateSubmit" disabled>Submit</button>
-    <button class="btn ghost" id="shareBtn">Share result</button>
-    <button class="btn ghost" id="copyData">Copy playtest data</button>
-    <button class="btn ghost" id="closeCard">Keep playing</button>
+    <button class="btn primary" id="shareBtn">Share result</button>
+    <button class="btn ghost" id="closeCard">Admire puzzle</button>
   </div>
 </div></div>
 
