@@ -32,8 +32,9 @@ const CUSTOM_IDX = (() => {
   const sols = Solver.solutions(pieces, { limit: 50 });
   const words = new Set(Solver.wordsOf(rows));
   sols.grids.forEach(g => Solver.wordsOf(g).forEach(w => words.add(w)));
+  const diff = Solver.difficulty(rows, pieces, sols.grids.length || 1);
   PUZZLES.push({ solution: rows, pieces, numSolutions: sols.grids.length || 1,
-                 solutionWords: [...words], difficulty: null, stars: null, custom: true });
+                 solutionWords: [...words], difficulty: diff.score, stars: diff.stars, custom: true });
   return PUZZLES.length - 1;
 })();
 const isCustom = idx => idx === CUSTOM_IDX;

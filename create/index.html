@@ -68,6 +68,7 @@
 <!-- 3. share -->
 <section class="step" id="stepShare" hidden>
   <p class="step-hint" id="shareSummary"></p>
+  <p class="piece-info share-diff"><span class="diff" id="shareDiff"></span></p>
   <div class="share-link"><input id="shareUrl" readonly aria-label="Link to your puzzle"></div>
   <div class="cactions col">
     <button class="btn primary" id="shareBtn">Share</button>
@@ -82,12 +83,20 @@
 <section class="step" id="stepMine" hidden>
   <h2 class="mine-title">My puzzles</h2>
   <p class="step-hint" id="mineEmpty">Puzzles you make are saved here once you reach the Share step.</p>
+  <div class="import-box" id="importBox" hidden>
+    <p id="importText"></p>
+    <div class="cactions">
+      <button class="btn ghost small" id="importNo">Not now</button>
+      <button class="btn primary small" id="importYes">Add them</button>
+    </div>
+  </div>
   <ul class="mine-list" id="mineList"></ul>
   <div class="cactions">
     <button class="btn ghost" id="mineBack">‹ Back</button>
     <button class="btn primary" id="mineNew">+ New puzzle</button>
   </div>
-  <p class="share-note mine-note">Saved in this browser only. Clearing Safari’s website data removes them.</p>
+  <button class="mlink export-btn" id="exportBtn" hidden>Export all</button>
+  <p class="share-note mine-note" id="mineNote">Saved in this browser only. Export all gives you one link that brings them all back, here or on another device.</p>
 </section>
 
 <script src="../data/words.js"></script>

@@ -33,15 +33,18 @@ const Solver = (() => {
     });
   }
 
-  // Fill the empty cells so every line is a word. Lines the player typed in full
-  // only need to be valid words; any line with a gap is filled from PUZZLE_WORDS.
+  // Fill the empty cells so every line is a word. A line the player typed in full
+  // stays as typed, even if it isn't a word (the page warns about that); any line
+  // with a gap is filled from PUZZLE_WORDS, or failing that any valid word.
   // All 8 words are distinct. random=true varies the result from call to call.
   // Returns the 16-letter grid, null if impossible, or 'timeout' if it gave up.
   function fill(grid, { random = true, nodeLimit = 400000 } = {}) {
     const pats = LINES.map(cells => cells.map(i => grid[i] || ''));
-    const cands = pats.map(pat => pat.every(Boolean)
-      ? (WORDSET.has(pat.join('')) ? [pat.join('')] : [])
-      : matching(PUZZLE_WORDS, pat, 'p'));
+    const cands = pats.map(pat => {
+      if (pat.every(Boolean)) return [pat.join('')];
+      const nice = matching(PUZZLE_WORDS, pat, 'p');
+      return nice.length ? nice : matching(WORDS, pat, 'v');
+    });
     if (cands.some(c => !c.length)) return null;
     // columns as prefix sets, so each row can be checked letter by letter
     const colPrefix = [4, 5, 6, 7].map(li => {
@@ -150,6 +153,102 @@ const Solver = (() => {
     return { grids, capped: found.size >= limit, timedOut };
   }
 
+  // ---- difficulty: a port of tools/score.py, so stars mean the same as the daily's.
+  // search    = -log10 P(a random legal arrangement is a solution): ominos placed as
+  //             rigid pieces, singles dropped into the holes
+  // branching = sum over lines of log10(# words fitting the omino-locked letters)
+  // Blended 60/40 against fixed anchors → 0–100 and 1–5 stars.
+  function difficulty(rows, pieces, numSolutions = 1, { samples = 120000 } = {}) {
+    const g = rows.join('');
+    const omino = new Set();
+    pieces.forEach(p => { if (p.cells.length > 1) p.cells.forEach(([r, c]) => omino.add(r * 4 + c)); });
+    let branching = 0;
+    LINES.forEach(cells => {
+      const n = matching(WORDS, cells.map(i => omino.has(i) ? g[i] : ''), 'v').length;
+      if (n > 0) branching += Math.log10(n);
+    });
+
+    const ominos = [], singles = [];
+    pieces.forEach(p => {
+      if (p.cells.length === 1) { singles.push(p.letters); return; }
+      const r0 = Math.min(...p.cells.map(c => c[0])), c0 = Math.min(...p.cells.map(c => c[1]));
+      ominos.push({ shape: p.cells.map(([r, c]) => [r - r0, c - c0]), letters: p.letters });
+    });
+    // every way to place the ominos (fixed letters by cell, and the holes left over)
+    const tilings = [], fixed = Array(16).fill('');
+    (function rec(k) {
+      if (k === ominos.length) {
+        tilings.push({ fixed: fixed.slice(), holes: [...Array(16).keys()].filter(i => !fixed[i]) });
+        return;
+      }
+      const { shape, letters } = ominos[k];
+      const rmax = Math.max(...shape.map(c => c[0])), cmax = Math.max(...shape.map(c => c[1]));
+      for (let R = 0; R < 4 - rmax; R++) for (let C = 0; C < 4 - cmax; C++) {
+        const cells = shape.map(([r, c]) => (r + R) * 4 + c + C);
+        if (cells.some(i => fixed[i])) continue;
+        cells.forEach((i, j) => { fixed[i] = letters[j]; });
+        rec(k + 1);
+        cells.forEach(i => { fixed[i] = ''; });
+      }
+    })(0);
+    const fact = n => n <= 1 ? 1 : n * fact(n - 1);
+    const counts = {};
+    singles.forEach(ch => { counts[ch] = (counts[ch] || 0) + 1; });
+    const perms = Object.values(counts).reduce((x, k) => x / fact(k), fact(singles.length));
+    const space = tilings.length * perms;
+
+    const cell = Array(16);
+    const solved = () => {
+      for (let i = 0; i < 4; i++) {
+        if (!WORDSET.has(cell[i * 4] + cell[i * 4 + 1] + cell[i * 4 + 2] + cell[i * 4 + 3])) return false;
+        if (!WORDSET.has(cell[i] + cell[4 + i] + cell[8 + i] + cell[12 + i])) return false;
+      }
+      return true;
+    };
+    let pSol = 0;
+    if (space && space <= 300000) {                  // small: count exactly
+      let sol = 0, seen = 0;
+      const letters = Object.keys(counts);
+      tilings.forEach(t => {
+        t.fixed.forEach((ch, i) => { cell[i] = ch; });
+        (function perm(k) {                          // distinct orderings of the singles
+          if (k === t.holes.length) { seen++; if (solved()) sol++; return; }
+          for (const ch of letters) {
+            if (!counts[ch]) continue;
+            counts[ch]--; cell[t.holes[k]] = ch;
+            perm(k + 1);
+            counts[ch]++;
+          }
+        })(0);
+      });
+      pSol = seen ? sol / seen : 0;
+    } else if (space) {                              // large: sample
+      let sol = 0, seed = 20260707;                // seeded: same puzzle, same score every time
+      const rand = () => {                           // mulberry32
+        seed = (seed + 0x6D2B79F5) | 0;
+        let t = Math.imul(seed ^ (seed >>> 15), 1 | seed);
+        t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+        return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+      };
+      const sl = singles.slice();
+      for (let s = 0; s < samples; s++) {
+        const t = tilings[Math.floor(rand() * tilings.length)];
+        for (let i = sl.length - 1; i > 0; i--) {
+          const j = Math.floor(rand() * (i + 1)); [sl[i], sl[j]] = [sl[j], sl[i]];
+        }
+        t.fixed.forEach((ch, i) => { cell[i] = ch; });
+        t.holes.forEach((i, k) => { cell[i] = sl[k]; });
+        if (solved()) sol++;
+      }
+      pSol = sol / samples;
+    }
+    pSol = space ? Math.max(pSol, numSolutions / space) : 1;
+    const search = pSol > 0 ? -Math.log10(pSol) : 12;
+    const clamp = x => Math.max(0, Math.min(1, x));
+    const score = Math.round(100 * (0.6 * clamp((search - 1.5) / 7) + 0.4 * clamp((branching - 2.5) / 8.5)));
+    return { score, stars: 1 + Math.min(4, Math.floor(score / 20)), search, branching };
+  }
+
   function wordsOf(rows) {
     return [...rows, ...[0, 1, 2, 3].map(c => rows.map(w => w[c]).join(''))];
   }
@@ -174,5 +273,5 @@ const Solver = (() => {
     return { letters, pieceOf };
   }
 
-  return { LINES, lineStatus, fill, piecesFrom, solutions, wordsOf, encode, decode };
+  return { LINES, lineStatus, fill, piecesFrom, solutions, difficulty, wordsOf, encode, decode };
 })();

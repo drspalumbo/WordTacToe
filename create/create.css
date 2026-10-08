@@ -121,3 +121,18 @@ html.dark .piece-info .warn{color:#E5B85A;}
 .mlink.del{color:var(--ink-soft);}
 .mlink.del[data-armed]{color:var(--bad);}
 .mine-note{color:var(--ink-soft); font-weight:600; font-size:12px; text-align:center;}
+
+/* difficulty stars, the same scale as the daily puzzles (gold is kept for Grid Check) */
+.diff{color:var(--ink);}
+.diff small{font-size:12px; color:var(--ink-soft); font-weight:700;}
+.stars{color:var(--accent); letter-spacing:1px;}
+.stars .off{color:var(--track-2);}
+.share-diff{margin:0 0 12px;}
+
+/* Export all / import */
+.export-btn{display:block; margin:14px auto 0;}
+.export-btn[hidden], .import-box[hidden]{display:none;}
+.import-box{width:100%; box-sizing:border-box; margin:6px 0 4px; padding:12px; border-radius:12px;
+  background:var(--accent-soft); text-align:center; font-size:14px; font-weight:700; color:var(--ink);}
+.import-box p{margin:0;}
+.import-box .cactions{margin-top:10px;}

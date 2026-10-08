@@ -174,7 +174,8 @@ function renderLetters() {
     if (new Set(ws).size < 8) issues.push(['bad', 'Each row and column needs a different word.']);
     else issues.push(['good', 'All 8 are words. Nice!']);
   }
-  if (!issues.length && draft.letters.some(Boolean)) {
+  // (a typed non-word line doesn't stop this: Fill in keeps it and fills around it)
+  if (issues.every(([, t]) => /isn’t in the word list/.test(t)) && !full && draft.letters.some(Boolean)) {
     // can what's here still become a full grid? (quick, and only a hint)
     const base = draft.letters.map((ch, i) => draft.typed[i] ? ch : '');
     const res = Solver.fill(base, { random: false, nodeLimit: 120000 });
@@ -344,9 +345,18 @@ function renderPieceInfo(groups) {
   if (res.timedOut) verdict = '<span class="warn">⚠ Lots of possible solutions — join more tiles to narrow it down.</span>';
   else if (n === 1) verdict = '<span class="good">✓ Exactly one solution.</span>';
   else verdict = `<span class="warn">⚠ ${res.capped ? '20+' : n} possible solutions. Fine to share, but joining more tiles narrows it down.</span>`;
+  lastDiff = difficultyOf(groups, n);
   $('pieceInfo').innerHTML =
-    `${multi} piece${multi === 1 ? '' : 's'} + ${singles} single tile${singles === 1 ? '' : 's'}<br>${verdict}`;
+    `${multi} piece${multi === 1 ? '' : 's'} + ${singles} single tile${singles === 1 ? '' : 's'}<br>${verdict}` +
+    `<br><span class="diff">Difficulty ${starRow(lastDiff.stars)} <small>${lastDiff.score}/100</small></span>`;
 }
+// same scale as the daily puzzles (tools/score.py): 1–5 stars, 0–100
+let lastDiff = null;
+function difficultyOf(groups, nSolutions) {
+  const rows = [0, 1, 2, 3].map(r => draft.letters.slice(r * 4, r * 4 + 4).join(''));
+  return Solver.difficulty(rows, puzzlePieces(groups), Math.max(1, nSolutions));
+}
+const starRow = n => `<span class="stars" aria-label="${n} of 5 stars">${'★'.repeat(n)}<span class="off">${'★'.repeat(5 - n)}</span></span>`;
 $('backToLetters').addEventListener('click', () => showStep('letters'));
 $('toShare').addEventListener('click', () => showStep('share'));
 
@@ -370,7 +380,9 @@ function renderShare() {
     `${16 - groups.filter(g => g.length > 1).reduce((s, g) => s + g.length, 0)} single tiles, ` +
     (n === 1 && !res.timedOut ? 'with exactly one solution.' : 'with more than one possible solution.') +
     ' Anyone with the link can play it. It’s saved in My puzzles.';
-  remember(n, res.capped || res.timedOut, multi);
+  const diff = lastDiff || difficultyOf(groups, n);
+  $('shareDiff').innerHTML = `Difficulty ${starRow(diff.stars)} <small>${diff.score}/100</small>`;
+  remember(n, res.capped || res.timedOut, multi, diff);
 }
 $('shareBtn').addEventListener('click', async () => {
   const url = $('shareUrl').value;
@@ -405,12 +417,12 @@ function loadMine() {
   return [];
 }
 const saveMine = list => { try { localStorage.setItem(MINE_KEY, JSON.stringify(list)); } catch (e) {} };
-function remember(nSolutions, more, pieces) {
+function remember(nSolutions, more, pieces, diff) {
   const list = loadMine(), code = shareCode(), now = Date.now();
   const old = list.find(e => e.id === draft.id);
   if (old && old.code === code) return;
   const entry = { id: draft.id, code, letters: draft.letters.slice(), typed: draft.typed.slice(),
-                  joins: draft.joins.slice(), solutions: nSolutions, more, pieces,
+                  joins: draft.joins.slice(), solutions: nSolutions, more, pieces, stars: diff.stars, score: diff.score,
                   created: old ? old.created : now, updated: now };
   saveMine([entry, ...list.filter(e => e.id !== draft.id)]);
   renderMyCount();
@@ -438,12 +450,14 @@ function renderMine() {
   const list = loadMine();
   renderMyCount();
   $('mineEmpty').hidden = list.length > 0;
+  $('exportBtn').hidden = !list.length;
+  renderImport();
   $('mineList').innerHTML = list.map(e => {
     const sol = e.solutions === 1 && !e.more ? 'one solution'
               : `${e.more ? e.solutions + '+' : e.solutions} solutions`;
     return `<li data-id="${e.id}">${miniGrid(e)}<div class="mine-body">` +
       `<div class="mine-meta">${fmtDate(e.updated)}${e.id === draft.id ? ' · <b>editing</b>' : ''}</div>` +
-      `<div class="mine-sub">${e.pieces} piece${e.pieces === 1 ? '' : 's'} · ${sol}</div>` +
+      `<div class="mine-sub">${e.stars ? starRow(e.stars) + ' · ' : ''}${e.pieces} piece${e.pieces === 1 ? '' : 's'} · ${sol}</div>` +
       `<div class="mine-acts">` +
       `<a class="mlink" href="${new URL('../?p=' + e.code, location.href).href}">Play</a>` +
       `<button class="mlink" data-act="share">Share</button>` +
@@ -452,6 +466,75 @@ function renderMine() {
       `</div></div></li>`;
   }).join('');
 }
+// ---- Export all / import: one link, #import=<entry>.<entry>…, each entry the
+// share code + 4 hex digits of which letters were typed + the date in base 36
+function exportLink() {
+  const parts = loadMine().map(e => e.code +
+    parseInt(e.typed.map(t => t ? 1 : 0).join(''), 2).toString(16).padStart(4, '0') +
+    Math.floor(e.created / 1000).toString(36));
+  return location.origin + location.pathname + '#import=' + parts.join('.');
+}
+function parseImport(hash) {
+  const m = /#import=([0-9a-z.]+)/.exec(hash || '');
+  if (!m) return [];
+  return m[1].split('.').map(part => {
+    const d = Solver.decode(part.slice(0, 33));
+    if (!d || !/^[0-9a-f]{4}[0-9a-z]+$/.test(part.slice(33))) return null;
+    const bits = parseInt(part.slice(33, 37), 16).toString(2).padStart(16, '0');
+    const created = parseInt(part.slice(37), 36) * 1000;
+    // joins: every pair of neighbours in the same piece
+    const joins = [];
+    for (let i = 0; i < 16; i++) {
+      if (i % 4 < 3 && d.pieceOf[i] === d.pieceOf[i + 1]) joins.push(i + '-' + (i + 1));
+      if (i < 12 && d.pieceOf[i] === d.pieceOf[i + 4]) joins.push(i + '-' + (i + 4));
+    }
+    const groups = Solver.piecesFrom(new Set(joins));
+    const pieces = groups.map(g => ({ cells: g.map(i => [Math.floor(i / 4), i % 4]),
+                                      letters: g.map(i => d.letters[i]).join('') }));
+    const rows = [0, 1, 2, 3].map(r => d.letters.slice(r * 4, r * 4 + 4).join(''));
+    const res = Solver.solutions(pieces, { limit: 20 });
+    const diff = Solver.difficulty(rows, pieces, Math.max(1, res.grids.length));
+    return { id: newId() + Math.random().toString(36).slice(2, 5), code: part.slice(0, 33),
+             letters: d.letters, typed: [...bits].map(b => b === '1'), joins,
+             solutions: res.grids.length, more: res.capped || res.timedOut,
+             pieces: groups.filter(g => g.length > 1).length,
+             stars: diff.stars, score: diff.score, created, updated: created };
+  }).filter(Boolean);
+}
+let pendingImport = parseImport(location.hash).filter(e => !loadMine().some(x => x.code === e.code));
+function renderImport() {
+  $('importBox').hidden = !pendingImport.length;
+  const n = pendingImport.length;
+  $('importText').textContent = `This link has ${n} puzzle${n === 1 ? '' : 's'} you don’t have here yet.`;
+}
+function endImport() {
+  pendingImport = [];
+  history.replaceState(null, '', location.pathname + location.search);
+  renderMine();
+}
+$('importYes').addEventListener('click', () => {
+  const all = [...pendingImport, ...loadMine()].sort((a, b) => b.updated - a.updated);
+  saveMine(all);
+  endImport();
+});
+$('importNo').addEventListener('click', endImport);
+$('exportBtn').addEventListener('click', async () => {
+  const url = exportLink(), n = loadMine().length, b = $('exportBtn');
+  const text = `My ${n} Danagram puzzle${n === 1 ? '' : 's'} (open to restore them)`;
+  if (navigator.share) {
+    try { await navigator.share({ title: 'My Danagram puzzles', text, url }); return; }
+    catch (err) { if (err && err.name === 'AbortError') return; }
+  }
+  try {
+    if (navigator.clipboard && window.isSecureContext) {
+      await navigator.clipboard.writeText(url); b.textContent = 'Link copied!';
+      setTimeout(() => { b.textContent = 'Export all'; }, 2500);
+      return;
+    }
+  } catch (err) {}
+  window.prompt('Copy this link and keep it somewhere safe:', url);
+});
+
 // two taps for anything that throws work away
 function armed(b, label, prompt) {
   if (b.dataset.armed) return true;
@@ -477,7 +560,7 @@ $('mineList').addEventListener('click', async ev => {
                     !loadMine().some(x => x.id === draft.id);
     if (unsaved && !armed(b, 'Edit', 'Replace draft?')) return;
     Object.assign(draft, { id: e.id, letters: e.letters.slice(), typed: e.typed.slice(), joins: e.joins.slice() });
-    cursor = 0; across = true; lastSolve = null;
+    cursor = 0; across = true; lastSolve = null; lastDiff = null;
     showStep('pieces');
   }
   if (act === 'share') {
@@ -499,6 +582,7 @@ window.addEventListener('resize', () => {
   if (draft.step === 'letters') placeMarks(Solver.lineStatus(draft.letters));
   if (draft.step === 'pieces') renderPieces();
 });
-showStep(draft.step || 'letters');
+if (pendingImport.length) { returnStep = draft.step || 'letters'; showStep('mine'); }
+else showStep(draft.step || 'letters');
 renderCursor();
 renderMyCount();
