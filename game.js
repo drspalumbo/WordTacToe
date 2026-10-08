@@ -361,7 +361,7 @@ function snapshot() {
 function restore(snap) {
   state.pieces.forEach((p, i) => { p.cells = snap[i].map(c => c.slice()); });
 }
-function commit(moves) {          // push history, apply a planned move
+function commit(moves, scoreDelay) {   // push history, apply a planned move
   state.undo.push(snapshot());
   if (state.undo.length > 100) state.undo.shift();
   state.redo.length = 0;
@@ -369,7 +369,7 @@ function commit(moves) {          // push history, apply a planned move
   positionTiles();
   updateUndoButtons();
   clearBadges(); clearScribbles();
-  scheduleScore();
+  scheduleScore(scoreDelay);
 }
 function clearHistory() { state.undo.length = 0; state.redo.length = 0; updateUndoButtons(); }
 function updateUndoButtons() {
@@ -845,11 +845,14 @@ function flyDot(fromEl, delay) {
 // so EXIT×AXIS at the X scores once, whichever way round it's laid. Words in the
 // opening scramble aren't scored up front; they count on the first move if they
 // survive it.
-const SCORE_DELAY = 200;           // let the tiles finish sliding (.tile transition is .18s)
+// How long a new arrangement has to stay put before it scores. Any move restarts
+// the wait. Shuffle waits longer, so mashing it can't farm words you never saw.
+const SCORE_DELAY = 300;           // deliberate moves (also lets the .18s tile slide finish)
+const SHUFFLE_SCORE_DELAY = 1000;
 let scoreTimer = null;
-function scheduleScore() {
+function scheduleScore(delay = SCORE_DELAY) {
   clearTimeout(scoreTimer);
-  scoreTimer = setTimeout(scoreBoard, SCORE_DELAY);
+  scoreTimer = setTimeout(scoreBoard, delay);
 }
 function cancelScore() { clearTimeout(scoreTimer); scoreTimer = null; }
 
@@ -1798,7 +1801,7 @@ function doShuffle() {
   const moves = {};
   state.pieces.forEach((p, i) => { moves[i] = p.cells.map(c => c.slice()); });
   restore(orig);                                 // rewind, then commit as a single undo step
-  commit(moves);
+  commit(moves, SHUFFLE_SCORE_DELAY);
   setMsg('Shuffled.');
 }
 document.getElementById('shuffleBtn').addEventListener('click', doShuffle);
