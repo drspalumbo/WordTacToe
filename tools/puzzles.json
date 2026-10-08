@@ -1,31 +1,18 @@
 [
  {
   "solution": [
-   "bide",
-   "obey",
-   "lice",
-   "asks"
+   "mass",
+   "ulna",
+   "stop",
+   "tows"
   ],
   "pieces": [
    {
     "cells": [
      [
-      3,
-      0
-     ],
-     [
-      3,
+      0,
       1
      ],
-     [
-      3,
-      2
-     ]
-    ],
-    "letters": "ask"
-   },
-   {
-    "cells": [
      [
       0,
       2
@@ -36,36 +23,58 @@
      ],
      [
       1,
-      3
-     ]
-    ],
-    "letters": "dey"
-   },
-   {
-    "cells": [
-     [
-      0,
-      1
-     ],
-     [
-      1,
-      1
-     ]
-    ],
-    "letters": "ib"
-   },
-   {
-    "cells": [
-     [
-      1,
       2
+     ]
+    ],
+    "letters": "assn"
+   },
+   {
+    "cells": [
+     [
+      1,
+      1
      ],
      [
       2,
+      1
+     ]
+    ],
+    "letters": "lt"
+   },
+   {
+    "cells": [
+     [
+      2,
+      2
+     ],
+     [
+      3,
       2
      ]
     ],
-    "letters": "ec"
+    "letters": "ow"
+   },
+   {
+    "cells": [
+     [
+      1,
+      3
+     ],
+     [
+      2,
+      3
+     ]
+    ],
+    "letters": "ap"
+   },
+   {
+    "cells": [
+     [
+      2,
+      0
+     ]
+    ],
+    "letters": "s"
    },
    {
     "cells": [
@@ -83,7 +92,7 @@
       0
      ]
     ],
-    "letters": "b"
+    "letters": "m"
    },
    {
     "cells": [
@@ -92,58 +101,49 @@
       0
      ]
     ],
+    "letters": "u"
+   },
+   {
+    "cells": [
+     [
+      3,
+      1
+     ]
+    ],
     "letters": "o"
    },
    {
     "cells": [
      [
-      2,
-      3
-     ]
-    ],
-    "letters": "e"
-   },
-   {
-    "cells": [
-     [
-      2,
-      1
-     ]
-    ],
-    "letters": "i"
-   },
-   {
-    "cells": [
-     [
-      2,
+      3,
       0
      ]
     ],
-    "letters": "l"
+    "letters": "t"
    }
   ],
   "numSolutions": 1,
   "solutionWords": [
-   "asks",
-   "bide",
-   "bola",
-   "deck",
-   "eyes",
-   "ibis",
-   "lice",
-   "obey"
+   "alto",
+   "mass",
+   "must",
+   "saps",
+   "snow",
+   "stop",
+   "tows",
+   "ulna"
   ],
-  "difficulty": 42,
+  "difficulty": 50,
   "stars": 3,
   "difficulty_raw": {
-   "search_info": 5.079,
-   "p_sol": 8.333333333333334e-06,
-   "space": 413280,
-   "branching": 4.918,
-   "formable": 217,
-   "search_norm": 0.511,
-   "lex_norm": 0.284,
-   "exact": false
+   "search_info": 5.343,
+   "p_sol": 4.5388525780682645e-06,
+   "space": 220320,
+   "branching": 6.081,
+   "formable": 181,
+   "search_norm": 0.549,
+   "lex_norm": 0.421,
+   "exact": true
   }
  },
  {
