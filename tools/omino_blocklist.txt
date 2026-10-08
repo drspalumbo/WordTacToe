@@ -1,0 +1,56 @@
+# Letter runs a multi-tile piece (omino) must not spell. A piece is checked along
+# every straight run of its tiles, left to right and top to bottom, so "ass" also
+# catches a piece reading PASS or ASSN. One entry per line; # starts a comment.
+# Used by generate.piece_is_clean() (newpuzzles.py / generate.py).
+
+# short fragments
+ass
+cum
+fag
+tit
+fuk
+fuc
+jiz
+cok
+dik
+nig
+sex
+wtf
+kkk
+
+# whole words (the clearly offensive ones from the curator's "Profane" tag)
+anal
+anus
+arse
+cock
+coon
+crap
+cunt
+dago
+damn
+dick
+dong
+dyke
+fart
+fuck
+gook
+homo
+jism
+kike
+nazi
+orgy
+piss
+poon
+poop
+porn
+rape
+shat
+shit
+slut
+smut
+spic
+turd
+twat
+wank
+wogs
+wops

@@ -44,7 +44,7 @@ for grid in candidates:
     tried += 1
     template = generate.TEMPLATES[tried % len(generate.TEMPLATES)]
     pieces = generate.fuse(template)
-    if pieces is None:
+    if pieces is None or not generate.pieces_are_clean(grid, pieces):
         continue
     sols = generate.count_solutions(grid, pieces)
     if len(sols) != 1:                      # single-solution only

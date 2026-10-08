@@ -124,6 +124,32 @@ def fuse(sizes):
             return pieces
     return None
 
+# ---------------------------------------------------------- clean ominos
+# A multi-tile piece shouldn't spell anything rude along any straight run of its
+# tiles (left to right, top to bottom). Blocked runs live in omino_blocklist.txt.
+BLOCKLIST = [w for w in (l.split('#')[0].strip().lower() for l in
+             open(os.path.join(os.path.dirname(os.path.abspath(__file__)), 'omino_blocklist.txt')))
+             if w]
+
+def piece_runs(grid, cells):
+    """Every horizontal and vertical run of 2+ contiguous tiles in a piece, as text."""
+    cs = set(map(tuple, cells))
+    runs = []
+    for (r, c) in cs:
+        if (r, c - 1) not in cs and (r, c + 1) in cs:        # start of a horizontal run
+            s, cc = '', c
+            while (r, cc) in cs: s += grid[r][cc]; cc += 1
+            runs.append(s)
+        if (r - 1, c) not in cs and (r + 1, c) in cs:        # start of a vertical run
+            s, rr = '', r
+            while (rr, c) in cs: s += grid[rr][c]; rr += 1
+            runs.append(s)
+    return runs
+
+def pieces_are_clean(grid, pieces):
+    return not any(bad in run for p in pieces if len(p) > 1
+                   for run in piece_runs(grid, p) for bad in BLOCKLIST)
+
 # ------------------------------------------------------- solution counting
 def normalize(cells):
     r0 = min(r for r, _ in cells)
@@ -176,7 +202,7 @@ def distinct8(g):
 
 def make_puzzle(grid, template):
     pieces = fuse(template)
-    if pieces is None:
+    if pieces is None or not pieces_are_clean(grid, pieces):
         return None
     sols = count_solutions(grid, pieces)
     # every word appearing in ANY solution — powers the Super Check hint system

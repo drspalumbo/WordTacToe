@@ -33,7 +33,10 @@ elif flag('--targets'):
 else:
     TARGETS = [36, 46, 55, 63, 71, 79, 87, 94]
 
-pool = [p for p in pickle.load(open("pool.pkl", "rb")) if p["difficulty"] >= FLOOR]
+import generate
+# pools built before the omino blocklist existed may hold a piece spelling something rude
+pool = [p for p in pickle.load(open("pool.pkl", "rb")) if p["difficulty"] >= FLOOR and
+        generate.pieces_are_clean(p["solution"], [pc["cells"] for pc in p["pieces"]])]
 print(f"{len(pool)} puzzles at/above difficulty {FLOOR}")
 
 def words_of(p):
