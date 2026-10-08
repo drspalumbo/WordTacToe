@@ -284,6 +284,14 @@ function styleTiles(p) {
     if (rt) w += 2 * GAP;
     if (dn) h += 2 * GAP;
     t.style.width = w + 'px'; t.style.height = h + 'px';
+    // Bridging both right and down also fills the little gap square diagonally
+    // below-right. That's only right inside a 2×2 block; otherwise (a T or L's
+    // inner corner) it pokes out as a bump, so clip it off.
+    const g = 2 * GAP;
+    t.style.clipPath = (rt && dn && !has(R + 1, C + 1))
+      ? `polygon(0 0, 100% 0, 100% calc(100% - ${g}px), calc(100% - ${g}px) calc(100% - ${g}px),` +
+        ` calc(100% - ${g}px) 100%, 0 100%)`
+      : '';
     const rad = Math.round(S * 0.17);
     t.style.borderRadius = [
       (!up && !lf) ? rad : 0, (!up && !rt) ? rad : 0,
