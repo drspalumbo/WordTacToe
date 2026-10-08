@@ -908,13 +908,14 @@ function scoreBoard() {
     setMsg(parts.join(' · ') + ` — +${sources.length} charge.`, '');
   }
 
-  // solved: finish without needing Check, once the dots have landed
+  // solved: finish without needing Check, once the dots have landed (their charge
+  // counts toward the hints-left stars in the summary)
   if (valid.every(Boolean)) {
     const g = words.slice(0, 4);
     h.history.push({ mode: 'solve', marks: words.map(() => '✔️') });
     state.busy = true;
     setTimeout(() => { state.busy = false; onWin(g); },
-               sources.length ? 780 + sources.length * 70 : 250);
+               sources.length ? 780 + sources.length * 70 + 200 : 250);
   }
 }
 
@@ -1129,7 +1130,9 @@ function updateSuper() {
   const badge = document.getElementById('bankBadge');
   if (stacks >= 2) { badge.textContent = '×' + stacks; badge.classList.add('show'); }
   else badge.classList.remove('show');
-  document.getElementById('bankCheckBtn').disabled = !ready || state.busy;
+  const btn = document.getElementById('bankCheckBtn');
+  btn.disabled = !ready || state.busy;
+  btn.style.setProperty('--fill', (frac * 100).toFixed(0) + '%');   // gold fills left→right
   document.getElementById('bankHint').textContent = ready
     ? 'Sorts the words on your board into in / not in the puzzle.'
     : `Make new words to charge it (${v % HINT_THRESHOLD} of ${HINT_THRESHOLD}).`;
@@ -1335,34 +1338,38 @@ async function runCheck(superMode) {
 document.getElementById('submitBtn').addEventListener('click', () => runCheck(false));
 
 // ------------------------------------------------- win summary / share text
-// One line per check: ➡️ four row marks, ⬇️ four column marks. ✔️ valid, ✖️ not a
-// word, and from a Super Check: ⭐ in the puzzle, 〰️ a word but not in the puzzle.
-function shareLines() {
+// One line per SuperCheck used, then the solving line: ➡️ four row marks, ⬇️ four
+// column marks. SuperCheck marks: ⭐ in the puzzle, 〰️ a word but not in the
+// puzzle, ✖️ not a word; the solving line is all ✔️ and ends 🎉. Then the count of
+// SuperChecks and the hints still banked, as stars. The summary is made once, at
+// the first solve, and stays as it was however the puzzle is played after that.
+function buildSummary() {
   const h = state.hints[state.idx];
-  return h.history.map((e, k) => {
-    const solved = e.marks.every(m => m === '✔️');
-    return '➡️' + e.marks.slice(0, 4).join('') +
-           '⬇️' + e.marks.slice(4).join('') +
-           (solved && k === h.history.length - 1 ? '🎉' : '');
-  });
-}
-function shareCount() {
-  const h = state.hints[state.idx];
-  const c = h.history.filter(e => e.mode === 'check').length;
+  const line = e => '➡️' + e.marks.slice(0, 4).join('') + '⬇️' + e.marks.slice(4).join('');
+  const lines = h.history.filter(e => e.mode === 'super').map(line);
+  const last = h.history[h.history.length - 1];
+  if (last && last.marks.every(m => m === '✔️')) lines.push(line(last) + '🎉');
   const s = h.history.filter(e => e.mode === 'super').length;
-  return `${c} Check${c === 1 ? '' : 's'}, ${s} SuperCheck${s === 1 ? '' : 's'}`;
+  const left = Math.floor(meterValue() / HINT_THRESHOLD);
+  return { lines, count: `${s} SuperCheck${s === 1 ? '' : 's'}` +
+                         (left ? ` · ${'⭐'.repeat(left)} left` : '') };
+}
+function summary() {
+  const h = state.hints[state.idx];
+  return h.summary || buildSummary();
 }
 function shareText() {
-  return `${LABEL} #${state.idx + 1}\n` + shareLines().join('\n') + '\n' + shareCount();
+  const s = summary();
+  return `${LABEL} #${state.idx + 1}\n` + s.lines.join('\n') + '\n' + s.count;
 }
 function renderShare() {
   const el = document.getElementById('shareBlock');
-  const h = state.hints[state.idx];
-  if (!h.history.length) { el.className = ''; el.innerHTML = ''; return; }
+  const s = summary();
+  if (!s.lines.length) { el.className = ''; el.innerHTML = ''; return; }
   el.innerHTML =
     `<div class="share-title">${LABEL} #${state.idx + 1}</div>` +
-    shareLines().map(l => `<div class="share-line">${l}</div>`).join('') +
-    `<div class="share-count">${shareCount()}</div>`;
+    s.lines.map(l => `<div class="share-line">${l}</div>`).join('') +
+    `<div class="share-count">${s.count}</div>`;
   el.className = 'show';
   el.querySelectorAll('.share-title, .share-line, .share-count').forEach((n, k) => {
     if (!n.animate) return;
@@ -1529,6 +1536,9 @@ function onWin(g) {
     cardB.textContent = '';
     celebrate = true;
   }
+  // freeze the success summary at the first real solve
+  const h = state.hints[state.idx];
+  if (!h.summary && !state.revealed) h.summary = buildSummary();
   updateMeta();
   openRating(true);
   if (celebrate) confetti();

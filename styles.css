@@ -637,9 +637,14 @@
   /* the grid check lives at the top of the open drawer */
   .bank-actions{display:flex; flex-direction:column; align-items:center; gap:5px;
     padding:6px 18px 8px;}
-  .btn.bank-check{background:var(--gold); color:var(--ink); padding:10px 22px;}
-  .btn.bank-check:disabled{opacity:1; background:#EEF1F4; color:var(--ink-soft);}
-  .btn.bank-check.pressed{background:#C6A310;}
+  /* the button is its own meter: gold fills it left to right as it charges */
+  .btn.bank-check{position:relative; overflow:hidden; isolation:isolate;
+    background:#EEF1F4; color:var(--ink); padding:10px 22px;}
+  .btn.bank-check::before{content:''; position:absolute; left:0; top:0; bottom:0; z-index:-1;
+    width:var(--fill, 0%); background:var(--gold);
+    transition:width .4s cubic-bezier(.3,.9,.4,1), background .12s ease;}
+  .btn.bank-check:disabled{opacity:1; color:var(--ink-soft);}
+  .btn.bank-check.pressed::before{background:#C6A310;}
   .bank-hint{font-size:12.5px; font-weight:600; color:var(--ink-soft); min-height:16px;}
   .wl h4{
     margin:0 0 6px; font-size:11px; letter-spacing:.1em; text-transform:uppercase;
