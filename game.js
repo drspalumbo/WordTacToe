@@ -1567,7 +1567,7 @@ function sharedTime() {
 function shareText() {
   const s = summary(), t = sharedTime();
   return `${LABEL} #${state.idx + 1}\n` + s.lines.join('\n') + '\n' + s.count +
-         (t ? '\n' + t : '') + '\ndanagram.fun';
+         (t ? '\n' + t : '') + '\nhttps://danagram.fun';   // https:// makes every app link it
 }
 function renderShare(animate = true) {
   const el = document.getElementById('shareBlock');
