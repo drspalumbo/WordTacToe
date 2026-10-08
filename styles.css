@@ -100,6 +100,11 @@
     font-size:17px; font-weight:800; line-height:1; padding:2px 8px; margin:-4px 2px;
     cursor:pointer; touch-action:manipulation; vertical-align:middle;}
   .day-nav:hover{color:var(--accent);}
+  .day-link{color:var(--ink-soft); text-decoration:none; font-weight:800;}
+  .day-link:hover{color:var(--accent);}
+/* → the Create page (Tools & Tips, and the win card) */
+.make-link{display:block; margin:12px auto 0; text-align:center; font-size:13.5px; font-weight:800;
+  color:var(--accent); text-decoration:none; touch-action:manipulation;}
 
 #helpOverlay{
     position:fixed; inset:0; background:rgba(28,40,54,.45); display:none;

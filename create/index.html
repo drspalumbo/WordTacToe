@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="theme-color" content="#EDF1F4" id="themeColor">
+<title>Create a Danagram</title>
+<link rel="icon" href="../favicon.ico" sizes="16x16 32x32 48x48">
+<link rel="icon" href="../icons/icon-32.png" type="image/png" sizes="32x32">
+<link rel="apple-touch-icon" href="../apple-touch-icon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,500;0,9..144,620;1,9..144,500&family=Archivo:wght@500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../styles.css">
+<link rel="stylesheet" href="create.css">
+<script>
+  // same theme rule as the game: the player's choice, else the phone's setting
+  (function () {
+    var t = null;
+    try { t = JSON.parse(localStorage.getItem('danagram_theme')); } catch (e) {}
+    var dark = t ? t === 'dark'
+                 : !!(window.matchMedia && matchMedia('(prefers-color-scheme: dark)').matches);
+    if (dark) {
+      document.documentElement.classList.add('dark');
+      document.getElementById('themeColor').setAttribute('content', '#12171D');
+    }
+  })();
+</script>
+</head>
+<body class="create">
+
+<header class="create-head">
+  <a class="back-link" href="../">‹ Today’s puzzle</a>
+  <h1>Create a <span class="dana">Dana</span>gram</h1>
+  <ol class="steps" aria-label="Steps">
+    <li data-step="letters">Letters</li>
+    <li data-step="pieces">Pieces</li>
+    <li data-step="share">Share</li>
+  </ol>
+</header>
+
+<!-- 1. letters: type any you like, Fill in does the rest -->
+<section class="step" id="stepLetters">
+  <p class="step-hint">Type letters anywhere in the grid, as many or as few as you like. Every row and column must end up a word.</p>
+  <div class="cgrid" id="letterGrid"></div>
+  <ul class="issues" id="issues" aria-live="polite"></ul>
+  <div class="cactions">
+    <button class="btn ghost" id="clearBtn">Clear</button>
+    <button class="btn primary" id="fillBtn">Fill in</button>
+  </div>
+  <button class="btn primary next" id="toPieces" disabled>Next: make pieces →</button>
+</section>
+
+<!-- 2. pieces: join neighbouring tiles into ominos -->
+<section class="step" id="stepPieces" hidden>
+  <p class="step-hint">Tap two neighbouring tiles (or the dot between them) to join them into one piece. Tap again to split. Unjoined tiles are single tiles.</p>
+  <div class="cgrid pieces" id="pieceGrid"></div>
+  <p class="piece-info" id="pieceInfo"></p>
+  <div class="cactions">
+    <button class="btn ghost" id="backToLetters">‹ Letters</button>
+    <button class="btn primary" id="toShare">Next: share →</button>
+  </div>
+</section>
+
+<!-- 3. share -->
+<section class="step" id="stepShare" hidden>
+  <p class="step-hint" id="shareSummary"></p>
+  <div class="share-link"><input id="shareUrl" readonly aria-label="Link to your puzzle"></div>
+  <div class="cactions col">
+    <button class="btn primary" id="shareBtn">Share</button>
+    <a class="btn ghost" id="playLink" href="#">Play it yourself</a>
+    <button class="btn ghost" id="backToPieces">‹ Pieces</button>
+    <button class="btn ghost" id="startOver">Start a new one</button>
+  </div>
+  <p class="share-note" id="shareNote"></p>
+</section>
+
+<script src="../data/words.js"></script>
+<script src="../data/puzzle_words.js"></script>
+<script src="../solver.js"></script>
+<script src="create.js"></script>
+</body>
+</html>

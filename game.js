@@ -1,5 +1,43 @@
 const OCOLORS = ['var(--o1)','var(--o2)','var(--o3)','var(--o4)','var(--o5)','var(--o6)'];
 
+// ---------------------------------------------------------- custom puzzles
+// A link made on the Create page (?p=CODE) adds that puzzle after the daily ones
+// and opens it. A code that doesn't decode to a valid, connected puzzle is ignored.
+const DAILY_COUNT = PUZZLES.length;
+const CUSTOM_CODE = (() => {
+  const m = typeof location !== 'undefined' && /[?&]p=([0-9a-z]+)/i.exec(location.search || '');
+  return m ? m[1].toLowerCase() : null;
+})();
+const CUSTOM_IDX = (() => {
+  if (!CUSTOM_CODE || typeof Solver === 'undefined') return -1;
+  const d = Solver.decode(CUSTOM_CODE);
+  if (!d) return -1;
+  const rows = [0, 1, 2, 3].map(r => d.letters.slice(r * 4, r * 4 + 4).join(''));
+  if (!Solver.wordsOf(rows).every(w => WORDSET.has(w))) return -1;
+  const groups = new Map();
+  d.pieceOf.forEach((p, i) => { if (!groups.has(p)) groups.set(p, []); groups.get(p).push(i); });
+  const connected = g => {                       // every piece one orthogonally joined shape
+    const seen = new Set([g[0]]), todo = [g[0]];
+    while (todo.length) {
+      const i = todo.pop();
+      [i - 4, i + 4, i % 4 ? i - 1 : -1, i % 4 < 3 ? i + 1 : -1].forEach(j => {
+        if (g.includes(j) && !seen.has(j)) { seen.add(j); todo.push(j); }
+      });
+    }
+    return seen.size === g.length;
+  };
+  if (![...groups.values()].every(connected)) return -1;
+  const pieces = [...groups.values()].map(g => ({
+    cells: g.map(i => [Math.floor(i / 4), i % 4]), letters: g.map(i => d.letters[i]).join('') }));
+  const sols = Solver.solutions(pieces, { limit: 50 });
+  const words = new Set(Solver.wordsOf(rows));
+  sols.grids.forEach(g => Solver.wordsOf(g).forEach(w => words.add(w)));
+  PUZZLES.push({ solution: rows, pieces, numSolutions: sols.grids.length || 1,
+                 solutionWords: [...words], difficulty: null, stars: null, custom: true });
+  return PUZZLES.length - 1;
+})();
+const isCustom = idx => idx === CUSTOM_IDX;
+
 const S_MAX = 84;
 let state = {
   idx: 0,
@@ -1572,10 +1610,14 @@ function sharedTime() {
   const t = timerOf(state.idx);
   return t.done && store.get(SHARE_TIME_KEY) ? '⏱ ' + fmtTime(t.ms) : '';
 }
+function shareTitle() { return isCustom(state.idx) ? 'Custom Danagram' : `${LABEL} #${state.idx + 1}`; }
+function shareLink() {                           // https:// makes every app link it
+  return 'https://danagram.fun' + (isCustom(state.idx) ? '/?p=' + CUSTOM_CODE : '');
+}
 function shareText() {
   const s = summary(), t = sharedTime();
-  return `${LABEL} #${state.idx + 1}\n` + s.lines.join('\n') + '\n' + s.count +
-         (t ? '\n' + t : '') + '\nhttps://danagram.fun';   // https:// makes every app link it
+  return `${shareTitle()}\n` + s.lines.join('\n') + '\n' + s.count +
+         (t ? '\n' + t : '') + '\n' + shareLink();
 }
 function renderShare(animate = true) {
   const el = document.getElementById('shareBlock');
@@ -1586,7 +1628,7 @@ function renderShare(animate = true) {
   document.getElementById('shareTime').checked = !!store.get(SHARE_TIME_KEY);
   if (!s.lines.length) { el.className = ''; el.innerHTML = ''; return; }
   el.innerHTML =
-    `<div class="share-title">${LABEL} #${state.idx + 1}</div>` +
+    `<div class="share-title">${shareTitle()}</div>` +
     s.lines.map(l => `<div class="share-line">${l}</div>`).join('') +
     `<div class="share-count">${s.count}</div>` +
     (t ? `<div class="share-count share-timeline">${t}</div>` : '');
@@ -1911,7 +1953,7 @@ function sendPlay(finished = false, idx = state.idx) {
   if (!h.play) { h.play = randomHex(8); h.playDay = localDay(); }
   const body = JSON.stringify({
     play: h.play, status: finished ? 'finished' : 'playing',
-    test: idx + 1, puzzle: puzzleHash(idx), day: h.playDay,
+    test: isCustom(idx) ? 0 : idx + 1, puzzle: puzzleHash(idx), day: h.playDay,
     yesterday: dailyIdx() > 0 && idx === dailyIdx() - 1,
     seconds: Math.round(timerNow(idx) / 1000),
     moves: h.moves || 0, shuffles: h.shuffles || 0,
@@ -2290,12 +2332,18 @@ function epochMs() {
 function dayIndex() {
   return Math.max(0, Math.round((localMidnight(new Date()) - epochMs()) / 86400000));
 }
-function dailyIdx() { return Math.min(dayIndex(), PUZZLES.length - 1); }
-function seasonOver() { return dayIndex() >= PUZZLES.length; }
+function dailyIdx() { return Math.min(dayIndex(), DAILY_COUNT - 1); }
+function seasonOver() { return dayIndex() >= DAILY_COUNT; }
 
 // Today's puzzle, or yesterday's: the chevrons step one day back and return.
 function shownDayIdx() { return dailyIdx() - (state.dayBack && dailyIdx() > 0 ? 1 : 0); }
 function renderDaily() {
+  if (isCustom(state.idx)) {
+    const today = '<a class="day-link" href="' + location.pathname + '">Today’s Danagram ›</a>';
+    dailyLines = { full: '<b>Custom puzzle</b> · ' + today, short: '<b>Custom</b> · ' + today };
+    fitDailyLine();
+    return;
+  }
   const back = state.dayBack && dailyIdx() > 0;
   const day = new Date();
   if (back) day.setDate(day.getDate() - 1);
@@ -2399,6 +2447,7 @@ if (!DEV) {
   if (meta) meta.style.display = 'none';
 }
 restoreProgress();
+if (CUSTOM_IDX >= 0) state.idx = CUSTOM_IDX;     // so renderDaily shows the custom line
 renderDaily();
-loadPuzzle(DEV ? 0 : dailyIdx());
+loadPuzzle(CUSTOM_IDX >= 0 ? CUSTOM_IDX : DEV ? 0 : dailyIdx());
 if (!store.get(HELP_SEEN)) showHelp();
