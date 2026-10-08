@@ -1415,7 +1415,7 @@ document.getElementById('submitBtn').addEventListener('click', () => runCheck(fa
 // ------------------------------------------------- win summary / share text
 // One line per Grid Check used, then the solving line: ➡️ four row marks, ⬇️ four
 // column marks. Grid Check marks: ⭐ in the puzzle, 〰️ a word but not in the
-// puzzle, ✖️ not a word; the solving line is all ✔️, with 🎉 on its own line.
+// puzzle, ✖️ not a word; the solving line is all ⭐, with 🎉 on its own line.
 // Then the count of Grid Checks and of words found. The summary is made once, at
 // the first solve, and stays as it was however the puzzle is played after that.
 function buildSummary() {
@@ -1423,7 +1423,8 @@ function buildSummary() {
   const line = e => '➡️' + e.marks.slice(0, 4).join('') + '⬇️' + e.marks.slice(4).join('');
   const lines = h.history.filter(e => e.mode === 'super').map(line);
   const last = h.history[h.history.length - 1];
-  if (last && last.marks.every(m => m === '✔️')) lines.push(line(last), '🎉');
+  if (last && last.marks.every(m => m === '✔️'))     // the solve: every word is in the puzzle
+    lines.push(line({ marks: last.marks.map(() => '⭐') }), '🎉');
   const s = h.history.filter(e => e.mode === 'super').length;
   const n = h.seen.length;                 // every distinct word made on this puzzle
   return { lines, count: `${s} Grid Check${s === 1 ? '' : 's'} · ${n} word${n === 1 ? '' : 's'} found` };
