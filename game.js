@@ -1872,9 +1872,9 @@ applyTheme();
 // Two events per puzzle per device, each sent at most once: 'start' (first move)
 // and 'finish' (first real solve). They go to a Google Sheet through an Apps
 // Script web app (tools/stats_apps_script.gs). No IDs or cookies, and the puzzle
-// is named by a short hash, never its answer. Off while STATS_URL is empty;
+// is named by a short hash, never its answer. Off if STATS_URL is empty;
 // opening the page with ?notrack=1 turns it off for that browser (our own devices).
-let STATS_URL = '';
+let STATS_URL = 'https://script.google.com/macros/s/AKfycbyuqYGR6T8Lah9ln1DV__2aXI-b7f2ipVJx62r5kS4WSvIfMJoHsajgcSFRDoKlktfs/exec';
 const STATS_SENT_KEY = 'danagram_stats_sent', NOTRACK_KEY = 'danagram_notrack';
 if (/[?&]notrack=1/.test(location.search || '')) store.set(NOTRACK_KEY, true);
 const versionEl = document.querySelector('.help-version');
