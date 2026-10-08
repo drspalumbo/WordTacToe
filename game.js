@@ -1042,7 +1042,7 @@ function renderWordLists(justAdded, newestFirst) {
   const total = h.inList.length + h.outList.length;
   // found is already newest-first (scoreBoard unshifts), so it skips order()
   const found = h.found.length
-    ? `<div class="wl found"><h4>Found <span class="wl-count">${h.found.length}</span></h4><ul>` +
+    ? `<div class="wl found"><h4>Found <span class="wl-count">${h.found.length + total}</span></h4><ul>` +
       h.found.map(w => `<li${w === justAdded ? ' data-new="1"' : ''}>${w.toUpperCase()}</li>`).join('') +
       '</ul></div>'
     : '';
@@ -1075,9 +1075,9 @@ function renderWordLists(justAdded, newestFirst) {
   // the drawer is always there; empty, it explains how to fill it
   document.getElementById('drawer').classList.toggle('has-words', total > 0);
   document.body.classList.add('has-drawer');
-  // counts as marks, like the drawer's three groups: gray = found but unchecked,
-  // circled = in the puzzle, struck = not in it. Zeros are left out.
-  const nf = h.found.length, ni = h.inList.length, no = h.outList.length;
+  // counts as marks: gray = every word found (checked or not), circled = in the
+  // puzzle, struck = not in it. Zeros are left out.
+  const ni = h.inList.length, no = h.outList.length, nf = h.found.length + ni + no;
   document.getElementById('drawerTabLabel').innerHTML = 'Word bank' + (nf + ni + no
     ? `<span class="tab-counts" aria-label="${nf} found, ${ni} in the puzzle, ${no} not">` +
       (nf ? `<span class="tc-found">${nf}</span>` : '') +
