@@ -2308,8 +2308,9 @@ document.getElementById('helpOverlay').addEventListener('click', (e) => {
 // ?dev=1 keeps the puzzle nav visible for playtesting the whole bank
 const DEV = typeof location !== 'undefined' && /[?&]dev=1/.test(location.search || '');
 if (!DEV) {
-  const nav = document.querySelector('.nav');
-  if (nav) nav.style.display = 'none';
+  // hide the whole nav row, not just its contents, or its margin still takes room
+  const meta = document.querySelector('.meta');
+  if (meta) meta.style.display = 'none';
 }
 restoreProgress();
 renderDaily();

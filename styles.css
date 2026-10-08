@@ -8,7 +8,6 @@
     --surface:#fff; --surface-soft:#F6F8FA;       /* cards, drawer, buttons */
     --track:#EEF1F4; --track-2:#DCE3E9;           /* unfilled meters */
     --divider:#EEF2F5;
-    --app-top:0px;               /* extra head room as a home-screen app (see below) */
     --o1:#F5C48C; --o2:#A9D9BE; --o3:#B5C7F0; --o4:#DDBEE8; --o5:#EFDE9C; --o6:#E8B3A6;
     --radius:14px;
   }
@@ -29,28 +28,34 @@
     --track:#2A333C; --track-2:#323C46;
     --divider:#252E37;
   }
-  /* As a home-screen app, iOS still blurs the area under the status bar beyond its
-     reported safe area, so push everything a little further down there. */
-  @media (display-mode: standalone){ :root{--app-top:40px;} }
-  html.standalone{--app-top:40px;}
+  /* As a home-screen app the page never scrolls or rubber-bands: it's pinned to the
+     screen, and the game is centred in it. */
+  @media (display-mode: standalone){
+    html, body{overscroll-behavior:none;}
+    body{position:fixed; inset:0; overflow:hidden; min-height:0;}
+  }
+  html.standalone, html.standalone body{overscroll-behavior:none;}
+  html.standalone body{position:fixed; inset:0; overflow:hidden; min-height:0;}
   *{box-sizing:border-box; -webkit-tap-highlight-color:transparent;}
   html,body{margin:0; padding:0;}
   body{
     background:var(--bg); color:var(--ink);
     font-family:'Archivo',system-ui,sans-serif;
     display:flex; flex-direction:column; align-items:center;
-    min-height:100vh; padding:14px 14px 26px;
+    justify-content:center;            /* the game sits centred on the screen */
+    min-height:100vh; min-height:100dvh; padding:14px 14px 26px;
     /* as a home-screen app the page runs under the status bar / notch: clear them */
-    padding-top:calc(14px + env(safe-area-inset-top, 0px) + var(--app-top));
+    padding-top:calc(14px + env(safe-area-inset-top, 0px));
     padding-left:calc(14px + env(safe-area-inset-left, 0px));
     padding-right:calc(14px + env(safe-area-inset-right, 0px));
   }
-  body.has-drawer{padding-bottom:50px; transition:padding-bottom .2s;}
-  header{text-align:center; margin-bottom:6px;}
+  /* the closed drawer's tab is 42px tall; 56 leaves the same 14px gap as at the top */
+  body.has-drawer{padding-bottom:calc(56px + env(safe-area-inset-bottom, 0px)); transition:padding-bottom .2s;}
+  /* the corner buttons live in the header, so they move with the centred game */
+  header{position:relative; width:100%; max-width:560px; text-align:center; margin-bottom:6px;}
 
   #helpBtn{
-    position:fixed; top:calc(12px + env(safe-area-inset-top, 0px) + var(--app-top));
-    right:calc(12px + env(safe-area-inset-right, 0px)); z-index:45;
+    position:absolute; top:-2px; right:-2px; z-index:45;
     width:34px; height:34px; border-radius:50%; cursor:pointer;
     border:1px solid var(--tile-line); background:var(--surface); color:var(--ink-soft);
     font:inherit; font-weight:800; font-size:16px; line-height:1;
@@ -60,8 +65,7 @@
   #helpBtn:hover{color:var(--ink); border-color:var(--ink-soft);}
   /* light/dark switch, mirroring ? in the other corner: shows where it will take you */
   #themeBtn{
-    position:fixed; top:calc(12px + env(safe-area-inset-top, 0px) + var(--app-top));
-    left:calc(12px + env(safe-area-inset-left, 0px)); z-index:45;
+    position:absolute; top:-2px; left:-2px; z-index:45;
     width:34px; height:34px; border-radius:50%; cursor:pointer; padding:0;
     border:1px solid var(--tile-line); background:var(--surface); color:var(--ink-soft);
     display:flex; align-items:center; justify-content:center; touch-action:manipulation;
@@ -70,8 +74,7 @@
   #themeBtn .icon-sun{display:none;}
   /* the timer sits under the theme switch; open, it widens into a pill with the time */
   #timerBtn{
-    position:fixed; top:calc(52px + env(safe-area-inset-top, 0px) + var(--app-top));
-    left:calc(12px + env(safe-area-inset-left, 0px)); z-index:45;
+    position:absolute; top:38px; left:-2px; z-index:45;
     height:34px; min-width:34px; border-radius:17px; cursor:pointer; padding:0 8px;
     border:1px solid var(--tile-line); background:var(--surface); color:var(--ink-soft);
     display:flex; align-items:center; gap:0; touch-action:manipulation;
