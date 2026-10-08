@@ -1874,11 +1874,15 @@ applyTheme();
 // puzzle, so plays can't be linked to each other or to anyone. The row is made on
 // the first move and updated whenever the player leaves the page, switches puzzle,
 // or finishes — so a give-up still records how far it got. The puzzle is named by
-// a short hash, never its answer. Off if STATS_URL is empty; opening the page with
-// ?notrack=1 turns it off for that browser (our own devices).
+// a short hash, never its answer. Off if STATS_URL is empty, or for a browser
+// that switched it off on the Tools & Tips page or opened the page with ?notrack=1.
 let STATS_URL = 'https://script.google.com/macros/s/AKfycbyuqYGR6T8Lah9ln1DV__2aXI-b7f2ipVJx62r5kS4WSvIfMJoHsajgcSFRDoKlktfs/exec';
 const NOTRACK_KEY = 'danagram_notrack';
 if (/[?&]notrack=1/.test(location.search || '')) store.set(NOTRACK_KEY, true);
+// the switch on the Tools & Tips page: off = nothing more is sent from this browser
+const statsOptIn = document.getElementById('statsOptIn');
+statsOptIn.checked = !store.get(NOTRACK_KEY);
+statsOptIn.addEventListener('change', () => store.set(NOTRACK_KEY, !statsOptIn.checked));
 try { localStorage.removeItem('danagram_stats_sent'); } catch (e) {}   // from the start/finish version
 const versionEl = document.querySelector('.help-version');
 const APP_VERSION = versionEl ? versionEl.textContent.trim() : '';
