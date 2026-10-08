@@ -2,9 +2,12 @@
 
 /* unlike the game, this page may need to scroll (even as a home-screen app) */
 html body.create{position:static !important; overflow:visible !important;
-  justify-content:flex-start; padding-bottom:calc(32px + env(safe-area-inset-bottom, 0px));}
+  justify-content:flex-start; padding-bottom:calc(12px + env(safe-area-inset-bottom, 0px));}
 
-.create-head{text-align:center; margin-bottom:10px;}
+.create-head{text-align:center; margin-bottom:12px;}
+#stepLetters .next{margin-top:10px;}
+#stepLetters .cactions{margin-top:10px;}
+#stepLetters .issues{margin-top:8px;}
 .back-link{display:inline-block; margin-bottom:6px; font-size:13px; font-weight:700;
   color:var(--ink-soft); text-decoration:none;}
 .back-link:hover{color:var(--accent);}
@@ -24,19 +27,26 @@ html body.create{position:static !important; overflow:visible !important;
   grid-auto-rows:var(--cell); gap:var(--gap); padding:12px; border-radius:18px;
   background:var(--well); box-shadow:inset 0 2px 6px rgba(25,40,55,.16);
   --cell:min(64px, calc((100vw - 92px) / 4)); --gap:10px;}
+#letterGrid{--cell:min(60px, calc((100vw - 92px) / 4), calc((100svh - 452px) / 4)); --gap:8px; padding:10px;}
 .ccell{position:relative; width:100%; height:100%; box-sizing:border-box; border-radius:12px;
   background:var(--tile); box-shadow:inset 0 0 0 1.25px var(--tile-line);
   font:inherit; font-family:'Archivo', sans-serif; font-weight:800; font-size:calc(var(--cell) * .46);
   color:var(--ink); text-align:center; text-transform:uppercase; padding:0; border:0;
   caret-color:var(--accent); outline:none; touch-action:manipulation;}
-input.ccell:focus{box-shadow:inset 0 0 0 2.5px var(--accent);}
-input.ccell.filled{color:var(--ink-soft);}             /* letters Fill in chose */
-input.ccell.bad{box-shadow:inset 0 0 0 2.5px var(--bad);}
-input.ccell.bad:focus{box-shadow:inset 0 0 0 2.5px var(--accent), 0 0 0 2px var(--bad);}
+/* letters step: plain tiles (no text editing), a cursor and its line like a crossword app */
+#letterGrid .ccell{display:flex; align-items:center; justify-content:center; cursor:pointer;
+  user-select:none; -webkit-user-select:none; -webkit-touch-callout:none;
+  -webkit-tap-highlight-color:transparent;}
+#letterGrid .ccell.inline{background:var(--accent-soft);}
+#letterGrid .ccell.cur{box-shadow:inset 0 0 0 3px var(--accent);}
+#letterGrid .ccell.filled{color:var(--ink-soft);}       /* letters Fill in chose */
+#letterGrid .ccell.bad{box-shadow:inset 0 0 0 2.5px var(--bad);}
+#letterGrid .ccell.bad.cur{box-shadow:inset 0 0 0 3px var(--accent), 0 0 0 2.5px var(--bad);}
 
 /* line marks: ✓ / ✗ at the end of each row and the foot of each column */
 .lmark{position:absolute; width:18px; height:18px; border-radius:50%; font-size:11px; font-weight:900;
   display:flex; align-items:center; justify-content:center; line-height:1; pointer-events:none;}
+.lmark[hidden]{display:none;}
 .lmark.ok{background:var(--good); color:#fff;}
 .lmark.bad{background:var(--bad); color:#fff;}
 
@@ -73,3 +83,17 @@ html.dark .piece-info .warn{color:#E5B85A;}
   border:1px solid var(--tile-line); background:var(--surface); color:var(--ink);
   font:inherit; font-size:13px;}
 .share-note{min-height:18px; margin:10px 0 0; font-size:13px; font-weight:700; color:var(--good);}
+
+.btn.small{padding:9px 14px; font-size:14px;}
+.btn.small:disabled{opacity:.4;}
+
+/* Wordle-style letter keyboard */
+.keyboard{width:100%; max-width:500px; margin-top:12px; display:flex; flex-direction:column; gap:6px;
+  user-select:none; -webkit-user-select:none; -webkit-touch-callout:none;}
+.krow{display:flex; justify-content:center; gap:5px;}
+.key{flex:1 1 0; max-width:42px; height:44px; padding:0; border:0; border-radius:7px;
+  background:var(--track-2); color:var(--ink); font:inherit; font-family:'Archivo', sans-serif;
+  font-size:16px; font-weight:800; cursor:pointer; touch-action:manipulation;
+  -webkit-tap-highlight-color:transparent;}
+.key.wide{flex:1.6 1 0; max-width:66px; font-size:18px;}
+.key.pressed{background:var(--accent-soft);}

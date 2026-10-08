@@ -40,13 +40,14 @@
 
 <!-- 1. letters: type any you like, Fill in does the rest -->
 <section class="step" id="stepLetters">
-  <p class="step-hint">Type letters anywhere in the grid, as many or as few as you like. Every row and column must end up a word.</p>
   <div class="cgrid" id="letterGrid"></div>
   <ul class="issues" id="issues" aria-live="polite"></ul>
   <div class="cactions">
-    <button class="btn ghost" id="clearBtn">Clear</button>
-    <button class="btn primary" id="fillBtn">Fill in</button>
+    <button class="btn ghost small" id="clearBtn">Clear all</button>
+    <button class="btn ghost small" id="clearFilledBtn">Clear filled</button>
+    <button class="btn primary small" id="fillBtn">Fill in</button>
   </div>
+  <div class="keyboard" id="keyboard" aria-label="Keyboard"></div>
   <button class="btn primary next" id="toPieces" disabled>Next: make pieces →</button>
 </section>
 

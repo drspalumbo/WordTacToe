@@ -39,21 +39,26 @@ function showStep(step) {
 }
 
 // ------------------------------------------------------------ 1. letters
-const inputs = [];
+// Plain tiles and our own letter keyboard (no text fields, so iOS shows no
+// selection handles or editing menus). Like a crossword app: tap a tile to put
+// the cursor there, tap it again to switch between across and down.
+const tiles = [];
 const marks = [];
+let cursor = 0, across = true;
 (function buildLetterGrid() {
   const grid = $('letterGrid');
   for (let i = 0; i < 16; i++) {
-    const inp = document.createElement('input');
-    inp.className = 'ccell';
-    Object.assign(inp, { maxLength: 2, autocomplete: 'off', spellcheck: false });
-    inp.setAttribute('autocapitalize', 'characters');
-    inp.setAttribute('aria-label', `Row ${Math.floor(i / 4) + 1}, column ${i % 4 + 1}`);
-    inp.addEventListener('input', () => onType(i));
-    inp.addEventListener('keydown', e => onKey(i, e));
-    inp.addEventListener('focus', () => inp.select());
-    grid.appendChild(inp);
-    inputs.push(inp);
+    const t = document.createElement('div');
+    t.className = 'ccell';
+    t.setAttribute('role', 'button');
+    t.setAttribute('aria-label', `Row ${Math.floor(i / 4) + 1}, column ${i % 4 + 1}`);
+    t.addEventListener('pointerdown', e => {
+      e.preventDefault();
+      if (cursor === i) across = !across; else cursor = i;
+      renderCursor();
+    });
+    grid.appendChild(t);
+    tiles.push(t);
   }
   for (let k = 0; k < 8; k++) {
     const m = document.createElement('span');
@@ -62,26 +67,72 @@ const marks = [];
     marks.push(m);
   }
 })();
-
-function onType(i) {
-  const v = (inputs[i].value.match(/[a-z]/gi) || []).pop();   // last letter typed wins
-  draft.letters[i] = v ? v.toLowerCase() : '';
-  draft.typed[i] = !!v;
-  saveDraft();
-  renderLetters();
-  if (v && i < 15) inputs[i + 1].focus();
-}
-function onKey(i, e) {
-  const go = j => { e.preventDefault(); inputs[j].focus(); };
-  if (e.key === 'Backspace' && !inputs[i].value && i > 0) {
-    e.preventDefault();
-    draft.letters[i - 1] = ''; draft.typed[i - 1] = false;
-    saveDraft(); renderLetters(); inputs[i - 1].focus();
+(function buildKeyboard() {
+  const kb = $('keyboard');
+  ['qwertyuiop', 'asdfghjkl', 'zxcvbnm⌫'].forEach(row => {
+    const r = document.createElement('div');
+    r.className = 'krow';
+    [...row].forEach(ch => {
+      const k = document.createElement('button');
+      k.className = 'key' + (ch === '⌫' ? ' wide' : '');
+      k.textContent = ch === '⌫' ? '⌫' : ch.toUpperCase();
+      k.setAttribute('aria-label', ch === '⌫' ? 'Delete' : ch.toUpperCase());
+      // act on press, not release: quick typing shouldn't drop letters
+      k.addEventListener('pointerdown', e => {
+        e.preventDefault();
+        k.classList.add('pressed');
+        ch === '⌫' ? backspace() : typeLetter(ch);
+      });
+      const up = () => k.classList.remove('pressed');
+      k.addEventListener('pointerup', up); k.addEventListener('pointerleave', up);
+      k.addEventListener('pointercancel', up);
+      r.appendChild(k);
+    });
+    kb.appendChild(r);
+  });
+})();
+// a physical keyboard works too
+document.addEventListener('keydown', e => {
+  if (draft.step !== 'letters' || e.metaKey || e.ctrlKey || e.altKey) return;
+  const move = { ArrowRight: [1, true], ArrowLeft: [-1, true], ArrowDown: [4, false], ArrowUp: [-4, false] }[e.key];
+  if (/^[a-z]$/i.test(e.key)) typeLetter(e.key.toLowerCase());
+  else if (e.key === 'Backspace') backspace();
+  else if (move) {
+    const j = cursor + move[0];
+    if (j >= 0 && j < 16 && (!move[1] || Math.floor(j / 4) === Math.floor(cursor / 4))) cursor = j;
+    across = move[1];
+    renderCursor();
   }
-  else if (e.key === 'ArrowRight' && i % 4 < 3) go(i + 1);
-  else if (e.key === 'ArrowLeft' && i % 4 > 0) go(i - 1);
-  else if (e.key === 'ArrowDown' && i < 12) go(i + 4);
-  else if (e.key === 'ArrowUp' && i > 3) go(i - 4);
+  else return;
+  e.preventDefault();
+});
+
+const step = d => across ? (cursor % 4 + d >= 0 && cursor % 4 + d < 4 ? cursor + d : -1)
+                         : (cursor + 4 * d >= 0 && cursor + 4 * d < 16 ? cursor + 4 * d : -1);
+function setCell(i, ch) {
+  draft.letters[i] = ch; draft.typed[i] = !!ch;
+  saveDraft(); renderLetters();
+}
+function typeLetter(ch) {
+  setCell(cursor, ch);
+  const next = step(1);
+  if (next >= 0) cursor = next;
+  renderCursor();
+}
+function backspace() {
+  if (!draft.letters[cursor]) {                // empty: step back, then clear that one
+    const prev = step(-1);
+    if (prev >= 0) cursor = prev;
+  }
+  setCell(cursor, '');
+  renderCursor();
+}
+function renderCursor() {
+  const line = across ? Solver.LINES[Math.floor(cursor / 4)] : Solver.LINES[4 + cursor % 4];
+  tiles.forEach((t, i) => {
+    t.classList.toggle('cur', i === cursor);
+    t.classList.toggle('inline', i !== cursor && line.includes(i));
+  });
 }
 
 function gridWords() {
@@ -98,13 +149,12 @@ const LINE_NAME = k => k < 4 ? `Row ${k + 1}` : `Column ${k - 3}`;
 function renderLetters() {
   const status = Solver.lineStatus(draft.letters);
   const bad = new Set();
-  inputs.forEach((inp, i) => {
-    const ch = draft.letters[i] ? draft.letters[i].toUpperCase() : '';
-    if (inp.value !== ch) inp.value = ch;
-    inp.classList.toggle('filled', !!ch && !draft.typed[i]);
+  tiles.forEach((t, i) => {
+    t.textContent = draft.letters[i] ? draft.letters[i].toUpperCase() : '';
+    t.classList.toggle('filled', !!draft.letters[i] && !draft.typed[i]);
   });
   status.forEach((s, k) => { if (s === 'notword' || s === 'nofit') Solver.LINES[k].forEach(i => bad.add(i)); });
-  inputs.forEach((inp, i) => inp.classList.toggle('bad', bad.has(i)));
+  tiles.forEach((t, i) => t.classList.toggle('bad', bad.has(i)));
   placeMarks(status);
 
   const issues = [];
@@ -125,15 +175,20 @@ function renderLetters() {
     const res = Solver.fill(base, { random: false, nodeLimit: 120000 });
     if (res === null) issues.push(['bad', 'These letters can’t all be completed into words.']);
   }
+  // nothing to flag: say what to do (this step has no hint paragraph, to fit the keyboard)
+  if (!issues.length) issues.push(['info', draft.letters.some(Boolean)
+    ? 'Keep typing, or Fill in the rest.' : 'Type any letters you like, then Fill in the rest.']);
   $('issues').innerHTML = issues.map(([cls, t]) => `<li class="${cls}">${t}</li>`).join('');
   const anyFilled = draft.letters.some((ch, i) => ch && !draft.typed[i]);
   $('fillBtn').textContent = anyFilled ? 'Fill again' : 'Fill in';
+  $('clearFilledBtn').disabled = !anyFilled;
+  $('clearBtn').disabled = !draft.letters.some(Boolean);
   $('toPieces').disabled = !lettersReady();
 }
 
 // ✓ / ✗ at the end of each row and the foot of each column
 function placeMarks(status) {
-  const cells = inputs.map(inp => ({ x: inp.offsetLeft, y: inp.offsetTop, w: inp.offsetWidth }));
+  const cells = tiles.map(t => ({ x: t.offsetLeft, y: t.offsetTop, w: t.offsetWidth }));
   status.forEach((s, k) => {
     const m = marks[k];
     const show = s === 'ok' || s === 'notword' || s === 'nofit';
@@ -160,16 +215,22 @@ $('fillBtn').addEventListener('click', () => {
     : '<li class="bad">There’s no way to fill these in with words. Try changing a letter.</li>';
 });
 
-// two taps to clear, so a stray tap doesn't wipe the grid
+// two taps to clear everything, so a stray tap doesn't wipe the grid
 function confirmTap(btn, label, action) {
   if (btn.dataset.armed) { delete btn.dataset.armed; btn.textContent = label; action(); return; }
-  btn.dataset.armed = '1'; btn.textContent = 'Tap again to clear';
+  btn.dataset.armed = '1'; btn.textContent = 'Tap again';
   setTimeout(() => { if (btn.dataset.armed) { delete btn.dataset.armed; btn.textContent = label; } }, 2500);
 }
-$('clearBtn').addEventListener('click', e => confirmTap(e.currentTarget, 'Clear', () => {
+$('clearBtn').addEventListener('click', e => confirmTap(e.currentTarget, 'Clear all', () => {
   draft.letters = Array(16).fill(''); draft.typed = Array(16).fill(false); draft.joins = [];
-  saveDraft(); renderLetters(); inputs[0].focus();
+  cursor = 0; across = true;
+  saveDraft(); renderLetters(); renderCursor();
 }));
+// keep what you typed, drop what Fill in chose
+$('clearFilledBtn').addEventListener('click', () => {
+  draft.letters = draft.letters.map((ch, i) => draft.typed[i] ? ch : '');
+  saveDraft(); renderLetters();
+});
 $('toPieces').addEventListener('click', () => showStep('pieces'));
 
 // ------------------------------------------------------------- 2. pieces
@@ -324,7 +385,7 @@ $('shareBtn').addEventListener('click', async () => {
 $('backToPieces').addEventListener('click', () => showStep('pieces'));
 $('startOver').addEventListener('click', e => confirmTap(e.currentTarget, 'Start a new one', () => {
   draft.letters = Array(16).fill(''); draft.typed = Array(16).fill(false); draft.joins = [];
-  showStep('letters'); inputs[0].focus();
+  cursor = 0; across = true; showStep('letters');
 }));
 
 window.addEventListener('resize', () => {
@@ -332,3 +393,4 @@ window.addEventListener('resize', () => {
   if (draft.step === 'pieces') renderPieces();
 });
 showStep(draft.step || 'letters');
+renderCursor();
