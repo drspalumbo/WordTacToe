@@ -855,6 +855,16 @@ function flyDot(fromEl, delay) {
 // the wait. Shuffle waits longer, so mashing it can't farm words you never saw.
 const SCORE_DELAY = 300;           // deliberate moves (also lets the .18s tile slide finish)
 const SHUFFLE_SCORE_DELAY = 1000;
+const SCORE_TICK = 200;            // ms between each word / crossing as it scores
+
+// a crossing tile's letter gives a little pop as it scores
+function popLetter(el) {
+  if (!el || !el.animate) return;
+  const reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  el.animate(reduce ? [{ opacity: 1 }, { opacity: .35 }, { opacity: 1 }]
+                    : [{ transform: 'scale(1)' }, { transform: 'scale(1.28)' }, { transform: 'scale(1)' }],
+             { duration: 280, easing: 'ease-out' });
+}
 let scoreTimer = null;
 function scheduleScore(delay = SCORE_DELAY) {
   clearTimeout(scoreTimer);
@@ -903,6 +913,12 @@ function scoreBoard() {
   }
   const valid = words.map(w => !!w && WORDSET.has(w));
 
+  // each point is a beat: the new word nods (or the crossing tile pops) as its dot
+  // flies off — one at a time, so you can watch the charge tick up
+  const letterAt = (r, c) => {
+    const hit = occ.get(key(r + off, c + off));
+    return state.pieces[hit.pi].tiles[hit.ci].querySelector('.letter');
+  };
   const sources = [], newWords = [];
   words.forEach((w, i) => {
     if (!valid[i] || h.seen.indexOf(w) !== -1) return;
@@ -912,12 +928,9 @@ function scoreBoard() {
     // launch from the middle of the word
     const a = cellSpot(...cells[1], off).getBoundingClientRect();
     const b = cellSpot(...cells[2], off).getBoundingClientRect();
-    sources.push({ getBoundingClientRect: () => ({
-      left: (a.left + b.left) / 2, top: (a.top + b.top) / 2, width: 24, height: 24 }) });
-    playVerdict(cells.map(([r, c]) => {
-      const hit = occ.get(key(r + off, c + off));
-      return state.pieces[hit.pi].tiles[hit.ci].querySelector('.letter');
-    }), true);
+    sources.push({ spot: { getBoundingClientRect: () => ({
+      left: (a.left + b.left) / 2, top: (a.top + b.top) / 2, width: 24, height: 24 }) },
+      show: () => playVerdict(cells.map(([r, c]) => letterAt(r, c)), true) });
   });
 
   let newCrossings = 0;
@@ -929,11 +942,12 @@ function scoreBoard() {
       if (h.crossings.indexOf(k) !== -1) continue;
       h.crossings.push(k);
       newCrossings++;
-      sources.push(cellSpot(r, c, off));
+      const el = letterAt(r, c);
+      sources.push({ spot: cellSpot(r, c, off), show: () => popLetter(el) });
     }
   }
 
-  sources.forEach((s, k) => flyDot(s, k * 70));    // each dot adds 1 when it lands
+  sources.forEach((s, k) => setTimeout(() => { s.show(); flyDot(s.spot, 0); }, k * SCORE_TICK));
   if (newWords.length || sources.length) saveProgress();
   if (newWords.length) {
     // new words go in the bank quietly (gray, unsorted); the drawer peeks so you see them land
@@ -956,7 +970,7 @@ function scoreBoard() {
     h.history.push({ mode: 'solve', marks: words.map(() => '✔️') });
     state.busy = true;
     setTimeout(() => { state.busy = false; updateSuper(); onWin(g); },
-               sources.length ? 780 + sources.length * 70 + 200 : 250);
+               sources.length ? (sources.length - 1) * SCORE_TICK + 780 + 200 : 250);
   }
 }
 
@@ -2076,10 +2090,13 @@ function stopCountdown() {
 
 // ------------------------------------------------------------- how to play
 const HELP_SEEN = 'danagram_help_seen';
+function showHelpPage(n) {
+  [1, 2, 3].forEach(k =>
+    document.getElementById('helpPage' + k).classList.toggle('active', k === n));
+}
 function showHelp() {
   document.getElementById('helpOverlay').classList.add('show');
-  document.getElementById('helpPage1').classList.add('active');
-  document.getElementById('helpPage2').classList.remove('active');
+  showHelpPage(1);
 }
 function hideHelp() {
   document.getElementById('helpOverlay').classList.remove('show');
@@ -2088,15 +2105,12 @@ function hideHelp() {
 document.getElementById('helpBtn').addEventListener('click', showHelp);
 document.getElementById('closeHelp').addEventListener('click', hideHelp);
 document.getElementById('closeHelp2').addEventListener('click', hideHelp);
+document.getElementById('closeHelp3').addEventListener('click', hideHelp);
 document.getElementById('helpClose').addEventListener('click', hideHelp);
-document.getElementById('toTipsBtn').addEventListener('click', () => {
-  document.getElementById('helpPage1').classList.remove('active');
-  document.getElementById('helpPage2').classList.add('active');
-});
-document.getElementById('toPage1Btn').addEventListener('click', () => {
-  document.getElementById('helpPage2').classList.remove('active');
-  document.getElementById('helpPage1').classList.add('active');
-});
+document.getElementById('toTipsBtn').addEventListener('click', () => showHelpPage(2));
+document.getElementById('toPage1Btn').addEventListener('click', () => showHelpPage(1));
+document.getElementById('toPage3Btn').addEventListener('click', () => showHelpPage(3));
+document.getElementById('toPage2Btn').addEventListener('click', () => showHelpPage(2));
 document.getElementById('helpOverlay').addEventListener('click', (e) => {
   if (e.target.id === 'helpOverlay') hideHelp();
 });

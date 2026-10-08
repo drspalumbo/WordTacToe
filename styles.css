@@ -81,13 +81,12 @@
   /* ===================================================================
      One 12s story runs across all three rows of "How to play", so every
      animation below shares the same clock and is keyed by percentage:
-        0-8%   scrambled RDWO at rest
-        8-14%  Check pressed -> letters shake, red X badge
+        0-22%  scrambled RDWO at rest
        22-37%  RD lifts out, W/O shuffle left, RD drops -> WORD
-       41-46%  Check pressed again -> letters nod, gold check badge
-       52-60%  gold check funnels down + pips stream -> Super charges
-       60-67%  star jumps, Super merges to gold
-       74-84%  Super pressed -> WORD gets circled
+       41-46%  WORD is a word: letters nod, gold check badge (no button needed)
+       52-60%  the check funnels into the word bank tab; its bar fills
+       60-63%  bar full: the tab pops. The Grid Check button (row 3) fills with it
+       74-84%  Grid Check pressed -> WORD gets circled
        92-97%  reset
      Slots are 30px wide on a 34px pitch, so one slot-step is 34px.
      =================================================================== */
@@ -134,10 +133,9 @@
     font-weight:900; font-size:13px; line-height:1;
     opacity:0; z-index:1;
   }
-  .vb-x{color:var(--ink); animation:vbX 12s ease-in-out infinite;}
   .vb-check{
     color:#fff; background:var(--gold);
-    --fx:-89px; --fy:219px;           /* measured badge centre -> star centre */
+    --fx:-62px; --fy:81px;            /* measured badge centre -> word bank bar centre */
     animation:vbCheck 12s ease-in-out infinite;
   }
   /* hand-drawn ring around the solved word, from the game's own sketch algorithm */
@@ -151,14 +149,9 @@
     stroke-dasharray:var(--len); stroke-dashoffset:var(--len); opacity:.8;
     animation:wordCircle 12s ease-out infinite;
   }
-  /* letters shake on a failed check and nod on a good one, reusing the real curves */
+  /* letters nod when they make a word, reusing the real curve */
   @keyframes letterStory{
-    0%,10.8%{transform:translate(0,0);}
-    11.4%{transform:translate(-3px,0);}
-    11.9%{transform:translate(3px,0);}
-    12.5%{transform:translate(-2px,0);}
-    13.0%{transform:translate(2px,0);}
-    13.6%,42.5%{transform:translate(0,0);}
+    0%,42.5%{transform:translate(0,0);}
     43.4%{transform:translate(0,-5px);}
     44.3%{transform:translate(0,1px);}
     45.6%,100%{transform:translate(0,0);}
@@ -191,12 +184,7 @@
     94.5%{transform:translate(0,0); opacity:0;}
     96.7%,100%{transform:translate(0,0); opacity:1;}
   }
-  @keyframes vbX{
-    0%,13.2%{opacity:0; transform:scale(.4);}
-    14.5%,20%{opacity:1; transform:scale(1);}
-    22%,100%{opacity:0; transform:scale(.8);}
-  }
-  /* the gold check appears, holds, then funnels down into the Super button */
+  /* the gold check appears, holds, then funnels down into the word bank bar */
   @keyframes vbCheck{
     0%,45.2%{opacity:0; transform:translate(0,0) scale(.4);}
     46.5%,51.7%{opacity:1; transform:translate(0,0) scale(1);}
@@ -210,10 +198,10 @@
     94.1%{stroke-dashoffset:var(--len); opacity:0;}
     96.7%,100%{stroke-dashoffset:var(--len); opacity:.8;}
   }
-  /* the check row's pips fall past this row's text and land in the star below, so
-     the row can't clip them and the text needs to sit above them in the stack */
+  /* the gold check falls past this row's text into the word bank below, so the row
+     can't clip it and the text needs to sit above it in the stack */
   #helpPage1 .help-list li{position:relative;}
-  /* opaque + above the pips so the charge passes behind the copy */
+  /* opaque + above the check so the charge passes behind the copy */
   #helpPage1 .help-text{position:relative; z-index:2; background:#fff; text-align:center;}
   .help-h{display:block; color:var(--ink); font-weight:800; margin-bottom:2px;}
   /* -------- win condition: a solved 4x4 grid saluting row by row, then column by
@@ -264,103 +252,58 @@
     text-align:left; font-size:13.5px; line-height:1.35;
     color:var(--ink); font-weight:800;
   }
-  .check-demo{
+  /* -------- row 2: the word's check lands in a little word bank tab and fills
+     its bar. Row 3's Grid Check fills on the same beat: they're one meter. -------- */
+  .bank-demo{
+    position:relative; flex:none; display:flex; flex-direction:column; align-items:center;
+    gap:4px; padding:6px 20px 8px; border-radius:11px 11px 0 0;
+    background:#fff; border:1px solid var(--tile-line); border-bottom:0;
+    animation:bankPop 12s ease-in-out infinite;
+  }
+  .bd-label{font-size:11px; font-weight:800; color:var(--ink-soft);}
+  .bd-bar{position:relative; display:block; width:56px; height:4px; border-radius:2px;
+    background:#DCE3E9; overflow:hidden;}
+  .bd-bar i, .gc-fill{position:absolute; left:0; top:0; bottom:0; width:0;
+    background:var(--gold); animation:bankFill 12s ease-in-out infinite;}
+  @keyframes bankFill{
+    0%,55.5%{width:0;}
+    58%{width:40%;}
+    60%,91.7%{width:100%;}
+    95%,100%{width:0;}
+  }
+  @keyframes bankPop{
+    0%,60%{transform:scale(1);}
+    61.5%{transform:scale(1.08);}
+    63%,100%{transform:scale(1);}
+  }
+  /* -------- row 3: Grid Check, full once the bar is, pressed -> WORD circled -------- */
+  .gc-row{
     position:relative; flex:none;
     display:flex; align-items:center; justify-content:center;
-    pointer-events:none;
+    width:84px; height:32px;
   }
-  .mini-check{
-    flex:none; cursor:default; white-space:nowrap;
-    display:inline-flex; align-items:center; justify-content:center;
-    font-weight:800; font-family:inherit; border:0;
-    padding:8px 16px; font-size:11px; border-radius:9px;
-    background:var(--accent); color:#fff;
-    animation:checkStory 12s ease-in-out infinite;
-  }
-  /* Check is pressed twice: once on the scramble (fails) and once on WORD (scores) */
-  @keyframes checkStory{
-    0%,8.3%{transform:scale(1) translateY(0); background:var(--accent);}
-    9.2%{transform:scale(.94) translateY(1px); background:#16307A;}
-    10.4%,41%{transform:scale(1) translateY(0); background:var(--accent);}
-    41.8%{transform:scale(.94) translateY(1px); background:#16307A;}
-    43%,100%{transform:scale(1) translateY(0); background:var(--accent);}
-  }
-  /* -------- Super: charges from the check, then merges and is spent -------- */
-  .super-demo{
-    position:relative; flex:none;
-    width:35px; height:35px; border-radius:10px;
-    background:#fff; border:1px solid var(--tile-line); box-sizing:border-box;
+  .gc-demo{
+    position:relative; overflow:hidden; isolation:isolate;
     display:flex; align-items:center; justify-content:center;
-    animation:superShell 12s ease-in-out infinite, superPress 12s ease-in-out infinite;
+    width:84px; height:30px; border-radius:9px; background:#EEF1F4;
+    font-size:10.5px; font-weight:800; white-space:nowrap;
+    animation:gcText 12s ease-in-out infinite, gcPress 12s ease-in-out infinite;
   }
-  .demo-ring{
-    position:absolute; top:50%; left:50%;
-    transform:translate(-50%,-50%) rotate(-90deg);
-    animation:superRingOpacity 12s ease-in-out infinite;
+  .gc-fill{z-index:-1;}
+  @keyframes gcText{
+    0%,59%{color:var(--ink-soft);}
+    61%,91.7%{color:var(--ink);}
+    95%,100%{color:var(--ink-soft);}
   }
-  .demo-ring-track{stroke:#DCE3E9;}
-  .demo-ring-fill{
-    stroke:var(--gold); stroke-dasharray:88; stroke-dashoffset:88;
-    animation:superRingFill 12s ease-in-out infinite;
+  /* pressing it is what reveals the word */
+  @keyframes gcPress{
+    0%,74%{transform:scale(1);}
+    74.8%{transform:scale(.93);}
+    75.8%,100%{transform:scale(1);}
   }
-  .demo-inner{
-    position:relative; z-index:2; display:flex; align-items:center; justify-content:center;
-    width:100%; animation:superGap 12s ease-in-out infinite;
-  }
-  .demo-star{
-    flex:none; color:var(--ink-soft); transform-origin:center;
-    animation:superStarColor 12s ease-in-out infinite, starJump 12s ease-in-out infinite;
-  }
-  .demo-label{
-    display:inline-block; max-width:0; overflow:hidden; white-space:nowrap;
-    opacity:0; color:var(--ink); font-weight:800; font-size:10px;
-    animation:superLabel 12s ease-in-out infinite;
-  }
-  /* pips of charge that drop out of Check, slip behind the text block, and land in
-     the star. --fall is the measured pill-centre → star-centre distance. */
-  .pip{
-    position:absolute; left:50%; top:50%; width:6px; height:6px;
-    margin:-3px 0 0 -3px; border-radius:50%;
-    background:var(--gold); opacity:0; z-index:0; pointer-events:none;
-    --fall:115px;
-    animation-name:pipFall; animation-duration:12s;
-    animation-timing-function:linear; animation-iteration-count:infinite;
-  }
-  /* the same gold check the word earns, but issued by the Check button itself as it
-     throws off charge — then it funnels into Super alongside the pips */
-  .cbadge{
-    position:absolute; left:78px; top:50%; margin-top:-9px;
-    width:18px; height:18px; border-radius:50%;
-    background:var(--gold); color:#fff;
-    display:flex; align-items:center; justify-content:center;
-    font-weight:900; font-size:11px; line-height:1;
-    opacity:0; z-index:1; pointer-events:none;
-    --cdx:-52.4px; --cdy:115px;   /* measured check-dot centre -> star centre */
-    animation:cbadgeStory 12s ease-in-out infinite;
-  }
-  @keyframes cbadgeStory{
-    0%,51.2%{opacity:0; transform:translate(0,0) scale(.4);}
-    52.4%,55%{opacity:1; transform:translate(0,0) scale(1);}
-    59%{opacity:1; transform:translate(var(--cdx),var(--cdy)) scale(.45);}
-    60.5%,100%{opacity:0; transform:translate(var(--cdx),var(--cdy)) scale(.3);}
-  }
-  @keyframes pipFall{
-    0%,51.7%{opacity:0; transform:translate(0,0) scale(.4);}
-    52.2%{opacity:0; transform:translate(calc(var(--dx) * .2), 11px) scale(.7);}
-    52.6%{opacity:1; transform:translate(calc(var(--dx) * .3), 17px) scale(1);}
-    53.8%{opacity:1; transform:translate(calc(var(--dx) * .7), calc(var(--fall) * .32)) scale(1);}
-    55.4%{opacity:1; transform:translate(var(--dx), calc(var(--fall) * .82)) scale(.9);}
-    56.2%,100%{opacity:0; transform:translate(0, var(--fall)) scale(.35);}
-  }
-  /* Super's whole job is telling you a word is really in the puzzle, so pressing it
-     circles a little word right here — the same gesture the board gets. */
-  .super-row{
-    position:relative; flex:none;
-    display:flex; align-items:center; justify-content:center;
-    width:70px; height:35px;
-  }
+  /* the word Grid Check confirms, circled with the same gesture the board gets */
   .mini-word{
-    position:absolute; left:82px; top:50%; margin-top:-11px;
+    position:absolute; left:96px; top:50%; margin-top:-11px;
     width:48px; height:22px;
     display:flex; align-items:center; justify-content:center;
     opacity:0; pointer-events:none;
@@ -389,102 +332,8 @@
     94.1%{stroke-dashoffset:var(--mlen); opacity:0;}
     96.7%,100%{stroke-dashoffset:var(--mlen); opacity:.8;}
   }
-  @keyframes superShell{
-    0%,63%{width:35px; height:35px; border-radius:10px; background:#fff; border-color:var(--tile-line);}
-    66.5%,91.7%{width:70px; height:35px; border-radius:11px; background:var(--gold); border-color:var(--gold);}
-    95%,100%{width:35px; height:35px; border-radius:10px; background:#fff; border-color:var(--tile-line);}
-  }
-  /* Super gets pressed once charged, which is what reveals the word */
-  @keyframes superPress{
-    0%,74%{transform:scale(1);}
-    74.8%{transform:scale(.93);}
-    75.8%,100%{transform:scale(1);}
-  }
-  @keyframes superRingFill{
-    0%,51.7%{stroke-dashoffset:88;}
-    60%,91.7%{stroke-dashoffset:0;}
-    95%,100%{stroke-dashoffset:88;}
-  }
-  @keyframes superRingOpacity{
-    0%,62%{opacity:1;}
-    66%,92%{opacity:0;}
-    96%,100%{opacity:1;}
-  }
-  @keyframes starJump{
-    0%,60%{transform:translateY(0);}
-    61.2%{transform:translateY(-4px);}
-    62%{transform:translateY(-7px);}
-    62.8%{transform:translateY(-3px);}
-    63.5%,100%{transform:translateY(0);}
-  }
-  @keyframes superGap{
-    0%,63%{gap:0;}
-    66.5%,92%{gap:6px;}
-    96%,100%{gap:0;}
-  }
-  @keyframes superStarColor{
-    0%,62%{color:var(--ink-soft);}
-    66%,92%{color:var(--ink);}
-    96%,100%{color:var(--ink-soft);}
-  }
-  @keyframes superLabel{
-    0%,63%{max-width:0; opacity:0;}
-    66.5%,92%{max-width:42px; opacity:1;}
-    96%,100%{max-width:0; opacity:0;}
-  }
-  /* -------- Tips: a Check press, then its charge multiplying cell-division style -------- */
-  .divide-icon{position:relative; overflow:visible; background:transparent; border:0;}
-  .dpip{
-    position:absolute; left:50%; top:50%; width:7px; height:7px;
-    margin:-3.5px 0 0 -3.5px; border-radius:50%; background:var(--gold);
-    animation-duration:3.6s; animation-timing-function:ease-in-out;
-    animation-iteration-count:infinite;
-  }
-  /* d1 starts life as the big check circle, so it is 20px at base and scales to
-     .35 (= 7px) once it has divided down into an ordinary pip */
-  .d1{
-    width:20px; height:20px; margin:-10px 0 0 -10px; color:#fff;
-    display:flex; align-items:center; justify-content:center;
-    animation-name:divide1;
-  }
-  .dcheck{
-    width:12px; height:12px; flex:none;
-    animation:dcheckFade 3.6s ease-in-out infinite;
-  }
-  .d2{animation-name:divide2;}
-  .d3{animation-name:divide3;}
-  .d4{animation-name:divide4;}
-  @keyframes dcheckFade{
-    0%,13%{opacity:1;}
-    17%,86%{opacity:0;}
-    93%,100%{opacity:1;}
-  }
-  /* each pip stretches just before it splits, the way a dividing cell pinches */
-  @keyframes divide1{
-    0%,14%{transform:translate(0,0) scale(1,1);}
-    19%{transform:translate(0,0) scale(.6,.25);}
-    25%,42%{transform:translate(-6px,0) scale(.35,.35);}
-    47%{transform:translate(-6px,0) scale(.25,.6);}
-    53%,80%{transform:translate(-6px,-6px) scale(.35,.35);}
-    89%,100%{transform:translate(0,0) scale(1,1);}
-  }
-  @keyframes divide2{
-    0%,19%{transform:translate(0,0) scale(0,0);}
-    25%,42%{transform:translate(6px,0) scale(1,1);}
-    47%{transform:translate(6px,0) scale(.7,1.7);}
-    53%,80%{transform:translate(6px,-6px) scale(1,1);}
-    89%,100%{transform:translate(0,0) scale(0,0);}
-  }
-  @keyframes divide3{
-    0%,47%{transform:translate(-6px,0) scale(0,0);}
-    53%,80%{transform:translate(-6px,6px) scale(1,1);}
-    89%,100%{transform:translate(0,0) scale(0,0);}
-  }
-  @keyframes divide4{
-    0%,47%{transform:translate(6px,0) scale(0,0);}
-    53%,80%{transform:translate(6px,6px) scale(1,1);}
-    89%,100%{transform:translate(0,0) scale(0,0);}
-  }
+  /* gesture tips: tap counts instead of a drawing */
+  .tap-icon{font-size:11px; font-weight:800; letter-spacing:-.02em;}
   .hk{
     display:inline-block; min-width:64px; font-weight:800; color:var(--ink);
   }
@@ -572,6 +421,7 @@
 
   /* Check sits alone at the end of the actions row */
   .check-group{display:flex; align-items:center;}
+  .check-group[hidden]{display:none;}
   #submitBtn{
     flex:none; white-space:nowrap; height:44px; padding:0 24px;
     display:flex; align-items:center; justify-content:center;

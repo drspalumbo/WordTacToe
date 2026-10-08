@@ -50,7 +50,8 @@
       <path d="M4 19v-6a4 4 0 0 1 4-4h12"/>
     </svg>
   </button>
-  <div class="check-group" id="checkGroup">
+  <!-- hidden: puzzles finish on their own now; kept for an easy return -->
+  <div class="check-group" id="checkGroup" hidden>
     <button class="btn primary" id="submitBtn"><span class="check-label" id="checkLabel">Check</span></button>
   </div>
 </div>
@@ -121,42 +122,26 @@
                 <path class="wc-path" d="M 133.2 10.1 C 142.9 15.4, 145.9 22.3, 139.5 28.7 C 133.2 35.2, 118.8 41.1, 100.5 44.4 C 82.2 47.8, 60.6 48.4, 42.5 46.4 C 24.5 44.4, 11.1 39.5, 5.3 33.6 C -0.6 27.7, 2.8 20.7, 12.6 14.9 C 22.4 9.0, 39.7 4.5, 58.4 2.5 C 77.2 0.5, 97.5 1.1, 112.9 4.2 C 128.3 7.4, 139.3 12.8, 141.2 19.1"/>
               </svg>
             </span>
-            <span class="vbadge vb-x">✗</span>
             <span class="vbadge vb-check">✓</span>
           </span>
           <span class="help-text"><b class="help-h">Unscramble tiles to make words</b>Drag a piece, or tap it and tell it where to go!</span>
         </li>
         <li>
-          <span class="check-demo" aria-hidden="true">
-            <span class="mini-check">Check</span>
-            <span class="pip" style="--dx:-9px; animation-delay:0ms;"></span>
-            <span class="pip" style="--dx:7px; animation-delay:90ms;"></span>
-            <span class="pip" style="--dx:-3px; animation-delay:180ms;"></span>
-            <span class="pip" style="--dx:10px; animation-delay:270ms;"></span>
-            <span class="pip" style="--dx:-7px; animation-delay:360ms;"></span>
-            <span class="pip" style="--dx:3px; animation-delay:450ms;"></span>
-            <span class="cbadge">✓</span>
+          <span class="bank-demo" aria-hidden="true">
+            <span class="bd-label">Word bank</span>
+            <span class="bd-bar"><i></i></span>
           </span>
-          <span class="help-text"><b class="help-h">Check your words (and charge up!)</b>Every new word you make, and every new spot where two words cross, charges up your word bank!</span>
+          <span class="help-text"><b class="help-h">New words charge up your word bank</b>Every new word you make, and every new spot where two words cross, fills the bar on your word bank.</span>
         </li>
         <li>
-          <span class="super-row" aria-hidden="true">
-            <span class="super-demo">
-            <svg class="demo-ring" viewBox="0 0 35 35" width="35" height="35">
-              <circle class="demo-ring-track" cx="17.5" cy="17.5" r="14" fill="none" stroke-width="2.5"/>
-              <circle class="demo-ring-fill" cx="17.5" cy="17.5" r="14" fill="none" stroke-width="2.5" stroke-linecap="round"/>
-            </svg>
-            <span class="demo-inner">
-              <svg class="demo-star" viewBox="0 0 24 24" width="13" height="13" fill="currentColor"><path d="M12 2.4l2.9 6.7 7.2.8-5.4 4.9 1.5 7.2-6.2-3.7-6.2 3.7 1.5-7.2-5.4-4.9 7.2-.8z"/></svg>
-              <span class="demo-label">Super</span>
-            </span>
-            </span>
+          <span class="gc-row" aria-hidden="true">
+            <span class="gc-demo"><i class="gc-fill"></i><span class="gc-label">Grid Check</span></span>
             <span class="mini-word">
               <span class="mw-text">WORD</span>
               <svg class="mw-circle" viewBox="0 0 48 22"><path class="mwc-path" d="M 42.3 6.1 C 45.3 8.0, 46.2 10.6, 44.3 13.0 C 42.4 15.3, 38.1 17.5, 32.6 18.6 C 27.1 19.8, 20.6 20.0, 15.2 19.2 C 9.8 18.4, 5.8 16.5, 4.0 14.3 C 2.2 12.1, 3.2 9.6, 6.1 7.4 C 9.1 5.3, 14.2 3.7, 19.9 3.0 C 25.5 2.3, 31.6 2.6, 36.2 3.8 C 40.8 5.0, 44.2 7.1, 44.7 9.4"/></svg>
             </span>
           </span>
-          <span class="help-text"><b class="help-h">Check your grid to sort your word bank</b>Once it’s charged, open the word bank and tap Grid Check to see which words on your board are in today’s puzzle…and which aren’t!</span>
+          <span class="help-text"><b class="help-h">Grid Check to sort your words</b>When the bar is full, open the word bank and tap Grid Check to see which words on your board are in today’s puzzle…and which aren’t!</span>
         </li>
       </ul>
       <div class="win-note">
@@ -220,14 +205,6 @@
         <li>
           <span class="hk-icon" aria-hidden="true">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <line x1="4" y1="12" x2="20" y2="12"/><polyline points="15 7 20 12 15 17"/><polyline points="9 7 4 12 9 17"/>
-            </svg>
-          </span>
-          <span><span class="hk">Swipe</span> Swipe on an empty spot of the board to slide every tile that way. Keep going and the tiles wrap around.</span>
-        </li>
-        <li>
-          <span class="hk-icon" aria-hidden="true">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
               <polyline points="16 3 21 3 21 8"/><line x1="4" y1="20" x2="21" y2="3"/>
               <polyline points="21 16 21 21 16 21"/><line x1="15" y1="15" x2="21" y2="21"/>
               <line x1="4" y1="4" x2="9" y2="9"/>
@@ -248,21 +225,56 @@
           <span><span class="hk">Scatter</span> Move the single letter tiles off to the edges. Sometimes, the best way to solve a Danagram is to start with arranging the larger Ominos.</span>
         </li>
         <li>
-          <span class="hk-icon divide-icon" aria-hidden="true">
-            <span class="dpip d1">
-              <svg class="dcheck" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
-            </span>
-            <span class="dpip d2"></span>
-            <span class="dpip d3"></span>
-            <span class="dpip d4"></span>
+          <span class="hk-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="3" y="9" width="18" height="6" rx="1.5"/><rect x="9" y="3" width="6" height="18" rx="1.5"/>
+            </svg>
           </span>
-          <span><span class="hk">Find New Words</span> Each new word, and each new place two words cross, charges your word bank the moment you make it.</span>
+          <span><span class="hk">Cross words</span> Every new word charges your word bank, and so does every new spot where two words cross. Building crosswords charges it fastest.</span>
         </li>
       </ul>
     </div>
     <div class="card-actions">
       <button class="btn primary" id="closeHelp2">Got it</button>
+      <button class="btn ghost" id="toPage3Btn">Gestures →</button>
       <button class="btn ghost" id="toPage1Btn">← Back</button>
+    </div>
+  </div>
+
+  <div class="help-page" id="helpPage3">
+    <h2>Gestures</h2>
+    <div class="help-body">
+      <ul class="help-list">
+        <li>
+          <span class="hk-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="5 9 2 12 5 15"/><polyline points="9 5 12 2 15 5"/><polyline points="15 19 12 22 9 19"/><polyline points="19 9 22 12 19 15"/>
+              <line x1="2" y1="12" x2="22" y2="12"/><line x1="12" y1="2" x2="12" y2="22"/>
+            </svg>
+          </span>
+          <span><span class="hk">Drag or tap</span> Drag a piece to move it, or tap a piece and then tap where it should go. Other pieces slide aside to make room.</span>
+        </li>
+        <li>
+          <span class="hk-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <line x1="4" y1="12" x2="20" y2="12"/><polyline points="15 7 20 12 15 17"/><polyline points="9 7 4 12 9 17"/>
+            </svg>
+          </span>
+          <span><span class="hk">Swipe</span> Swipe on an empty spot of the board to slide every tile that way. Keep going and the tiles wrap around.</span>
+        </li>
+        <li>
+          <span class="hk-icon tap-icon" aria-hidden="true">2×</span>
+          <span><span class="hk">Double-tap</span> Double-tap an empty spot of the board to undo your last move.</span>
+        </li>
+        <li>
+          <span class="hk-icon tap-icon" aria-hidden="true">3×</span>
+          <span><span class="hk">Triple-tap</span> Triple-tap an empty spot to redo it.</span>
+        </li>
+      </ul>
+    </div>
+    <div class="card-actions">
+      <button class="btn primary" id="closeHelp3">Got it</button>
+      <button class="btn ghost" id="toPage2Btn">← Back</button>
     </div>
   </div>
 
