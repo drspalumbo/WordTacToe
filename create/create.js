@@ -6,6 +6,7 @@
 const OCOLORS = ['var(--o1)', 'var(--o2)', 'var(--o3)', 'var(--o4)', 'var(--o5)', 'var(--o6)'];
 const DRAFT_KEY = 'danagram_create_draft';
 const $ = id => document.getElementById(id);
+const escHtml = s => String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
 
 function loadDraft() {
   try {
@@ -373,10 +374,31 @@ function shareCode() {
   groups.forEach((g, p) => g.forEach(i => { pieceOf[i] = p; }));
   return Solver.encode(draft.letters, pieceOf);
 }
-function renderShare() {
-  const url = new URL('../?p=' + shareCode(), location.href).href;
+// the game link: the puzzle, plus the title and note when there are any
+function linkFor(code, title, note) {
+  return new URL('../?p=' + code +
+    (title ? '&t=' + encodeURIComponent(title) : '') +
+    (note ? '&n=' + encodeURIComponent(note) : ''), location.href).href;
+}
+// share text: "I made a Danagram!", the title, then the link (the share sheet adds
+// the link after the text; a copied version spells it out)
+const shareMsg = title => 'I made a Danagram!' + (title ? '\n' + title : '');
+const shareFull = (title, url) => shareMsg(title) + '\n' + url;
+let shareMeta = null;
+function updateLink() {
+  const url = linkFor(shareCode(), draft.title, draft.note);
   $('shareUrl').value = url;
   $('playLink').href = url;
+  if (shareMeta) remember(...shareMeta);
+}
+['titleIn', 'noteIn'].forEach(id => $(id).addEventListener('input', () => {
+  draft.title = $('titleIn').value.replace(/\s+/g, ' ').trim();
+  draft.note = $('noteIn').value.trim();
+  saveDraft(); updateLink();
+}));
+function renderShare() {
+  $('titleIn').value = draft.title || '';
+  $('noteIn').value = draft.note || '';
   $('shareNote').textContent = '';
   const groups = Solver.piecesFrom(joins());
   const multi = groups.filter(g => g.length > 1).length;
@@ -389,18 +411,19 @@ function renderShare() {
     ' Anyone with the link can play it. It’s saved in My puzzles.';
   const diff = lastDiff || difficultyOf(groups, n);
   $('shareDiff').innerHTML = `Difficulty ${starRow(diff.stars)} <small>${diff.score}/100</small>`;
-  remember(n, res.capped || res.timedOut, multi, diff);
+  shareMeta = [n, res.capped || res.timedOut, multi, diff];
+  updateLink();
 }
 $('shareBtn').addEventListener('click', async () => {
   const url = $('shareUrl').value;
   if (navigator.share) {
-    try { await navigator.share({ title: 'Danagram', text: 'Try the Danagram I made!', url }); return; }
+    try { await navigator.share({ title: 'Danagram', text: shareMsg(draft.title), url }); return; }
     catch (e) { if (e && e.name === 'AbortError') return; }
   }
   try {
     if (navigator.clipboard && window.isSecureContext) {
-      await navigator.clipboard.writeText(url);
-      $('shareNote').textContent = 'Link copied!';
+      await navigator.clipboard.writeText(shareFull(draft.title, url));
+      $('shareNote').textContent = 'Copied!';
       return;
     }
   } catch (e) {}
@@ -409,7 +432,9 @@ $('shareBtn').addEventListener('click', async () => {
 });
 $('backToPieces').addEventListener('click', () => showStep('pieces'));
 function newPuzzle() {
-  Object.assign(draft, { id: newId(), letters: Array(16).fill(''), typed: Array(16).fill(false), joins: [] });
+  Object.assign(draft, { id: newId(), letters: Array(16).fill(''), typed: Array(16).fill(false), joins: [],
+                         title: '', note: '' });
+  shareMeta = null;
   cursor = 0; across = true; showStep('letters');
 }
 // it's saved in My puzzles by now, so no need to confirm
@@ -427,8 +452,9 @@ const saveMine = list => { try { localStorage.setItem(MINE_KEY, JSON.stringify(l
 function remember(nSolutions, more, pieces, diff) {
   const list = loadMine(), code = shareCode(), now = Date.now();
   const old = list.find(e => e.id === draft.id);
-  if (old && old.code === code) return;
-  const entry = { id: draft.id, code, letters: draft.letters.slice(), typed: draft.typed.slice(),
+  const title = draft.title || '', note = draft.note || '';
+  if (old && old.code === code && (old.title || '') === title && (old.note || '') === note) return;
+  const entry = { id: draft.id, code, title, note, letters: draft.letters.slice(), typed: draft.typed.slice(),
                   joins: draft.joins.slice(), solutions: nSolutions, more, pieces, stars: diff.stars, score: diff.score,
                   created: old ? old.created : now, updated: now };
   saveMine([entry, ...list.filter(e => e.id !== draft.id)]);
@@ -463,10 +489,11 @@ function renderMine() {
     const sol = e.solutions === 1 && !e.more ? 'one solution'
               : `${e.more ? e.solutions + '+' : e.solutions} solutions`;
     return `<li data-id="${e.id}">${miniGrid(e)}<div class="mine-body">` +
-      `<div class="mine-meta">${fmtDate(e.updated)}${e.id === draft.id ? ' · <b>editing</b>' : ''}</div>` +
+      `<div class="mine-meta">${e.title ? `<span class="mine-name">${escHtml(e.title)}</span> · ` : ''}` +
+      `${fmtDate(e.updated)}${e.id === draft.id ? ' · <b>editing</b>' : ''}</div>` +
       `<div class="mine-sub">${e.stars ? starRow(e.stars) + ' · ' : ''}${e.pieces} piece${e.pieces === 1 ? '' : 's'} · ${sol}</div>` +
       `<div class="mine-acts">` +
-      `<a class="mlink" href="${new URL('../?p=' + e.code, location.href).href}">Play</a>` +
+      `<a class="mlink" href="${escHtml(linkFor(e.code, e.title, e.note))}">Play</a>` +
       `<button class="mlink" data-act="share">Share</button>` +
       `<button class="mlink" data-act="edit">Edit</button>` +
       `<button class="mlink del" data-act="delete">Delete</button>` +
@@ -478,13 +505,19 @@ function renderMine() {
 function exportLink() {
   const parts = loadMine().map(e => e.code +
     parseInt(e.typed.map(t => t ? 1 : 0).join(''), 2).toString(16).padStart(4, '0') +
-    Math.floor(e.created / 1000).toString(36));
+    Math.floor(e.created / 1000).toString(36) +
+    (e.title || e.note ? '~' + b64url(JSON.stringify([e.title || '', e.note || ''])) : ''));
   return location.origin + location.pathname + '#import=' + parts.join('.');
 }
+const b64url = s => btoa(unescape(encodeURIComponent(s))).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+const unb64url = s => decodeURIComponent(escape(atob(s.replace(/-/g, '+').replace(/_/g, '/'))));
 function parseImport(hash) {
-  const m = /#import=([0-9a-z.]+)/.exec(hash || '');
+  const m = /#import=([0-9A-Za-z.~_-]+)/.exec(hash || '');
   if (!m) return [];
-  return m[1].split('.').map(part => {
+  return m[1].split('.').map(whole => {
+    const [part, text] = whole.split('~');
+    let title = '', note = '';
+    if (text) try { [title, note] = JSON.parse(unb64url(text)).map(String); } catch (e) {}
     const d = Solver.decode(part.slice(0, 33));
     if (!d || !/^[0-9a-f]{4}[0-9a-z]+$/.test(part.slice(33))) return null;
     const bits = parseInt(part.slice(33, 37), 16).toString(2).padStart(16, '0');
@@ -506,7 +539,8 @@ function parseImport(hash) {
              letters: d.letters, typed: [...bits].map(b => b === '1'), joins,
              solutions: res.grids.length, more: res.capped || res.timedOut,
              pieces: groups.filter(g => g.length > 1).length,
-             stars: diff.stars, score: diff.score, created, updated: created };
+             stars: diff.stars, score: diff.score, created, updated: created,
+             title: title.slice(0, 40), note: note.slice(0, 240) };
   }).filter(Boolean);
 }
 let pendingImport = parseImport(location.hash).filter(e => !loadMine().some(x => x.code === e.code));
@@ -567,19 +601,21 @@ $('mineList').addEventListener('click', async ev => {
     const unsaved = draft.id !== id && draft.letters.some(Boolean) &&
                     !loadMine().some(x => x.id === draft.id);
     if (unsaved && !armed(b, 'Edit', 'Replace draft?')) return;
-    Object.assign(draft, { id: e.id, letters: e.letters.slice(), typed: e.typed.slice(), joins: e.joins.slice() });
+    Object.assign(draft, { id: e.id, letters: e.letters.slice(), typed: e.typed.slice(), joins: e.joins.slice(),
+                           title: e.title || '', note: e.note || '' });
+    shareMeta = null;
     cursor = 0; across = true; lastSolve = null; lastDiff = null;
     showStep('pieces');
   }
   if (act === 'share') {
-    const url = new URL('../?p=' + e.code, location.href).href;
+    const url = linkFor(e.code, e.title, e.note);
     if (navigator.share) {
-      try { await navigator.share({ title: 'Danagram', text: 'Try the Danagram I made!', url }); return; }
+      try { await navigator.share({ title: 'Danagram', text: shareMsg(e.title), url }); return; }
       catch (err) { if (err && err.name === 'AbortError') return; }
     }
     try {
       if (navigator.clipboard && window.isSecureContext) {
-        await navigator.clipboard.writeText(url); b.textContent = 'Copied!'; return;
+        await navigator.clipboard.writeText(shareFull(e.title, url)); b.textContent = 'Copied!'; return;
       }
     } catch (err) {}
     window.prompt('Copy this link:', url);

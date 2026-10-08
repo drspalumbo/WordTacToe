@@ -8,6 +8,14 @@ const CUSTOM_CODE = (() => {
   const m = typeof location !== 'undefined' && /[?&]p=([0-9a-z]+)/i.exec(location.search || '');
   return m ? m[1].toLowerCase() : null;
 })();
+// optional title (&t=) and note for players (&n=), written by the creator
+const CUSTOM_TEXT = (() => {
+  const q = typeof location !== 'undefined' && typeof URLSearchParams !== 'undefined'
+    ? new URLSearchParams(location.search || '') : null;
+  const clean = (v, n) => (v || '').replace(/\s+/g, ' ').trim().slice(0, n);
+  return { title: q ? clean(q.get('t'), 40) : '', note: q ? (q.get('n') || '').trim().slice(0, 240) : '' };
+})();
+const escHtml = s => s.replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
 const CUSTOM_IDX = (() => {
   if (!CUSTOM_CODE || typeof Solver === 'undefined') return -1;
   const d = Solver.decode(CUSTOM_CODE);
@@ -1612,9 +1620,15 @@ function sharedTime() {
   const t = timerOf(state.idx);
   return t.done && store.get(SHARE_TIME_KEY) ? '⏱ ' + fmtTime(t.ms) : '';
 }
-function shareTitle() { return isCustom(state.idx) ? 'Custom Danagram' : `${LABEL} #${state.idx + 1}`; }
+function shareTitle() {
+  if (!isCustom(state.idx)) return `${LABEL} #${state.idx + 1}`;
+  return CUSTOM_TEXT.title ? `Danagram: “${CUSTOM_TEXT.title}”` : 'Custom Danagram';
+}
 function shareLink() {                           // https:// makes every app link it
-  return 'https://danagram.fun' + (isCustom(state.idx) ? '/?p=' + CUSTOM_CODE : '');
+  if (!isCustom(state.idx)) return 'https://danagram.fun';
+  return 'https://danagram.fun/?p=' + CUSTOM_CODE +
+    (CUSTOM_TEXT.title ? '&t=' + encodeURIComponent(CUSTOM_TEXT.title) : '') +
+    (CUSTOM_TEXT.note ? '&n=' + encodeURIComponent(CUSTOM_TEXT.note) : '');
 }
 function shareText() {
   const s = summary(), t = sharedTime();
@@ -2342,7 +2356,11 @@ function shownDayIdx() { return dailyIdx() - (state.dayBack && dailyIdx() > 0 ? 
 function renderDaily() {
   if (isCustom(state.idx)) {
     const today = '<a class="day-link" href="' + location.pathname + '">Today’s Danagram ›</a>';
-    dailyLines = { full: '<b>Custom puzzle</b> · ' + today, short: '<b>Custom</b> · ' + today };
+    const { title, note } = CUSTOM_TEXT;
+    const name = t => `<button class="day-title" id="customInfo"${note || title ? '' : ' disabled'}>` +
+      `<b>${escHtml(t)}</b>${note ? ' <span class="info-i" aria-hidden="true">i</span>' : ''}</button>`;
+    dailyLines = { full: name(title || 'Custom puzzle') + ' · ' + today,
+                   short: name(title || 'Custom') + ' · ' + today };
     fitDailyLine();
     return;
   }
@@ -2377,6 +2395,7 @@ function fitDailyLine() {
 }
 window.addEventListener('resize', fitDailyLine);
 document.getElementById('dailyLine').addEventListener('click', e => {
+  if (e.target.closest('#customInfo')) { showIntro(); return; }
   const b = e.target.closest('.day-nav');
   if (!b || state.busy) return;
   state.dayBack = b.id === 'dayPrev';
@@ -2452,4 +2471,17 @@ restoreProgress();
 if (CUSTOM_IDX >= 0) state.idx = CUSTOM_IDX;     // so renderDaily shows the custom line
 renderDaily();
 loadPuzzle(CUSTOM_IDX >= 0 ? CUSTOM_IDX : DEV ? 0 : dailyIdx());
-if (!store.get(HELP_SEEN)) showHelp();
+// a custom puzzle with a title or note opens with the creator's card (then help, if new)
+function showIntro() {
+  document.getElementById('introTitle').textContent = CUSTOM_TEXT.title || 'Custom Danagram';
+  const note = document.getElementById('introNote');
+  note.textContent = CUSTOM_TEXT.note;
+  note.hidden = !CUSTOM_TEXT.note;
+  document.getElementById('introOverlay').classList.add('show');
+}
+document.getElementById('introPlay').addEventListener('click', () => {
+  document.getElementById('introOverlay').classList.remove('show');
+  if (!store.get(HELP_SEEN)) showHelp();
+});
+if (isCustom(state.idx) && (CUSTOM_TEXT.title || CUSTOM_TEXT.note)) showIntro();
+else if (!store.get(HELP_SEEN)) showHelp();

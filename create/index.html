@@ -69,6 +69,13 @@
 <section class="step" id="stepShare" hidden>
   <p class="step-hint" id="shareSummary"></p>
   <p class="piece-info share-diff"><span class="diff" id="shareDiff"></span></p>
+  <div class="share-fields">
+    <label><span class="fl">Title <span>(optional)</span></span>
+      <input id="titleIn" maxlength="40" placeholder="Give it a name" autocomplete="off"></label>
+    <label><span class="fl">Note for players <span>(optional)</span></span>
+      <textarea id="noteIn" maxlength="240" rows="3"
+        placeholder="A hint, a dedication, or a clue for a name or other non-word"></textarea></label>
+  </div>
   <div class="share-link"><input id="shareUrl" readonly aria-label="Link to your puzzle"></div>
   <div class="cactions col">
     <button class="btn primary" id="shareBtn">Share</button>
