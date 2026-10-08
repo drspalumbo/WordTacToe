@@ -363,6 +363,7 @@ function restore(snap) {
   state.pieces.forEach((p, i) => { p.cells = snap[i].map(c => c.slice()); });
 }
 function commit(moves, scoreDelay) {   // push history, apply a planned move
+  timerOnMove();
   state.undo.push(snapshot());
   if (state.undo.length > 100) state.undo.shift();
   state.redo.length = 0;
@@ -380,6 +381,7 @@ function updateUndoButtons() {
 }
 function doUndo() {
   if (!state.undo.length || state.busy) return;
+  timerOnMove();
   state.redo.push(snapshot());
   restore(state.undo.pop());
   setSelected(null); clearGhost(); clearBadges(); clearScribbles(); positionTiles(); updateUndoButtons();
@@ -389,6 +391,7 @@ function doUndo() {
 }
 function doRedo() {
   if (!state.redo.length || state.busy) return;
+  timerOnMove();
   state.undo.push(snapshot());
   restore(state.redo.pop());
   setSelected(null); clearGhost(); clearBadges(); clearScribbles(); positionTiles(); updateUndoButtons();
@@ -966,6 +969,7 @@ function scoreBoard() {
 
   // solved: finish without needing Check, once the dots have landed
   if (valid.every(Boolean)) {
+    timerStop(state.lastMoveMs);         // the time is when the last piece landed, not now
     const g = words.slice(0, 4);
     h.history.push({ mode: 'solve', marks: words.map(() => '✔️') });
     state.busy = true;
@@ -1271,8 +1275,8 @@ function flashEmptySquares() {
   }
 }
 
-// After solving, the drawer button puts the pieces back into the solution. It's
-// an ordinary undoable move, but it doesn't score or replay the win.
+// After solving, the drawer button puts the pieces back into the solution — an
+// ordinary undoable move that doesn't score — then brings the share card back up.
 function showSolution() {
   if (state.busy) return;
   const P = PUZZLES[state.idx], off = innerOff();
@@ -1281,11 +1285,24 @@ function showSolution() {
   const d = document.getElementById('drawer');
   d.classList.remove('open', 'peek');
   document.getElementById('drawerTab').setAttribute('aria-expanded', 'false');
-  if (JSON.stringify(moves) === JSON.stringify(state.pieces.map(p => p.cells))) return;
-  setSelected(null); clearGhost();
-  state.quietSolve = true;
-  commit(moves);
-  setMsg('Here’s the solution.', '');
+  // already showing the answer? (compare letters: two identical tiles swapped look the same)
+  const grid = currentGrid();
+  const inPlace = !!grid && grid.join('') === P.solution.join('') &&
+    state.pieces.every(p => p.cells.every(([r, c]) => r >= off && c >= off && r < off + 4 && c < off + 4));
+  if (!inPlace) {
+    setSelected(null); clearGhost();
+    state.quietSolve = true;
+    commit(moves);
+    setMsg('Here’s the solution.', '');
+  }
+  // then, once the pieces have settled, the share card
+  setTimeout(() => {
+    if (!isSolved()) return;
+    document.getElementById('cardTitle').textContent = 'Congratulations!';
+    document.getElementById('cardBody').textContent = '';
+    document.getElementById('cardWords').textContent = '';
+    openWinCard();
+  }, inPlace ? 250 : 900);
 }
 
 document.getElementById('drawerTab').addEventListener('click', () => {
@@ -1520,37 +1537,53 @@ document.getElementById('submitBtn').addEventListener('click', () => runCheck(fa
 // ------------------------------------------------- win summary / share text
 // One line per Grid Check used, then the solving line: ➡️ four row marks, ⬇️ four
 // column marks. Grid Check marks: ⭐ in the puzzle, 〰️ a word but not in the
-// puzzle, ✖️ not a word; the solving line is all ⭐, with 🎉 on its own line.
-// Then the count of Grid Checks and of words found. The summary is made once, at
-// the first solve, and stays as it was however the puzzle is played after that.
+// puzzle, ✖️ not a word; the solving line is all ⭐. Then the count of Grid Checks
+// and of words found. The summary is made once, at the first solve, and stays as
+// it was however the puzzle is played after that. The solve time (only if the
+// player switches it on) and the link are added when it's shown or shared.
 function buildSummary() {
   const h = state.hints[state.idx];
   const line = e => '➡️' + e.marks.slice(0, 4).join('') + '⬇️' + e.marks.slice(4).join('');
   const lines = h.history.filter(e => e.mode === 'super').map(line);
   const last = h.history[h.history.length - 1];
   if (last && last.marks.every(m => m === '✔️'))     // the solve: every word is in the puzzle
-    lines.push(line({ marks: last.marks.map(() => '⭐') }), '🎉');
+    lines.push(line({ marks: last.marks.map(() => '⭐') }));
   const s = h.history.filter(e => e.mode === 'super').length;
   const n = h.seen.length;                 // every distinct word made on this puzzle
   return { lines, count: `${s} Grid Check${s === 1 ? '' : 's'} · ${n} word${n === 1 ? '' : 's'} found` };
 }
 function summary() {
   const h = state.hints[state.idx];
-  return h.summary || buildSummary();
+  const s = h.summary || buildSummary();
+  // summaries saved before the 🎉 line was dropped still carry it
+  return { lines: s.lines.filter(l => l !== '🎉'), count: s.count };
+}
+const SHARE_TIME_KEY = 'danagram_share_time';
+// the solve time, but only once the player has chosen to share it
+function sharedTime() {
+  const t = timerOf(state.idx);
+  return t.done && store.get(SHARE_TIME_KEY) ? '⏱ ' + fmtTime(t.ms) : '';
 }
 function shareText() {
-  const s = summary();
-  return `${LABEL} #${state.idx + 1}\n` + s.lines.join('\n') + '\n' + s.count;
+  const s = summary(), t = sharedTime();
+  return `${LABEL} #${state.idx + 1}\n` + s.lines.join('\n') + '\n' + s.count +
+         (t ? '\n' + t : '') + '\ndanagram.fun';
 }
-function renderShare() {
+function renderShare(animate = true) {
   const el = document.getElementById('shareBlock');
-  const s = summary();
+  const s = summary(), t = sharedTime();
+  // the switch only appears when there's a recorded time to share
+  const row = document.getElementById('shareTimeRow');
+  row.hidden = !timerOf(state.idx).done;
+  document.getElementById('shareTime').checked = !!store.get(SHARE_TIME_KEY);
   if (!s.lines.length) { el.className = ''; el.innerHTML = ''; return; }
   el.innerHTML =
     `<div class="share-title">${LABEL} #${state.idx + 1}</div>` +
     s.lines.map(l => `<div class="share-line">${l}</div>`).join('') +
-    `<div class="share-count">${s.count}</div>`;
+    `<div class="share-count">${s.count}</div>` +
+    (t ? `<div class="share-count share-timeline">${t}</div>` : '');
   el.className = 'show';
+  if (!animate) return;
   el.querySelectorAll('.share-title, .share-line, .share-count').forEach((n, k) => {
     if (!n.animate) return;
     n.style.opacity = '0';
@@ -1649,6 +1682,10 @@ async function shareOrCopy(text, btn) {
   flashBtn(btn, 'Select the text above');
 }
 
+document.getElementById('shareTime').addEventListener('change', e => {
+  store.set(SHARE_TIME_KEY, e.target.checked);
+  renderShare(false);
+});
 document.getElementById('shareBtn').addEventListener('click', () => {
   shareOrCopy(shareText(), document.getElementById('shareBtn'));
 });
@@ -1718,6 +1755,7 @@ function onWin(g) {
   }
   // freeze the success summary at the first real solve
   const h = state.hints[state.idx];
+  if (!state.revealed) timerStop(state.lastMoveMs);
   if (!h.summary && !state.revealed) h.summary = buildSummary();
   updateMeta();
   updateSuper();                       // Grid Check → Show solution
@@ -1756,6 +1794,7 @@ function saveProgress(idx = state.idx) {
 }
 function flushProgress() {
   clearTimeout(progressTimer); progressTimer = null;
+  if (timerFrom !== null) { timerPause(); timerResume(); }   // bank the running stretch
   if (!dirtyPuzzles.size) return;
   saveSession();                               // the puzzle on screen
   const all = store.get(PROGRESS_KEY) || {};
@@ -1820,6 +1859,76 @@ if (darkQuery) {
 }
 applyTheme();
 
+// ------------------------------------------------------------- solve timer
+// Active play time: starts with the first move, pauses while the page is hidden
+// or another puzzle is on screen, and stops at the move that places the last
+// piece. Kept per puzzle in hints.time, so it's saved with the rest of progress.
+let timerFrom = null;                  // performance.now() when the current stretch began
+function timerOf(idx) {
+  const h = state.hints[idx];
+  if (!h.time) h.time = { ms: 0, started: false, done: false };
+  return h.time;
+}
+function timerNow(idx = state.idx) {
+  const t = timerOf(idx);
+  return t.ms + (idx === state.idx && timerFrom !== null ? performance.now() - timerFrom : 0);
+}
+function timerPause() {
+  if (timerFrom === null) return;
+  timerOf(state.idx).ms += performance.now() - timerFrom;
+  timerFrom = null;
+}
+function timerResume() {
+  const t = timerOf(state.idx);
+  if (t.started && !t.done && !document.hidden && timerFrom === null) timerFrom = performance.now();
+}
+function timerOnMove() {
+  const t = timerOf(state.idx);
+  if (t.done || isSolved()) return;
+  if (!t.started) { t.started = true; timerResume(); renderTimer(); }   // the pill starts ticking
+  state.lastMoveMs = timerNow();
+}
+function timerStop(atMs) {
+  const t = timerOf(state.idx);
+  if (t.done || !t.started) return;
+  t.ms = atMs != null ? atMs : timerNow();
+  t.done = true;
+  timerFrom = null;
+  renderTimer();
+}
+function fmtTime(ms) {
+  const s = Math.floor(ms / 1000), hh = Math.floor(s / 3600), mm = Math.floor(s / 60) % 60;
+  const ss = String(s % 60).padStart(2, '0');
+  return hh ? `${hh}:${String(mm).padStart(2, '0')}:${ss}` : `${mm}:${ss}`;
+}
+// the header pill: shown or folded away at the player's choice (remembered)
+const TIMER_SHOWN_KEY = 'danagram_timer_shown';
+let timerTick = null, lastTimerFit = '';
+function renderTimer() {
+  const btn = document.getElementById('timerBtn');
+  const open = !!store.get(TIMER_SHOWN_KEY);
+  btn.classList.toggle('open', open);
+  btn.setAttribute('aria-expanded', open ? 'true' : 'false');
+  btn.setAttribute('aria-label', open ? 'Hide timer' : 'Show timer');
+  const t = timerOf(state.idx);
+  const text = isSolved() && !t.started ? '–:––' : fmtTime(timerNow());
+  document.getElementById('timerText').textContent = text;
+  btn.classList.toggle('long', text.length > 5);
+  // refit the date line only when the pill's size changes, not on every tick —
+  // rebuilding it would swap out the ‹ › buttons under a finger
+  const fit = (open ? 'open' : 'shut') + text.length;
+  if (fit !== lastTimerFit) { lastTimerFit = fit; fitDailyLine(); }
+  clearInterval(timerTick); timerTick = null;
+  if (open && t.started && !t.done) timerTick = setInterval(renderTimer, 500);
+}
+document.getElementById('timerBtn').addEventListener('click', () => {
+  store.set(TIMER_SHOWN_KEY, !store.get(TIMER_SHOWN_KEY));
+  renderTimer();
+});
+document.addEventListener('visibilitychange', () => {
+  if (document.hidden) timerPause(); else { timerResume(); renderTimer(); }
+});
+
 // ------------------------------------------------------------ success card
 function openWinCard() {
   state.drag = null;
@@ -1859,6 +1968,7 @@ function saveSession() {
 function loadPuzzle(idx) {
   saveSession();                                 // preserve the puzzle we're leaving
   cancelScore();                                 // a pending score belongs to that puzzle
+  timerPause();                                  // and so does the running clock
   state.idx = (idx + PUZZLES.length) % PUZZLES.length;
   state.mode = 'free';
   const P = PUZZLES[state.idx];
@@ -1887,6 +1997,8 @@ function loadPuzzle(idx) {
   updateUndoButtons();
   updateMeta();
   updateSuper();
+  timerResume();
+  renderTimer();
   setMsg('Drag a piece, or tap it then tap a destination. Double-tap empty space to undo.');
 }
 
@@ -2100,14 +2212,33 @@ function renderDaily() {
   const back = state.dayBack && dailyIdx() > 0;
   const day = new Date();
   if (back) day.setDate(day.getDate() - 1);
-  const date = day.toLocaleDateString(undefined, { weekday: 'long', month: 'long', day: 'numeric' });
-  document.getElementById('dailyLine').innerHTML =
+  const line = date =>
     (!back && dailyIdx() > 0
       ? '<button class="day-nav" id="dayPrev" aria-label="Play yesterday’s puzzle">‹</button>' : '') +
     `<b>Test #${shownDayIdx() + 1}</b> · ${date}` +
     (!back && seasonOver() ? ' · last one for now' : '') +
     (back ? '<button class="day-nav" id="dayNext" aria-label="Back to today’s puzzle">›</button>' : '');
+  dailyLines = {
+    full: line(day.toLocaleDateString(undefined, { weekday: 'long', month: 'long', day: 'numeric' })),
+    short: line(day.toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' })),
+  };
+  fitDailyLine();
 }
+// The full date unless the open timer pill (top left) would touch it; then "Wed, Sep 30".
+let dailyLines = null;
+function fitDailyLine() {
+  if (!dailyLines) return;
+  const el = document.getElementById('dailyLine');
+  el.innerHTML = dailyLines.full;
+  const btn = document.getElementById('timerBtn');
+  if (!btn.classList.contains('open')) return;
+  // where the pill ends once fully open (it may still be animating open)
+  const pillRight = btn.getBoundingClientRect().left + 8 + 16 + 5 +
+                    document.getElementById('timerText').scrollWidth + 8 + 2;
+  const r = document.createRange(); r.selectNodeContents(el);
+  if (r.getBoundingClientRect().left < pillRight + 8) el.innerHTML = dailyLines.short;
+}
+window.addEventListener('resize', fitDailyLine);
 document.getElementById('dailyLine').addEventListener('click', e => {
   const b = e.target.closest('.day-nav');
   if (!b || state.busy) return;

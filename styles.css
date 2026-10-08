@@ -57,6 +57,22 @@
   }
   #themeBtn:hover{color:var(--ink); border-color:var(--ink-soft);}
   #themeBtn .icon-sun{display:none;}
+  /* the timer sits under the theme switch; open, it widens into a pill with the time */
+  #timerBtn{
+    position:fixed; top:52px; left:12px; z-index:45;
+    height:34px; min-width:34px; border-radius:17px; cursor:pointer; padding:0 8px;
+    border:1px solid var(--tile-line); background:var(--surface); color:var(--ink-soft);
+    display:flex; align-items:center; gap:0; touch-action:manipulation;
+    font:inherit; font-weight:800; font-size:13px; font-variant-numeric:tabular-nums;
+    transition:gap .25s ease;
+  }
+  #timerBtn svg{flex:none;}
+  #timerText{display:inline-block; max-width:0; overflow:hidden; white-space:nowrap; color:var(--ink);
+    transition:max-width .25s ease;}
+  #timerBtn.open{gap:5px;}
+  #timerBtn.open #timerText{max-width:64px;}
+  #timerBtn.long{font-size:11.5px;}           /* an hour or more: keep clear of the date line */
+  #timerBtn:hover{color:var(--ink); border-color:var(--ink-soft);}
   html.dark #themeBtn .icon-sun{display:block;}
   html.dark #themeBtn .icon-moon{display:none;}
   #dailyLine{
@@ -669,6 +685,21 @@
     max-height:calc(100vh - 40px); overflow-y:auto; -webkit-overflow-scrolling:touch;
   }
   .card-actions{display:flex; flex-direction:column; gap:9px; margin-top:16px;}
+  /* "Share my time": a small switch under the result, off unless the player turns it on */
+  .share-time{display:flex; align-items:center; justify-content:center; gap:9px; margin-top:12px;
+    font-size:13.5px; font-weight:700; color:var(--ink-soft); cursor:pointer; user-select:none;
+    touch-action:manipulation;}
+  .share-time[hidden]{display:none;}
+  .share-time input{position:absolute; opacity:0; width:1px; height:1px;}
+  .st-switch{position:relative; flex:none; width:34px; height:20px; border-radius:10px;
+    background:var(--track-2); transition:background .2s ease;}
+  .st-switch::after{content:''; position:absolute; top:2px; left:2px; width:16px; height:16px;
+    border-radius:50%; background:var(--surface); box-shadow:0 1px 2px rgba(20,32,45,.25);
+    transition:transform .2s ease;}
+  .share-time input:checked + .st-switch{background:var(--accent);}
+  .share-time input:checked + .st-switch::after{transform:translateX(14px);}
+  .share-time input:focus-visible + .st-switch{outline:2px solid var(--ink); outline-offset:2px;}
+  .share-timeline{margin-top:4px;}
   .card-actions .btn{width:100%; box-sizing:border-box; margin:0;}
 
   .confetti{
