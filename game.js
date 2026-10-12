@@ -72,6 +72,19 @@ const CUSTOM_IDX = (() => {
   return PUZZLES.length - 1;
 })();
 const isCustom = idx => idx === CUSTOM_IDX;
+// Arranging (?arrange=1, inside the Create page's Start step): just the board and
+// its controls. No scoring, saving, stats or timer. Untouched, it shows the
+// random start and reshuffles itself now and then; the first real move stops
+// that. Every change is posted to the Create page.
+const ARRANGE = CUSTOM_IDX >= 0 && /[?&]arrange=1/.test(location.search || '');
+let arrangeTouched = ARRANGE && !!PUZZLES[CUSTOM_IDX].start;   // a valid &s= start: already arranged
+if (ARRANGE) document.documentElement.classList.add('arrange');
+// a shared puzzle isn't the daily: say so in the heading (and the tab)
+if (CUSTOM_IDX >= 0) {
+  const h1 = document.querySelector('header h1');
+  if (h1 && h1.firstChild && h1.firstChild.nodeType === 3) h1.firstChild.textContent = 'Custom ';
+  document.title = 'Custom Danagram';
+}
 
 const S_MAX = 84;
 let state = {
@@ -424,6 +437,15 @@ function positionTiles() {
         `translate(${c * S + GAP}px, ${r * S + GAP}px)`;
     });
   });
+  if (ARRANGE) postArrange();
+}
+function postArrange() {
+  if (window.parent === window) return;
+  window.parent.postMessage({ type: 'danagram-arrange', touched: arrangeTouched,
+    // each piece's first cell, as a square (0–35) of the 6×6 board
+    start: state.pieces.map(p => p.cells[0][0] * 6 + p.cells[0][1]),
+    // the content's height (the document itself stretches to fill the frame)
+    height: Math.ceil(document.querySelector('.actions').getBoundingClientRect().bottom + window.scrollY + 8) }, '*');
 }
 
 function setSelected(sel) {
@@ -445,6 +467,7 @@ function restore(snap) {
   state.pieces.forEach((p, i) => { p.cells = snap[i].map(c => c.slice()); });
 }
 function commit(moves, scoreDelay) {   // push history, apply a planned move
+  if (ARRANGE) arrangeTouched = true;            // a real move: this is the creator's start now
   timerOnMove();
   state.undo.push(snapshot());
   if (state.undo.length > 100) state.undo.shift();
@@ -967,6 +990,7 @@ function cellSpot(r, c, off) {
 
 function scoreBoard() {
   scoreTimer = null;
+  if (ARRANGE) return;
   if (state.quietSolve) { state.quietSolve = false; return; }   // Show solution
   const h = state.hints[state.idx];
   const off = innerOff();
@@ -1885,6 +1909,7 @@ const dirtyPuzzles = new Set();
 let progressTimer = null;
 
 function saveProgress(idx = state.idx) {
+  if (ARRANGE) return;
   dirtyPuzzles.add(idx);
   clearTimeout(progressTimer);
   progressTimer = setTimeout(flushProgress, 250);
@@ -1993,6 +2018,7 @@ function localDay(d = new Date()) {
 }
 // Send (or update) this puzzle's row. finished=true once, at the first real solve.
 function sendPlay(finished = false, idx = state.idx) {
+  if (ARRANGE) return;
   if (!STATS_URL || store.get(NOTRACK_KEY)) return;
   const h = state.hints[idx], t = timerOf(idx);
   if (!t.started || h.statsDone) return;       // nothing played yet / final row already sent
@@ -2052,6 +2078,7 @@ function timerResume() {
   if (t.started && !t.done && !document.hidden && timerFrom === null) timerFrom = performance.now();
 }
 function timerOnMove() {
+  if (ARRANGE) return;
   const t = timerOf(state.idx);
   if (t.done || isSolved()) return;
   const h = state.hints[state.idx];
@@ -2561,7 +2588,7 @@ if (!DEV) {
   const meta = document.querySelector('.meta');
   if (meta) meta.style.display = 'none';
 }
-restoreProgress();
+if (!ARRANGE) restoreProgress();
 if (CUSTOM_IDX >= 0) state.idx = CUSTOM_IDX;     // so renderDaily shows the custom line
 renderDaily();
 loadPuzzle(CUSTOM_IDX >= 0 ? CUSTOM_IDX : DEV ? 0 : dailyIdx());
@@ -2577,5 +2604,32 @@ document.getElementById('introPlay').addEventListener('click', () => {
   document.getElementById('introOverlay').classList.remove('show');
   if (!store.get(HELP_SEEN)) showHelp();
 });
-if (isCustom(state.idx) && (CUSTOM_TEXT.title || CUSTOM_TEXT.note)) showIntro();
+if (ARRANGE) setupArrange();
+else if (isCustom(state.idx) && (CUSTOM_TEXT.title || CUSTOM_TEXT.note)) showIntro();
 else if (!store.get(HELP_SEEN)) showHelp();
+
+function setupArrange() {
+  const say = () => setMsg(arrangeTouched
+    ? 'This is where players will start. Drag, shuffle, undo: it’s all the game’s controls.'
+    : 'Players get a random start. Move any piece to set your own.');
+  say();
+  // untouched: a fresh random layout every few seconds (not undoable, not a move)
+  setInterval(() => {
+    if (arrangeTouched || state.busy || state.drag || state.sel || document.hidden) return;
+    scramble();
+    positionTiles();
+  }, 2600);
+  window.addEventListener('message', e => {
+    if (e.source !== window.parent || !e.data || e.data.type !== 'danagram-arrange-reset') return;
+    arrangeTouched = false;                      // back to a random start
+    PUZZLES[state.idx].start = null;
+    clearHistory(); setSelected(null); clearGhost();
+    startPosition(); positionTiles(); say();
+  });
+  let said = arrangeTouched;
+  document.addEventListener('pointerup', () => {   // the first move changes the caption
+    setTimeout(() => { if (arrangeTouched && !said) { said = true; say(); } postArrange(); }, 50);
+  });
+  window.addEventListener('resize', postArrange);
+  postArrange();
+}

@@ -476,7 +476,6 @@ function paintsFrom(groups, c) {
 // order), the board square (0–35) of its first cell; null = the game's own
 // random start. It's tied to the pieces it was made for (draft.startFor).
 const N6 = 6;
-let sel6 = null;                                   // {p, k}: piece and which of its cells was grabbed
 function startGroups() {
   const groups = Solver.piecesFrom(joins());
   const pieces = puzzlePieces(groups);
@@ -518,99 +517,34 @@ function startSolved(ps, start) {
   const rows = [0, 1, 2, 3].map(r => cell.slice(r * 4, r * 4 + 4).join(''));
   return Solver.wordsOf(rows).every(w => WORDSET.has(w) || gridWords().includes(w));
 }
-// a random spot for every piece, biggest first (not the game's scramble, just a start)
-function scrambleStart(ps) {
-  for (let tries = 0; tries < 200; tries++) {
-    const start = Array(ps.length), taken = new Set();
-    const order = ps.map((P, p) => p).sort((a, b) => ps[b].g.length - ps[a].g.length);
-    let ok = true;
-    for (const p of order) {
-      const spots = [];
-      for (let s = 0; s < N6 * N6; s++) {
-        const R = Math.floor(s / N6), C = s % N6;
-        const sq = ps[p].rel.map(([r, c]) => [R + r, C + c]);
-        if (sq.every(([r, c]) => r >= 0 && r < N6 && c >= 0 && c < N6 && !taken.has(r * N6 + c))) spots.push([s, sq]);
-      }
-      if (!spots.length) { ok = false; break; }
-      const [s, sq] = spots[Math.floor(Math.random() * spots.length)];
-      start[p] = s; sq.forEach(([r, c]) => taken.add(r * N6 + c));
-    }
-    if (ok && !startSolved(ps, start)) return start;
-  }
-  return null;
-}
 function setStart(start) {
   draft.start = start; draft.startFor = start ? shareCode() : null;
   saveDraft();
 }
 
+// The board is the game itself, in arranging mode (?arrange=1): the same pieces,
+// moves, undo/redo, scatter and shuffle. Untouched, it shows players' random start
+// and reshuffles itself; the first real move makes the layout the creator's start.
+// It posts every layout here; the warnings (and the "already solved" block) are ours.
+let arrangeSrc = '';
+function arrangeUrl() {
+  const c = paintParam(), st = startParam();
+  return '../?p=' + shareCode() + (c ? '&c=' + c : '') + (st ? '&s=' + st : '') + '&arrange=1';
+}
 function renderStart() {
-  const ps = startGroups(), custom = startValid();
-  const board = $('startBoard');
-  board.innerHTML = '';
-  board.classList.toggle('off', !custom);
-  const W = board.clientWidth, pad = 8, gap = 4;
-  const S = (W - 2 * pad - (N6 - 1) * gap) / N6, step = S + gap;
-  const at = (r, c) => [pad + c * step, pad + r * step];
-  // the squares, with the 4×4 the answer goes in marked
-  for (let r = 0; r < N6; r++) for (let c = 0; c < N6; c++) {
-    const q = document.createElement('div');
-    q.className = 'sq' + (r >= 1 && r <= 4 && c >= 1 && c <= 4 ? ' zone' : '');
-    const [x, y] = at(r, c);
-    Object.assign(q.style, { left: x + 'px', top: y + 'px', width: S + 'px', height: S + 'px' });
-    q.dataset.sq = r * N6 + c;
-    board.appendChild(q);
-  }
+  const frame = $('startFrame'), url = arrangeUrl();
+  if (url !== arrangeSrc) { arrangeSrc = url; frame.src = url; }
+  renderStartInfo();
+}
+function renderStartInfo() {
+  const custom = startValid();
+  $('startRandom').hidden = !custom;
   if (!custom) {
-    $('startHint').textContent = 'Players start from a random arrangement (the same one for everyone). ' +
-      'To set it yourself — tee up a red herring, or spell a message — arrange it here.';
-    const b = document.createElement('button');
-    b.className = 'btn primary sboard-go'; b.textContent = 'Arrange the start';
-    b.addEventListener('click', () => { setStart(scrambleStart(ps)); sel6 = null; renderStart(); });
-    board.appendChild(b);
-    $('startInfo').textContent = '';
-    $('startRandom').hidden = true; $('startScramble').hidden = true;
+    $('startInfo').textContent = 'Players get a random start, the same for everyone. ' +
+      'To set your own (a red herring, or a message), move any piece.';
     return;
   }
-  $('startHint').textContent = 'Drag pieces to where players will find them, or tap a piece and then a square.';
-  $('startRandom').hidden = false; $('startScramble').hidden = false;
-  const cov = covered(ps, draft.start);
-  ps.forEach((P, p) => {
-    const el = document.createElement('div');
-    el.className = 'spiece' + (sel6 && sel6.p === p ? ' sel' : '');
-    el.dataset.p = p;
-    const minR = Math.min(...cov[p].map(x => x[0])), minC = Math.min(...cov[p].map(x => x[1]));
-    const [ox, oy] = at(minR, minC);
-    Object.assign(el.style, { left: ox + 'px', top: oy + 'px' });
-    const has = (r, c) => cov[p].some(x => x[0] === r && x[1] === c);
-    cov[p].forEach(([r, c], k) => {
-      const t = document.createElement('div');
-      t.className = 'stile';
-      t.textContent = P.letters[k].toUpperCase();
-      t.dataset.k = k;
-      Object.assign(t.style, { left: (c - minC) * step + 'px', top: (r - minR) * step + 'px',
-                               width: S + 'px', height: S + 'px', fontSize: S * .46 + 'px',
-                               background: P.colour || 'var(--tile)' });
-      if (P.colour) t.style.boxShadow = 'none';
-      // square off corners where it joins the rest of its piece
-      const up = has(r - 1, c), dn = has(r + 1, c), lf = has(r, c - 1), rt = has(r, c + 1), R = 10;
-      t.style.borderRadius = [(!up && !lf) ? R : 0, (!up && !rt) ? R : 0,
-                              (!dn && !rt) ? R : 0, (!dn && !lf) ? R : 0].map(v => v + 'px').join(' ');
-      el.appendChild(t);
-      // bridges to the right and below, so a piece reads as one shape
-      [[0, 1], [1, 0]].forEach(([dr, dc]) => {
-        if (!has(r + dr, c + dc)) return;
-        const b = document.createElement('div');
-        b.className = 'sbridge';
-        Object.assign(b.style, dc
-          ? { left: ((c - minC) * step + S - 1) + 'px', top: (r - minR) * step + 'px', width: gap + 2 + 'px', height: S + 'px' }
-          : { left: (c - minC) * step + 'px', top: ((r - minR) * step + S - 1) + 'px', width: S + 'px', height: gap + 2 + 'px' });
-        b.style.background = P.colour;
-        el.appendChild(b);
-      });
-    });
-    board.appendChild(el);
-  });
+  const ps = startGroups(), cov = covered(ps, draft.start);
   const inZone = cov.flat().filter(([r, c]) => r >= 1 && r <= 4 && c >= 1 && c <= 4).length;
   // words the start already shows (a free point for the player); stronger if it's
   // a word from the answer. Warnings only: a creator may want either on purpose.
@@ -618,12 +552,11 @@ function renderStart() {
   const answer = answerWords();
   const fmt = list => list.map(([name, w]) => `${name}: ${w.toUpperCase()}`).join(', ');
   const inAnswer = shown.filter(([, w]) => answer.has(w)), other = shown.filter(([, w]) => !answer.has(w));
-  $('startInfo').innerHTML = `${inZone} of 16 squares in the middle are filled.` +
+  $('startInfo').innerHTML = `Your start: ${inZone} of 16 squares in the middle are filled.` +
     (inAnswer.length ? `<br><span class="bad">⚠ The start shows ${inAnswer.length === 1 ? 'an answer word' : 'answer words'}
        (${fmt(inAnswer)}). That gives part of the solution away.</span>` : '') +
     (other.length ? `<br><span class="warn">Heads up: the start already spells ${fmt(other)}.
        Players get ${other.length === 1 ? 'it' : 'them'} for free.</span>` : '');
-  startBoardGeom = { pad, step, S };
 }
 // the words a start shows, by the game's rule: a full row or column of the middle
 // 4×4 that's a word, and doesn't run on (a piece at either end carrying on past it)
@@ -637,9 +570,12 @@ function startWords(ps, start) {
     const hits = cells.map(([r, c]) => at.get(r * N6 + c));
     if (hits.some(h => !h)) continue;
     const [dr, dc] = i < 4 ? [0, 1] : [1, 0];
-    const runsOn = ([r, c], [br, bc], h) => { const b = at.get(br * N6 + bc); return br >= 0 && bc >= 0 && br < N6 && bc < N6 && b && b[0] === h[0]; };
+    const runsOn = ([br, bc], h) => {
+      const b = br >= 0 && bc >= 0 && br < N6 && bc < N6 && at.get(br * N6 + bc);
+      return !!b && b[0] === h[0];
+    };
     const [f, l] = [cells[0], cells[3]];
-    if (runsOn(f, [f[0] - dr, f[1] - dc], hits[0]) || runsOn(l, [l[0] + dr, l[1] + dc], hits[3])) continue;
+    if (runsOn([f[0] - dr, f[1] - dc], hits[0]) || runsOn([l[0] + dr, l[1] + dc], hits[3])) continue;
     const w = hits.map(h => h[1]).join('');
     if (WORDSET.has(w) || extra.has(w)) out.push([i < 4 ? `row ${i + 1}` : `column ${i - 3}`, w]);
   }
@@ -651,74 +587,30 @@ function answerWords() {
   if (lastSolve) lastSolve.grids.forEach(g => Solver.wordsOf(g).forEach(w => set.add(w)));
   return set;
 }
-let startBoardGeom = null;
-
-// drag: the grabbed piece follows the finger and snaps to the nearest squares on
-// release; a drop that's off the board or on another piece goes back. A tap
-// (no movement) selects the piece; then tapping a square moves the grabbed cell there.
-let drag6 = null;
-$('startBoard').addEventListener('pointerdown', e => {
-  const t = e.target.closest('.stile');
-  if (!t) return;
-  e.preventDefault();
-  const el = t.parentElement;
-  drag6 = { p: +el.dataset.p, k: +t.dataset.k, el, x: e.clientX, y: e.clientY, moved: false,
-            left: parseFloat(el.style.left), top: parseFloat(el.style.top) };
-  el.setPointerCapture(e.pointerId);
-  el.classList.add('lift');
-});
-$('startBoard').addEventListener('pointermove', e => {
-  if (!drag6) return;
-  const dx = e.clientX - drag6.x, dy = e.clientY - drag6.y;
-  if (Math.abs(dx) + Math.abs(dy) > 6) drag6.moved = true;
-  if (drag6.moved) {
-    drag6.el.style.left = drag6.left + dx + 'px';
-    drag6.el.style.top = drag6.top + dy + 'px';
-  }
-});
-function moveGrabbed(p, k, R, C) {               // put piece p's cell k on square (R, C)
+window.addEventListener('message', e => {
+  const frame = $('startFrame');
+  if (!frame || e.source !== frame.contentWindow || !e.data || e.data.type !== 'danagram-arrange') return;
+  if (e.data.height) frame.style.height = e.data.height + 'px';
+  if (draft.step !== 'start') return;
   const ps = startGroups();
-  const [kr, kc] = ps[p].rel[k];
-  const start = draft.start.slice();
-  start[p] = (R - kr) * N6 + (C - kc);
-  const r0 = R - kr, c0 = C - kc;
-  if (r0 < 0 || c0 < 0 || r0 >= N6 || c0 >= N6 || !fits(ps, start)) return 'blocked';
-  if (startSolved(ps, start)) return 'solved';
-  setStart(start);
-  return 'ok';
-}
-$('startBoard').addEventListener('pointerup', e => {
-  if (!drag6) return;
-  const d = drag6; drag6 = null;
-  d.el.classList.remove('lift');
-  if (!d.moved) {                                // a tap: select, or deselect
-    sel6 = sel6 && sel6.p === d.p ? null : { p: d.p, k: d.k };
-    renderStart();
+  const start = e.data.start;
+  if (!Array.isArray(start) || start.length !== ps.length) return;
+  if (!e.data.touched) { if (draft.start) setStart(null); renderStartInfo(); return; }
+  if (startSolved(ps, start)) {                  // keep the last start that wasn't the answer
+    renderStartInfo();
+    $('startInfo').innerHTML = '<span class="bad">That’s the answer! Players would start solved — move something.</span>';
     return;
   }
-  const { pad, step } = startBoardGeom;
-  const t = d.el.querySelector(`.stile[data-k="${d.k}"]`);
-  const R = Math.round((parseFloat(d.el.style.top) + parseFloat(t.style.top) - pad) / step);
-  const C = Math.round((parseFloat(d.el.style.left) + parseFloat(t.style.left) - pad) / step);
-  const res = moveGrabbed(d.p, d.k, R, C);
-  sel6 = null;
-  renderStart();
-  if (res !== 'ok') $('startInfo').textContent = res === 'solved'
-    ? 'That would start the puzzle solved!' : 'It doesn’t fit there.';
+  setStart(start);
+  renderStartInfo();
 });
-$('startBoard').addEventListener('pointercancel', () => { drag6 = null; renderStart(); });
-$('startBoard').addEventListener('click', e => {
-  const q = e.target.closest('.sq');
-  if (!q || !sel6) return;
-  const s = +q.dataset.sq;
-  const res = moveGrabbed(sel6.p, sel6.k, Math.floor(s / N6), s % N6);
-  if (res === 'ok') sel6 = null;
-  renderStart();
-  if (res !== 'ok') $('startInfo').textContent = res === 'solved'
-    ? 'That would start the puzzle solved!' : 'It doesn’t fit there.';
+$('startRandom').addEventListener('click', () => {
+  setStart(null);
+  const frame = $('startFrame');
+  if (frame.contentWindow) frame.contentWindow.postMessage({ type: 'danagram-arrange-reset' }, '*');
+  arrangeSrc = arrangeUrl();                     // the frame's own state matches; no reload
+  renderStartInfo();
 });
-$('startScramble').addEventListener('click', () => { setStart(scrambleStart(startGroups())); sel6 = null; renderStart(); });
-$('startRandom').addEventListener('click', () => { setStart(null); sel6 = null; renderStart(); });
 $('backToPieces2').addEventListener('click', () => showStep('pieces'));
 $('toShare').addEventListener('click', () => showStep('share'));
 // for the link: one base-36 character per piece

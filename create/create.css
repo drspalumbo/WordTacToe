@@ -200,3 +200,7 @@ html.dark .sboard .sq.zone{background:rgba(255,255,255,.09);}
 .cgrid.pieces.painting .joint{display:none;}
 .cgrid.pieces.painting .ccell{cursor:copy;}
 .piece-info .bad{color:var(--bad);}
+
+/* Start step: the game itself, arranging (sized to its content by its messages) */
+.arrange-frame{width:calc(100% + 28px); max-width:420px; margin:0 -14px; height:480px; border:0;
+  display:block; background:transparent;}
