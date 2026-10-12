@@ -69,7 +69,7 @@ let state = {
   hints: PUZZLES.map(() => ({ seen: [], crossings: [], charge: 0, spent: 0,
                               found: [], inList: [], outList: [], history: [] })),
 };
-const HINT_THRESHOLD = 5;      // charge points needed per Super Check
+const HINT_THRESHOLD = 8;      // charge points needed per Super Check
 let S = 72, GAP = 3;
 
 const board = document.getElementById('board');
@@ -203,7 +203,8 @@ function tryMove(pi, anchor, tr, tc, mode) {
 }
 
 // -------------------------------------------------------------- scramble
-function scramble() {
+// rand: Math.random for a shuffle; a seeded one for a puzzle's starting position
+function scramble(rand = Math.random) {
   const P = PUZZLES[state.idx];
   state.pieces.forEach((p, i) => {
     p.cells = P.pieces[i].cells.map(c => c.slice());
@@ -231,9 +232,9 @@ function scramble() {
   let applied = 0, guard = 0;
   while ((applied < 45 || solvedAt0()) && guard < 6000) {
     guard++;
-    const pi = Math.floor(Math.random() * state.pieces.length);
-    const anchor = Math.floor(Math.random() * state.pieces[pi].cells.length);
-    const tr = Math.floor(Math.random() * 4), tc = Math.floor(Math.random() * 4);
+    const pi = Math.floor(rand() * state.pieces.length);
+    const anchor = Math.floor(rand() * state.pieces[pi].cells.length);
+    const tr = Math.floor(rand() * 4), tc = Math.floor(rand() * 4);
     const res = tryMove(pi, anchor, tr, tc, 'strict');
     if (res.ok) { res.apply(); applied++; }
   }
@@ -1605,8 +1606,11 @@ function buildSummary() {
   if (last && last.marks.every(m => m === '✔️'))     // the solve: every word is in the puzzle
     lines.push(line({ marks: last.marks.map(() => '⭐') }));
   const s = h.history.filter(e => e.mode === 'super').length;
-  const n = h.seen.length;                 // every distinct word made on this puzzle
-  return { lines, count: `${s} Grid Check${s === 1 ? '' : 's'} · ${n} word${n === 1 ? '' : 's'} found` };
+  // extra words: every distinct word made, minus the puzzle's own (usually 8, fewer
+  // if a word repeats), so it reads as what the player found beyond the answer
+  const own = new Set(Solver.wordsOf(PUZZLES[state.idx].solution)).size;
+  const n = Math.max(0, h.seen.length - own);
+  return { lines, count: `${s} Grid Check${s === 1 ? '' : 's'} · +${n} word${n === 1 ? '' : 's'} found` };
 }
 function summary() {
   const h = state.hints[state.idx];
@@ -2129,9 +2133,9 @@ function loadPuzzle(idx) {
     state.pieces.forEach((p, i) => { p.cells = sess.cells[i].map(c => c.slice()); });
     state.undo = sess.undo.map(deepCells);
     state.redo = sess.redo.map(deepCells);
-  } else {                                       // first visit → fresh scramble
+  } else {                                       // first visit → the puzzle's starting position
     state.undo = []; state.redo = [];
-    scramble();
+    startPosition();
     saveProgress();
   }
 
@@ -2148,6 +2152,27 @@ function loadPuzzle(idx) {
 
 document.getElementById('prevBtn').addEventListener('click', () => !state.busy && loadPuzzle(state.idx - 1));
 document.getElementById('nextBtn').addEventListener('click', () => !state.busy && loadPuzzle(state.idx + 1));
+// Every player starts from the same position, like a newspaper puzzle: a puzzle's
+// own start (P.start: cells per piece, on the 6×6 board) if it has one, otherwise a
+// scramble seeded by the puzzle itself.
+function seededRand(seed) {                      // mulberry32
+  return () => {
+    seed = (seed + 0x6D2B79F5) | 0;
+    let t = Math.imul(seed ^ (seed >>> 15), 1 | seed);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+function startPosition() {
+  const P = PUZZLES[state.idx];
+  if (Array.isArray(P.start) && P.start.length === state.pieces.length) {
+    state.pieces.forEach((p, i) => { p.cells = P.start[i].map(c => c.slice()); });
+    state.revealed = false;
+    return;
+  }
+  scramble(seededRand(parseInt(puzzleHash(state.idx), 16)));
+}
+
 // Shuffle the current arrangement with random legal moves — one undo reverts it.
 function doShuffle() {
   if (state.busy) return;
@@ -2387,11 +2412,12 @@ function fitDailyLine() {
   el.innerHTML = dailyLines.full;
   const btn = document.getElementById('timerBtn');
   if (!btn.classList.contains('open')) return;
-  // where the pill ends once fully open (it may still be animating open)
-  const pillRight = btn.getBoundingClientRect().left + 8 + 16 + 5 +
-                    document.getElementById('timerText').scrollWidth + 8 + 2;
+  // the pill hangs under ☰ (top right) and grows leftward: where its left edge ends
+  // up once fully open (it may still be animating)
+  const pillLeft = btn.getBoundingClientRect().right - (8 + 16 + 5 +
+                   document.getElementById('timerText').scrollWidth + 8 + 2);
   const r = document.createRange(); r.selectNodeContents(el);
-  if (r.getBoundingClientRect().left < pillRight + 8) el.innerHTML = dailyLines.short;
+  if (r.getBoundingClientRect().right > pillLeft - 8) el.innerHTML = dailyLines.short;
 }
 window.addEventListener('resize', fitDailyLine);
 document.getElementById('dailyLine').addEventListener('click', e => {
@@ -2442,11 +2468,51 @@ function showHelp() {
   document.getElementById('helpOverlay').classList.add('show');
   showHelpPage(1);
 }
+// The first time help is closed it folds into the menu's ? (the menu opens to
+// catch it), then the menu closes after a beat: that's where help lives.
 function hideHelp() {
-  document.getElementById('helpOverlay').classList.remove('show');
+  const ov = document.getElementById('helpOverlay');
+  const first = !store.get(HELP_SEEN);
   store.set(HELP_SEEN, 1);
+  if (!first || !ov.classList.contains('show')) { ov.classList.remove('show'); return; }
+  setMenu(true);
+  const help = document.getElementById('helpBtn');
+  const land = () => {
+    ov.classList.remove('show');
+    help.classList.add('landed');
+    setTimeout(() => { help.classList.remove('landed'); setMenu(false); }, 1100);
+  };
+  const card = ov.querySelector('.card');
+  const reduce = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
+  if (reduce || !card.animate) { land(); return; }
+  // where the ? will be once the menu has unfolded: 120px under ☰
+  const from = card.getBoundingClientRect(), m = document.getElementById('menuBtn').getBoundingClientRect();
+  const to = { x: m.left + m.width / 2, y: m.top + 120 + m.height / 2 };
+  const dx = to.x - (from.left + from.width / 2), dy = to.y - (from.top + from.height / 2);
+  const k = m.width / Math.max(from.width, from.height);
+  card.animate([{ transform: 'none', opacity: 1, borderRadius: '20px' },
+                { transform: `translate(${dx}px, ${dy}px) scale(${k})`, opacity: .3, borderRadius: '200px' }],
+               { duration: 480, easing: 'cubic-bezier(.5,0,.75,.4)' });
+  ov.animate([{ backgroundColor: getComputedStyle(ov).backgroundColor }, { backgroundColor: 'rgba(0,0,0,0)' }],
+             { duration: 480 });
+  setTimeout(land, 470);
 }
-document.getElementById('helpBtn').addEventListener('click', showHelp);
+document.getElementById('helpBtn').addEventListener('click', () => { setMenu(false); showHelp(); });
+
+// ---------------------------------------------------------------- the menu
+function setMenu(open) {
+  const m = document.getElementById('menu');
+  m.classList.toggle('open', open);
+  document.getElementById('menuBtn').setAttribute('aria-expanded', open ? 'true' : 'false');
+  document.getElementById('menuBtn').setAttribute('aria-label', open ? 'Close menu' : 'Menu');
+  fitDailyLine();
+}
+document.getElementById('menuBtn').addEventListener('click', () =>
+  setMenu(!document.getElementById('menu').classList.contains('open')));
+// a tap anywhere else folds it
+document.addEventListener('pointerdown', e => {
+  if (!e.target.closest('#menu')) setMenu(false);
+});
 document.getElementById('closeHelp').addEventListener('click', hideHelp);
 document.getElementById('closeHelp2').addEventListener('click', hideHelp);
 document.getElementById('closeHelp3').addEventListener('click', hideHelp);
