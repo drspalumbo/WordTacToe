@@ -322,6 +322,9 @@ function metrics() {
   const size = S * cols();
   board.style.width = size + 'px';
   board.style.height = size + 'px';
+  // the board's width, so the header, message and (on wide screens) the word bank
+  // line up with it rather than with the page
+  document.documentElement.style.setProperty('--board-w', size + 'px');
   board.style.backgroundImage = 'none';        // outer scratch area is plain
   // grid lines live only in the inner 4×4 target zone
   zone.style.left = S + 'px'; zone.style.top = S + 'px';
