@@ -1140,18 +1140,18 @@ function layoutDrawer() {
   document.getElementById('drawerEdgePath').setAttribute('d', d);
 }
 
-// Word bank order, the player's pick (remembered): 'recent' = newest made first,
-// 'abc' = alphabetical. Applies to all three lists. (During a Grid Check the
+// Word bank order, the player's pick (remembered): 'abc' = alphabetical (the
+// default), 'recent' = newest made first. Applies to all three lists. (During a Grid Check the
 // sorted lists run ticker-style instead: each word drops in at the top.)
 const BANK_SORT_KEY = 'danagram_bank_sort';
-const bankSort = () => store.get(BANK_SORT_KEY) === 'abc' ? 'abc' : 'recent';
+const bankSort = () => store.get(BANK_SORT_KEY) === 'recent' ? 'recent' : 'abc';
 // the switch itself: small text in the Found header line (or its own line when
 // there's no Found list), the active one bold and underlined
 function bankSortHtml() {
   const b = (k, label) => `<button data-sort="${k}" aria-pressed="${bankSort() === k}"` +
     `${bankSort() === k ? ' class="on"' : ''}>${label}</button>`;
-  return `<span class="bank-sort" role="group" aria-label="Sort words">${b('recent', 'Recent')}` +
-    `<i aria-hidden="true">·</i>${b('abc', 'A–Z')}</span>`;
+  return `<span class="bank-sort" role="group" aria-label="Sort words">${b('abc', 'A–Z')}` +
+    `<i aria-hidden="true">·</i>${b('recent', 'Recent')}</span>`;
 }
 document.getElementById('wordLists').addEventListener('click', e => {
   const b = e.target.closest('button[data-sort]');
