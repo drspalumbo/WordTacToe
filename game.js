@@ -2387,9 +2387,9 @@ window.addEventListener('resize', () => { metrics(); positionTiles(); clearBadge
 
 // ------------------------------------------------------------------ the daily
 // Danagram #1. PERMANENT once launched — it defines what "#47" means in every
-// shared result forever. Soft launch as "Danagram Test" (see LABEL) from Oct 8 2026.
+// shared result forever. Soft-launched as "Danagram Test" from Oct 8 2026; full name from Oct 11.
 const EPOCH = '2026-10-08';
-const LABEL = 'Danagram Test';   // shown in the header and share text; drop "Test" at full launch
+const LABEL = 'Danagram';        // shown in the share text
 
 const localMidnight = d =>
   new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime();
@@ -2423,7 +2423,7 @@ function renderDaily() {
   const line = date =>
     (!back && dailyIdx() > 0
       ? '<button class="day-nav" id="dayPrev" aria-label="Play yesterday’s puzzle">‹</button>' : '') +
-    `<b>Test #${shownDayIdx() + 1}</b> · ${date}` +
+    `<b>#${shownDayIdx() + 1}</b> · ${date}` +
     (!back && seasonOver() ? ' · last one for now' : '') +
     (back ? '<button class="day-nav" id="dayNext" aria-label="Back to today’s puzzle">›</button>' : '');
   dailyLines = {
