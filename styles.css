@@ -156,6 +156,8 @@
 /* → the Create page (Tools & Tips, and the win card) */
 .make-link{display:block; margin:12px auto 0; text-align:center; font-size:13.5px; font-weight:800;
   color:var(--accent); text-decoration:none; touch-action:manipulation;}
+/* the menu's make-your-own icon (a grid with a + at its corner), inline with the text */
+.make-icon{display:inline-block; vertical-align:-2px; margin-right:3px;}
 
 #helpOverlay{
     position:fixed; inset:0; background:rgba(28,40,54,.45); display:none;
