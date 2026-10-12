@@ -37,6 +37,7 @@
   <ol class="steps" aria-label="Steps">
     <li data-step="letters">Letters</li>
     <li data-step="pieces">Pieces</li>
+    <li data-step="start">Start</li>
     <li data-step="share">Share</li>
   </ol>
 </header>
@@ -59,17 +60,40 @@
   <p class="step-hint">Tap two neighbouring tiles (or the dot between them) to join them into one piece. Tap again to split. Unjoined tiles are single tiles.</p>
   <div class="cgrid pieces" id="pieceGrid"></div>
   <p class="piece-info" id="pieceInfo"></p>
+  <details class="diff-detail color-detail" id="colorDetail">
+    <summary>Colors</summary>
+    <div class="color-body">
+      <p>Pick a color, then tap pieces to paint them. Auto puts a piece back.</p>
+      <div class="swatches" id="swatches"></div>
+      <button class="mlink" id="resetColors">Reset all colors</button>
+    </div>
+  </details>
   <details class="diff-detail" id="diffDetail">
     <summary>How is difficulty worked out?</summary>
     <div id="diffBody"></div>
   </details>
   <div class="cactions">
     <button class="btn ghost" id="backToLetters">‹ Letters</button>
+    <button class="btn primary" id="toStart">Next: start →</button>
+  </div>
+</section>
+
+<!-- 3. start: where the pieces sit when a player opens the puzzle -->
+<section class="step" id="stepStart" hidden>
+  <p class="step-hint" id="startHint"></p>
+  <div class="sboard" id="startBoard"></div>
+  <p class="piece-info" id="startInfo" aria-live="polite"></p>
+  <div class="cactions">
+    <button class="btn ghost small" id="startRandom">Random start</button>
+    <button class="btn ghost small" id="startScramble">Shuffle</button>
+  </div>
+  <div class="cactions">
+    <button class="btn ghost" id="backToPieces2">‹ Pieces</button>
     <button class="btn primary" id="toShare">Next: share →</button>
   </div>
 </section>
 
-<!-- 3. share -->
+<!-- 4. share -->
 <section class="step" id="stepShare" hidden>
   <p class="step-hint" id="shareSummary"></p>
   <p class="piece-info share-diff"><span class="diff" id="shareDiff"></span></p>
@@ -84,7 +108,7 @@
   <div class="cactions col">
     <button class="btn primary" id="shareBtn">Share</button>
     <a class="btn ghost" id="playLink" href="#">Play it yourself</a>
-    <button class="btn ghost" id="backToPieces">‹ Pieces</button>
+    <button class="btn ghost" id="backToPieces">‹ Start</button>
     <button class="btn ghost" id="startOver">Start a new one</button>
   </div>
   <p class="share-note" id="shareNote"></p>

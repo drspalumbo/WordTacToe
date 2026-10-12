@@ -9,6 +9,7 @@
     --track:#EEF1F4; --track-2:#DCE3E9;           /* unfilled meters */
     --divider:#EEF2F5;
     --o1:#F5C48C; --o2:#A9D9BE; --o3:#B5C7F0; --o4:#DDBEE8; --o5:#EFDE9C; --o6:#E8B3A6;
+    --o7:#F2B8C8; --o8:#CBD3DA; --o9:#C9E39E;   /* extra colours for Create */
     --radius:14px;
   }
   /* ---------------------------------------------------------------- dark mode
@@ -24,6 +25,7 @@
     --good:#3DB57F; --bad:#E55A6F; --purple:#8C6FE6;
     --charge:#4F7FE0; --charge-press:#3462C4;
     --o1:#7C5A35; --o2:#335E49; --o3:#3A4B7A; --o4:#5E4470; --o5:#6E6230; --o6:#74443B;
+    --o7:#7A3E55; --o8:#4A545E; --o9:#4E6A2C;
     --surface:#1B2229; --surface-soft:#222A32;
     --track:#2A333C; --track-2:#323C46;
     --divider:#252E37;

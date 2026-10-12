@@ -5,6 +5,19 @@
 
 const OCOLORS = ['var(--o1)', 'var(--o2)', 'var(--o3)', 'var(--o4)', 'var(--o5)', 'var(--o6)'];
 const DRAFT_KEY = 'danagram_create_draft';
+// Colours a creator can paint a piece (or single tile) with. Codes go in the link
+// one per piece (&c=): 0 = automatic, 1–9 = these, a = plain tile. The game has the same list.
+const PALETTE = { 1: 'var(--o1)', 2: 'var(--o2)', 3: 'var(--o3)', 4: 'var(--o4)', 5: 'var(--o5)',
+                  6: 'var(--o6)', 7: 'var(--o7)', 8: 'var(--o8)', 9: 'var(--o9)', a: 'var(--tile)' };
+// each piece's colour: painted, or the automatic one (null = a plain single tile)
+function pieceColours(groups, paints = {}) {
+  let auto = 0;
+  return groups.map(g => {
+    const own = g.length > 1 ? OCOLORS[auto++ % OCOLORS.length] : null;
+    const code = (paints || {})[g[0]];
+    return code && PALETTE[code] ? PALETTE[code] : own;
+  });
+}
 const $ = id => document.getElementById(id);
 const escHtml = s => String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
 
@@ -28,10 +41,10 @@ function showStep(step) {
   if (step !== 'letters' && step !== 'mine' && !lettersReady()) step = 'letters';
   if (step !== 'mine') { draft.step = step; saveDraft(); }
   $('myBtn').hidden = step === 'mine';
-  ['letters', 'pieces', 'share', 'mine'].forEach(s => {
+  ['letters', 'pieces', 'start', 'share', 'mine'].forEach(s => {
     $('step' + s[0].toUpperCase() + s.slice(1)).hidden = s !== step;
   });
-  const order = ['letters', 'pieces', 'share'];
+  const order = ['letters', 'pieces', 'start', 'share'];
   document.querySelectorAll('.steps li').forEach(li => {
     const k = order.indexOf(li.dataset.step), at = order.indexOf(step);
     li.classList.toggle('on', k === at);
@@ -39,6 +52,7 @@ function showStep(step) {
   });
   if (step === 'letters') renderLetters();
   if (step === 'pieces') renderPieces();
+  if (step === 'start') renderStart();
   if (step === 'share') renderShare();
   if (step === 'mine') renderMine();
   window.scrollTo(0, 0);
@@ -279,6 +293,13 @@ function toggleJoin(a, b) {
   draft.joins = [...j]; saveDraft(); renderPieces();
 }
 function tapTile(i) {
+  if (painting()) {                              // Colors open: tapping paints the whole piece
+    const g = Solver.piecesFrom(joins()).find(g => g.includes(i));
+    draft.colors = Object.assign({}, draft.colors);
+    if (brush === '0') delete draft.colors[g[0]]; else draft.colors[g[0]] = brush;
+    saveDraft(); renderPieces();
+    return;
+  }
   if (selected === -1) selected = i;
   else if (selected === i) selected = -1;
   else if (adjacent(selected, i)) { toggleJoin(selected, i); selected = -1; }
@@ -292,9 +313,9 @@ function renderPieces() {
   const j = joins();
   const groups = Solver.piecesFrom(j);
   const pieceOf = Array(16);
-  let colour = 0;
-  const colours = groups.map(g => g.length > 1 ? OCOLORS[colour++ % OCOLORS.length] : null);
+  const colours = pieceColours(groups, draft.colors);
   groups.forEach((g, p) => g.forEach(i => { pieceOf[i] = p; }));
+  grid.classList.toggle('painting', painting());
 
   const R = 12;
   pcells.forEach((d, i) => {
@@ -412,7 +433,296 @@ function difficultyOf(groups, nSolutions) {
 }
 const starRow = n => `<span class="stars" aria-label="${n} of 5 stars">${'★'.repeat(n)}<span class="off">${'★'.repeat(5 - n)}</span></span>`;
 $('backToLetters').addEventListener('click', () => showStep('letters'));
+$('toStart').addEventListener('click', () => showStep('start'));
+
+// ---- Colors fold-out: while it's open, tapping a piece paints it with the brush
+let brush = '1';
+const painting = () => $('colorDetail').open;
+(function buildSwatches() {
+  const box = $('swatches');
+  [['0', null, 'Auto'], ...Object.entries(PALETTE).map(([k, v]) => [k, v, null])].forEach(([code, css, label]) => {
+    const b = document.createElement('button');
+    b.className = 'swatch' + (code === '0' ? ' auto' : '');
+    b.dataset.code = code;
+    b.setAttribute('aria-label', label || (code === 'a' ? 'Plain' : 'Colour ' + code));
+    if (css) b.style.background = css;
+    if (label) b.textContent = label;
+    b.addEventListener('click', () => { brush = code; renderSwatches(); });
+    box.appendChild(b);
+  });
+})();
+function renderSwatches() {
+  document.querySelectorAll('.swatch').forEach(b => b.classList.toggle('on', b.dataset.code === brush));
+}
+$('colorDetail').addEventListener('toggle', () => { selected = -1; renderSwatches(); renderPieces(); });
+$('resetColors').addEventListener('click', () => { draft.colors = {}; saveDraft(); renderPieces(); });
+// for the link: one code per piece, or nothing if every piece is automatic
+function paintParam(groups = Solver.piecesFrom(joins()), paints = draft.colors || {}) {
+  const c = groups.map(g => PALETTE[paints[g[0]]] ? paints[g[0]] : '0').join('');
+  return /[^0]/.test(c) ? c : '';
+}
+// and back: a code string (one per piece) → paints keyed by each piece's first cell
+function paintsFrom(groups, c) {
+  if (c && typeof c === 'object') return c;
+  if (!c || typeof c !== 'string' || c.length !== groups.length) return {};
+  const out = {};
+  groups.forEach((g, p) => { if (PALETTE[c[p]]) out[g[0]] = c[p]; });
+  return out;
+}
+
+// -------------------------------------------------------------- 3. start
+// Where the pieces sit when a player opens the puzzle, on the game's 6×6 board
+// (the answer goes in the middle 4×4). draft.start: per piece (in piecesFrom
+// order), the board square (0–35) of its first cell; null = the game's own
+// random start. It's tied to the pieces it was made for (draft.startFor).
+const N6 = 6;
+let sel6 = null;                                   // {p, k}: piece and which of its cells was grabbed
+function startGroups() {
+  const groups = Solver.piecesFrom(joins());
+  const pieces = puzzlePieces(groups);
+  const colours = pieceColours(groups, draft.colors);
+  return groups.map((g, p) => ({
+    g, letters: pieces[p].letters,
+    rel: g.map(i => [Math.floor(i / 4) - Math.floor(g[0] / 4), i % 4 - g[0] % 4]),
+    colour: colours[p],
+  }));
+}
+function startValid() {
+  if (!draft.start || draft.startFor !== shareCode()) { draft.start = null; return false; }
+  return true;
+}
+// squares each piece covers for a start (null if off the board)
+function covered(ps, start) {
+  return ps.map((P, p) => {
+    const R = Math.floor(start[p] / N6), C = start[p] % N6;
+    const sq = P.rel.map(([r, c]) => [R + r, C + c]);
+    return sq.every(([r, c]) => r >= 0 && r < N6 && c >= 0 && c < N6) ? sq : null;
+  });
+}
+function fits(ps, start) {
+  const cov = covered(ps, start), seen = new Set();
+  for (const sq of cov) {
+    if (!sq) return false;
+    for (const [r, c] of sq) { const k = r * N6 + c; if (seen.has(k)) return false; seen.add(k); }
+  }
+  return true;
+}
+// is this start already the answer (every piece home in the 4×4, all lines words)?
+function startSolved(ps, start) {
+  const cell = Array(16).fill('');
+  for (const [p, sq] of covered(ps, start).entries()) for (const [k, [r, c]] of sq.entries()) {
+    if (r < 1 || r > 4 || c < 1 || c > 4) return false;
+    cell[(r - 1) * 4 + c - 1] = ps[p].letters[k];
+  }
+  Solver.allowWords(gridWords());
+  const rows = [0, 1, 2, 3].map(r => cell.slice(r * 4, r * 4 + 4).join(''));
+  return Solver.wordsOf(rows).every(w => WORDSET.has(w) || gridWords().includes(w));
+}
+// a random spot for every piece, biggest first (not the game's scramble, just a start)
+function scrambleStart(ps) {
+  for (let tries = 0; tries < 200; tries++) {
+    const start = Array(ps.length), taken = new Set();
+    const order = ps.map((P, p) => p).sort((a, b) => ps[b].g.length - ps[a].g.length);
+    let ok = true;
+    for (const p of order) {
+      const spots = [];
+      for (let s = 0; s < N6 * N6; s++) {
+        const R = Math.floor(s / N6), C = s % N6;
+        const sq = ps[p].rel.map(([r, c]) => [R + r, C + c]);
+        if (sq.every(([r, c]) => r >= 0 && r < N6 && c >= 0 && c < N6 && !taken.has(r * N6 + c))) spots.push([s, sq]);
+      }
+      if (!spots.length) { ok = false; break; }
+      const [s, sq] = spots[Math.floor(Math.random() * spots.length)];
+      start[p] = s; sq.forEach(([r, c]) => taken.add(r * N6 + c));
+    }
+    if (ok && !startSolved(ps, start)) return start;
+  }
+  return null;
+}
+function setStart(start) {
+  draft.start = start; draft.startFor = start ? shareCode() : null;
+  saveDraft();
+}
+
+function renderStart() {
+  const ps = startGroups(), custom = startValid();
+  const board = $('startBoard');
+  board.innerHTML = '';
+  board.classList.toggle('off', !custom);
+  const W = board.clientWidth, pad = 8, gap = 4;
+  const S = (W - 2 * pad - (N6 - 1) * gap) / N6, step = S + gap;
+  const at = (r, c) => [pad + c * step, pad + r * step];
+  // the squares, with the 4×4 the answer goes in marked
+  for (let r = 0; r < N6; r++) for (let c = 0; c < N6; c++) {
+    const q = document.createElement('div');
+    q.className = 'sq' + (r >= 1 && r <= 4 && c >= 1 && c <= 4 ? ' zone' : '');
+    const [x, y] = at(r, c);
+    Object.assign(q.style, { left: x + 'px', top: y + 'px', width: S + 'px', height: S + 'px' });
+    q.dataset.sq = r * N6 + c;
+    board.appendChild(q);
+  }
+  if (!custom) {
+    $('startHint').textContent = 'Players start from a random arrangement (the same one for everyone). ' +
+      'To set it yourself — tee up a red herring, or spell a message — arrange it here.';
+    const b = document.createElement('button');
+    b.className = 'btn primary sboard-go'; b.textContent = 'Arrange the start';
+    b.addEventListener('click', () => { setStart(scrambleStart(ps)); sel6 = null; renderStart(); });
+    board.appendChild(b);
+    $('startInfo').textContent = '';
+    $('startRandom').hidden = true; $('startScramble').hidden = true;
+    return;
+  }
+  $('startHint').textContent = 'Drag pieces to where players will find them, or tap a piece and then a square.';
+  $('startRandom').hidden = false; $('startScramble').hidden = false;
+  const cov = covered(ps, draft.start);
+  ps.forEach((P, p) => {
+    const el = document.createElement('div');
+    el.className = 'spiece' + (sel6 && sel6.p === p ? ' sel' : '');
+    el.dataset.p = p;
+    const minR = Math.min(...cov[p].map(x => x[0])), minC = Math.min(...cov[p].map(x => x[1]));
+    const [ox, oy] = at(minR, minC);
+    Object.assign(el.style, { left: ox + 'px', top: oy + 'px' });
+    const has = (r, c) => cov[p].some(x => x[0] === r && x[1] === c);
+    cov[p].forEach(([r, c], k) => {
+      const t = document.createElement('div');
+      t.className = 'stile';
+      t.textContent = P.letters[k].toUpperCase();
+      t.dataset.k = k;
+      Object.assign(t.style, { left: (c - minC) * step + 'px', top: (r - minR) * step + 'px',
+                               width: S + 'px', height: S + 'px', fontSize: S * .46 + 'px',
+                               background: P.colour || 'var(--tile)' });
+      if (P.colour) t.style.boxShadow = 'none';
+      // square off corners where it joins the rest of its piece
+      const up = has(r - 1, c), dn = has(r + 1, c), lf = has(r, c - 1), rt = has(r, c + 1), R = 10;
+      t.style.borderRadius = [(!up && !lf) ? R : 0, (!up && !rt) ? R : 0,
+                              (!dn && !rt) ? R : 0, (!dn && !lf) ? R : 0].map(v => v + 'px').join(' ');
+      el.appendChild(t);
+      // bridges to the right and below, so a piece reads as one shape
+      [[0, 1], [1, 0]].forEach(([dr, dc]) => {
+        if (!has(r + dr, c + dc)) return;
+        const b = document.createElement('div');
+        b.className = 'sbridge';
+        Object.assign(b.style, dc
+          ? { left: ((c - minC) * step + S - 1) + 'px', top: (r - minR) * step + 'px', width: gap + 2 + 'px', height: S + 'px' }
+          : { left: (c - minC) * step + 'px', top: ((r - minR) * step + S - 1) + 'px', width: S + 'px', height: gap + 2 + 'px' });
+        b.style.background = P.colour;
+        el.appendChild(b);
+      });
+    });
+    board.appendChild(el);
+  });
+  const inZone = cov.flat().filter(([r, c]) => r >= 1 && r <= 4 && c >= 1 && c <= 4).length;
+  // words the start already shows (a free point for the player); stronger if it's
+  // a word from the answer. Warnings only: a creator may want either on purpose.
+  const shown = startWords(ps, draft.start);
+  const answer = answerWords();
+  const fmt = list => list.map(([name, w]) => `${name}: ${w.toUpperCase()}`).join(', ');
+  const inAnswer = shown.filter(([, w]) => answer.has(w)), other = shown.filter(([, w]) => !answer.has(w));
+  $('startInfo').innerHTML = `${inZone} of 16 squares in the middle are filled.` +
+    (inAnswer.length ? `<br><span class="bad">⚠ The start shows ${inAnswer.length === 1 ? 'an answer word' : 'answer words'}
+       (${fmt(inAnswer)}). That gives part of the solution away.</span>` : '') +
+    (other.length ? `<br><span class="warn">Heads up: the start already spells ${fmt(other)}.
+       Players get ${other.length === 1 ? 'it' : 'them'} for free.</span>` : '');
+  startBoardGeom = { pad, step, S };
+}
+// the words a start shows, by the game's rule: a full row or column of the middle
+// 4×4 that's a word, and doesn't run on (a piece at either end carrying on past it)
+function startWords(ps, start) {
+  const at = new Map();                          // square → [piece, letter]
+  covered(ps, start).forEach((sq, p) => sq.forEach(([r, c], k) => at.set(r * N6 + c, [p, ps[p].letters[k]])));
+  const extra = new Set(gridWords());
+  const out = [];
+  for (let i = 0; i < 8; i++) {
+    const cells = [0, 1, 2, 3].map(j => i < 4 ? [1 + i, 1 + j] : [1 + j, 1 + i - 4]);
+    const hits = cells.map(([r, c]) => at.get(r * N6 + c));
+    if (hits.some(h => !h)) continue;
+    const [dr, dc] = i < 4 ? [0, 1] : [1, 0];
+    const runsOn = ([r, c], [br, bc], h) => { const b = at.get(br * N6 + bc); return br >= 0 && bc >= 0 && br < N6 && bc < N6 && b && b[0] === h[0]; };
+    const [f, l] = [cells[0], cells[3]];
+    if (runsOn(f, [f[0] - dr, f[1] - dc], hits[0]) || runsOn(l, [l[0] + dr, l[1] + dc], hits[3])) continue;
+    const w = hits.map(h => h[1]).join('');
+    if (WORDSET.has(w) || extra.has(w)) out.push([i < 4 ? `row ${i + 1}` : `column ${i - 3}`, w]);
+  }
+  return out;
+}
+// every word in any solution (the puzzle's own, plus any other way to solve it)
+function answerWords() {
+  const set = new Set(gridWords());
+  if (lastSolve) lastSolve.grids.forEach(g => Solver.wordsOf(g).forEach(w => set.add(w)));
+  return set;
+}
+let startBoardGeom = null;
+
+// drag: the grabbed piece follows the finger and snaps to the nearest squares on
+// release; a drop that's off the board or on another piece goes back. A tap
+// (no movement) selects the piece; then tapping a square moves the grabbed cell there.
+let drag6 = null;
+$('startBoard').addEventListener('pointerdown', e => {
+  const t = e.target.closest('.stile');
+  if (!t) return;
+  e.preventDefault();
+  const el = t.parentElement;
+  drag6 = { p: +el.dataset.p, k: +t.dataset.k, el, x: e.clientX, y: e.clientY, moved: false,
+            left: parseFloat(el.style.left), top: parseFloat(el.style.top) };
+  el.setPointerCapture(e.pointerId);
+  el.classList.add('lift');
+});
+$('startBoard').addEventListener('pointermove', e => {
+  if (!drag6) return;
+  const dx = e.clientX - drag6.x, dy = e.clientY - drag6.y;
+  if (Math.abs(dx) + Math.abs(dy) > 6) drag6.moved = true;
+  if (drag6.moved) {
+    drag6.el.style.left = drag6.left + dx + 'px';
+    drag6.el.style.top = drag6.top + dy + 'px';
+  }
+});
+function moveGrabbed(p, k, R, C) {               // put piece p's cell k on square (R, C)
+  const ps = startGroups();
+  const [kr, kc] = ps[p].rel[k];
+  const start = draft.start.slice();
+  start[p] = (R - kr) * N6 + (C - kc);
+  const r0 = R - kr, c0 = C - kc;
+  if (r0 < 0 || c0 < 0 || r0 >= N6 || c0 >= N6 || !fits(ps, start)) return 'blocked';
+  if (startSolved(ps, start)) return 'solved';
+  setStart(start);
+  return 'ok';
+}
+$('startBoard').addEventListener('pointerup', e => {
+  if (!drag6) return;
+  const d = drag6; drag6 = null;
+  d.el.classList.remove('lift');
+  if (!d.moved) {                                // a tap: select, or deselect
+    sel6 = sel6 && sel6.p === d.p ? null : { p: d.p, k: d.k };
+    renderStart();
+    return;
+  }
+  const { pad, step } = startBoardGeom;
+  const t = d.el.querySelector(`.stile[data-k="${d.k}"]`);
+  const R = Math.round((parseFloat(d.el.style.top) + parseFloat(t.style.top) - pad) / step);
+  const C = Math.round((parseFloat(d.el.style.left) + parseFloat(t.style.left) - pad) / step);
+  const res = moveGrabbed(d.p, d.k, R, C);
+  sel6 = null;
+  renderStart();
+  if (res !== 'ok') $('startInfo').textContent = res === 'solved'
+    ? 'That would start the puzzle solved!' : 'It doesn’t fit there.';
+});
+$('startBoard').addEventListener('pointercancel', () => { drag6 = null; renderStart(); });
+$('startBoard').addEventListener('click', e => {
+  const q = e.target.closest('.sq');
+  if (!q || !sel6) return;
+  const s = +q.dataset.sq;
+  const res = moveGrabbed(sel6.p, sel6.k, Math.floor(s / N6), s % N6);
+  if (res === 'ok') sel6 = null;
+  renderStart();
+  if (res !== 'ok') $('startInfo').textContent = res === 'solved'
+    ? 'That would start the puzzle solved!' : 'It doesn’t fit there.';
+});
+$('startScramble').addEventListener('click', () => { setStart(scrambleStart(startGroups())); sel6 = null; renderStart(); });
+$('startRandom').addEventListener('click', () => { setStart(null); sel6 = null; renderStart(); });
+$('backToPieces2').addEventListener('click', () => showStep('pieces'));
 $('toShare').addEventListener('click', () => showStep('share'));
+// for the link: one base-36 character per piece
+const startParam = () => startValid() ? draft.start.map(s => s.toString(36)).join('') : '';
 
 // -------------------------------------------------------------- 3. share
 function shareCode() {
@@ -422,8 +732,8 @@ function shareCode() {
   return Solver.encode(draft.letters, pieceOf);
 }
 // the game link: the puzzle, plus the title and note when there are any
-function linkFor(code, title, note) {
-  return new URL('../?p=' + code +
+function linkFor(code, title, note, start, colors) {
+  return new URL('../?p=' + code + (start ? '&s=' + start : '') + (colors ? '&c=' + colors : '') +
     (title ? '&t=' + encodeURIComponent(title) : '') +
     (note ? '&n=' + encodeURIComponent(note) : ''), location.href).href;
 }
@@ -433,7 +743,7 @@ const shareMsg = title => 'I made a Danagram!' + (title ? '\n' + title : '');
 const shareFull = (title, url) => shareMsg(title) + '\n' + url;
 let shareMeta = null;
 function updateLink() {
-  const url = linkFor(shareCode(), draft.title, draft.note);
+  const url = linkFor(shareCode(), draft.title, draft.note, startParam(), paintParam());
   $('shareUrl').value = url;
   $('playLink').href = url;
   if (shareMeta) remember(...shareMeta);
@@ -477,10 +787,10 @@ $('shareBtn').addEventListener('click', async () => {
   $('shareUrl').focus(); $('shareUrl').select();
   $('shareNote').textContent = 'Copy the link above.';
 });
-$('backToPieces').addEventListener('click', () => showStep('pieces'));
+$('backToPieces').addEventListener('click', () => showStep('start'));
 function newPuzzle() {
   Object.assign(draft, { id: newId(), letters: Array(16).fill(''), typed: Array(16).fill(false), joins: [],
-                         title: '', note: '' });
+                         title: '', note: '', start: null, startFor: null, colors: {} });
   shareMeta = null;
   cursor = 0; across = true; showStep('letters');
 }
@@ -500,8 +810,10 @@ function remember(nSolutions, more, pieces, diff) {
   const list = loadMine(), code = shareCode(), now = Date.now();
   const old = list.find(e => e.id === draft.id);
   const title = draft.title || '', note = draft.note || '';
-  if (old && old.code === code && (old.title || '') === title && (old.note || '') === note) return;
-  const entry = { id: draft.id, code, title, note, letters: draft.letters.slice(), typed: draft.typed.slice(),
+  const start = startParam(), colors = paintParam();
+  if (old && old.code === code && (old.title || '') === title && (old.note || '') === note &&
+      (old.start || '') === start && (old.colors || '') === colors) return;
+  const entry = { id: draft.id, code, title, note, start, colors, letters: draft.letters.slice(), typed: draft.typed.slice(),
                   joins: draft.joins.slice(), solutions: nSolutions, more, pieces, stars: diff.stars, score: diff.score,
                   created: old ? old.created : now, updated: now };
   saveMine([entry, ...list.filter(e => e.id !== draft.id)]);
@@ -519,8 +831,7 @@ $('mineNew').addEventListener('click', newPuzzle);
 const fmtDate = t => new Date(t).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
 function miniGrid(e) {
   const groups = Solver.piecesFrom(new Set(e.joins));
-  let colour = 0;
-  const colours = groups.map(g => g.length > 1 ? OCOLORS[colour++ % OCOLORS.length] : 'var(--tile)');
+  const colours = pieceColours(groups, paintsFrom(groups, e.colors)).map(c => c || 'var(--tile)');
   const bg = Array(16);
   groups.forEach((g, p) => g.forEach(i => { bg[i] = colours[p]; }));
   return '<div class="mini" aria-hidden="true">' +
@@ -540,7 +851,7 @@ function renderMine() {
       `${fmtDate(e.updated)}${e.id === draft.id ? ' · <b>editing</b>' : ''}</div>` +
       `<div class="mine-sub">${e.stars ? starRow(e.stars) + ' · ' : ''}${e.pieces} piece${e.pieces === 1 ? '' : 's'} · ${sol}</div>` +
       `<div class="mine-acts">` +
-      `<a class="mlink" href="${escHtml(linkFor(e.code, e.title, e.note))}">Play</a>` +
+      `<a class="mlink" href="${escHtml(linkFor(e.code, e.title, e.note, e.start, e.colors))}">Play</a>` +
       `<button class="mlink" data-act="share">Share</button>` +
       `<button class="mlink" data-act="edit">Edit</button>` +
       `<button class="mlink del" data-act="delete">Delete</button>` +
@@ -553,7 +864,8 @@ function exportLink() {
   const parts = loadMine().map(e => e.code +
     parseInt(e.typed.map(t => t ? 1 : 0).join(''), 2).toString(16).padStart(4, '0') +
     Math.floor(e.created / 1000).toString(36) +
-    (e.title || e.note ? '~' + b64url(JSON.stringify([e.title || '', e.note || ''])) : ''));
+    (e.title || e.note || e.start || e.colors
+      ? '~' + b64url(JSON.stringify([e.title || '', e.note || '', e.start || '', e.colors || ''])) : ''));
   return location.origin + location.pathname + '#import=' + parts.join('.');
 }
 const b64url = s => btoa(unescape(encodeURIComponent(s))).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
@@ -564,7 +876,8 @@ function parseImport(hash) {
   return m[1].split('.').map(whole => {
     const [part, text] = whole.split('~');
     let title = '', note = '';
-    if (text) try { [title, note] = JSON.parse(unb64url(text)).map(String); } catch (e) {}
+    let start = '', colors = '';
+    if (text) try { [title, note, start = '', colors = ''] = JSON.parse(unb64url(text)).map(String); } catch (e) {}
     const d = Solver.decode(part.slice(0, 33));
     if (!d || !/^[0-9a-f]{4}[0-9a-z]+$/.test(part.slice(33))) return null;
     const bits = parseInt(part.slice(33, 37), 16).toString(2).padStart(16, '0');
@@ -587,7 +900,9 @@ function parseImport(hash) {
              solutions: res.grids.length, more: res.capped || res.timedOut,
              pieces: groups.filter(g => g.length > 1).length,
              stars: diff.stars, score: diff.score, created, updated: created,
-             title: title.slice(0, 40), note: note.slice(0, 240) };
+             title: title.slice(0, 40), note: note.slice(0, 240),
+             start: /^[0-9a-z]+$/.test(start) && start.length === groups.length ? start : '',
+             colors: /^[0-9a]+$/.test(colors) && colors.length === groups.length ? colors : '' };
   }).filter(Boolean);
 }
 let pendingImport = parseImport(location.hash).filter(e => !loadMine().some(x => x.code === e.code));
@@ -649,13 +964,16 @@ $('mineList').addEventListener('click', async ev => {
                     !loadMine().some(x => x.id === draft.id);
     if (unsaved && !armed(b, 'Edit', 'Replace draft?')) return;
     Object.assign(draft, { id: e.id, letters: e.letters.slice(), typed: e.typed.slice(), joins: e.joins.slice(),
-                           title: e.title || '', note: e.note || '' });
+                           title: e.title || '', note: e.note || '',
+                           start: e.start ? [...e.start].map(ch => parseInt(ch, 36)) : null,
+                           startFor: e.start ? e.code : null,
+                           colors: paintsFrom(Solver.piecesFrom(new Set(e.joins)), e.colors) });
     shareMeta = null;
     cursor = 0; across = true; lastSolve = null; lastDiff = null;
     showStep('pieces');
   }
   if (act === 'share') {
-    const url = linkFor(e.code, e.title, e.note);
+    const url = linkFor(e.code, e.title, e.note, e.start, e.colors);
     if (navigator.share) {
       try { await navigator.share({ title: 'Danagram', text: shareMsg(e.title), url }); return; }
       catch (err) { if (err && err.name === 'AbortError') return; }

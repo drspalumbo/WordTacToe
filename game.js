@@ -13,7 +13,9 @@ const CUSTOM_TEXT = (() => {
   const q = typeof location !== 'undefined' && typeof URLSearchParams !== 'undefined'
     ? new URLSearchParams(location.search || '') : null;
   const clean = (v, n) => (v || '').replace(/\s+/g, ' ').trim().slice(0, n);
-  return { title: q ? clean(q.get('t'), 40) : '', note: q ? (q.get('n') || '').trim().slice(0, 240) : '' };
+  return { title: q ? clean(q.get('t'), 40) : '', note: q ? (q.get('n') || '').trim().slice(0, 240) : '',
+           start: q ? (q.get('s') || '').toLowerCase() : '',
+           colors: q ? (q.get('c') || '').toLowerCase() : '' };
 })();
 const escHtml = s => s.replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
 const CUSTOM_IDX = (() => {
@@ -42,8 +44,31 @@ const CUSTOM_IDX = (() => {
   const words = new Set(Solver.wordsOf(rows));
   sols.grids.forEach(g => Solver.wordsOf(g).forEach(w => words.add(w)));
   const diff = Solver.difficulty(rows, pieces, sols.grids.length || 1);
+  // the creator's starting position (&s=): one base-36 square (0–35, on the 6×6
+  // board) per piece for its first cell. Ignored unless every piece fits, no overlaps.
+  let start = null;
+  if (/^[0-9a-z]+$/.test(CUSTOM_TEXT.start) && CUSTOM_TEXT.start.length === pieces.length) {
+    const taken = new Set();
+    start = pieces.map((p, i) => {
+      const s = parseInt(CUSTOM_TEXT.start[i], 36), R = Math.floor(s / 6), C = s % 6;
+      const [r0, c0] = p.cells[0];
+      return p.cells.map(([r, c]) => [R + r - r0, C + c - c0]);
+    });
+    const ok = start.every(cells => cells.every(([r, c]) => {
+      const k = r * 6 + c;
+      if (r < 0 || r > 5 || c < 0 || c > 5 || taken.has(k)) return false;
+      taken.add(k); return true;
+    }));
+    if (!ok) start = null;
+  }
   PUZZLES.push({ solution: rows, pieces, numSolutions: sols.grids.length || 1,
-                 solutionWords: [...words], difficulty: diff.score, stars: diff.stars, custom: true });
+                 solutionWords: [...words], difficulty: diff.score, stars: diff.stars, custom: true,
+                 start });
+  // the creator's colours (&c=): one code per piece, 0 = automatic (same list as Create)
+  const PAINT = { 1: 'var(--o1)', 2: 'var(--o2)', 3: 'var(--o3)', 4: 'var(--o4)', 5: 'var(--o5)',
+                  6: 'var(--o6)', 7: 'var(--o7)', 8: 'var(--o8)', 9: 'var(--o9)', a: 'var(--tile)' };
+  if (CUSTOM_TEXT.colors.length === pieces.length)
+    pieces.forEach((p, i) => { if (PAINT[CUSTOM_TEXT.colors[i]]) p.paint = PAINT[CUSTOM_TEXT.colors[i]]; });
   return PUZZLES.length - 1;
 })();
 const isCustom = idx => idx === CUSTOM_IDX;
@@ -346,7 +371,7 @@ function styleTiles(p) {
       (!up && !lf) ? rad : 0, (!up && !rt) ? rad : 0,
       (!dn && !rt) ? rad : 0, (!dn && !lf) ? rad : 0,
     ].map(v => v + 'px').join(' ');
-    t.style.background = p.cells.length > 1 ? p.color : 'var(--tile)';
+    t.style.background = p.paint || (p.cells.length > 1 ? p.color : 'var(--tile)');
     // a fused tile is stretched toward its neighbor; re-center the glyph over
     // the true cell center with a compensating margin (leaves seams untouched)
     const letter = t.querySelector('.letter');
@@ -1631,6 +1656,8 @@ function shareTitle() {
 function shareLink() {                           // https:// makes every app link it
   if (!isCustom(state.idx)) return 'https://danagram.fun';
   return 'https://danagram.fun/?p=' + CUSTOM_CODE +
+    (PUZZLES[CUSTOM_IDX].start ? '&s=' + CUSTOM_TEXT.start : '') +
+    (PUZZLES[CUSTOM_IDX].pieces.some(p => p.paint) ? '&c=' + CUSTOM_TEXT.colors : '') +
     (CUSTOM_TEXT.title ? '&t=' + encodeURIComponent(CUSTOM_TEXT.title) : '') +
     (CUSTOM_TEXT.note ? '&n=' + encodeURIComponent(CUSTOM_TEXT.note) : '');
 }
@@ -2122,6 +2149,7 @@ function loadPuzzle(idx) {
   const P = PUZZLES[state.idx];
   state.pieces = P.pieces.map((p, i) => ({
     letters: p.letters,
+    paint: p.paint,
     cells: p.cells.map(c => c.slice()),
     color: OCOLORS[
       P.pieces.filter((q, j) => j < i && q.letters.length > 1).length % OCOLORS.length],
