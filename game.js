@@ -2523,40 +2523,27 @@ function showHelp() {
   document.getElementById('helpOverlay').classList.add('show');
   showHelpPage(1);
 }
-// The first time help is closed it folds into the menu's ? (the menu opens to
-// catch it), then the menu closes after a beat: that's where help lives.
+// The first time help is closed, the menu opens for a moment with its ? lit up,
+// then folds away: that's where help lives.
 function hideHelp() {
   const ov = document.getElementById('helpOverlay');
-  const first = !store.get(HELP_SEEN);
+  const first = !store.get(HELP_SEEN) && ov.classList.contains('show');
   store.set(HELP_SEEN, 1);
-  if (!first || !ov.classList.contains('show')) { ov.classList.remove('show'); return; }
-  setMenu(true);
+  ov.classList.remove('show');
+  if (!first) return;
   const help = document.getElementById('helpBtn');
-  const land = () => {
-    ov.classList.remove('show');
+  setTimeout(() => {
+    setMenu(true);
     help.classList.add('landed');
-    setTimeout(() => { help.classList.remove('landed'); setMenu(false); }, 1100);
-  };
-  const card = ov.querySelector('.card');
-  const reduce = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
-  if (reduce || !card.animate) { land(); return; }
-  // where the ? will be once the menu has unfolded: 120px under ☰
-  const from = card.getBoundingClientRect(), m = document.getElementById('menuBtn').getBoundingClientRect();
-  const to = { x: m.left + m.width / 2, y: m.top + 120 + m.height / 2 };
-  const dx = to.x - (from.left + from.width / 2), dy = to.y - (from.top + from.height / 2);
-  const k = m.width / Math.max(from.width, from.height);
-  card.animate([{ transform: 'none', opacity: 1, borderRadius: '20px' },
-                { transform: `translate(${dx}px, ${dy}px) scale(${k})`, opacity: .3, borderRadius: '200px' }],
-               { duration: 480, easing: 'cubic-bezier(.5,0,.75,.4)' });
-  ov.animate([{ backgroundColor: getComputedStyle(ov).backgroundColor }, { backgroundColor: 'rgba(0,0,0,0)' }],
-             { duration: 480 });
-  setTimeout(land, 470);
+    setTimeout(() => { help.classList.remove('landed'); setMenu(false); }, 1400);
+  }, 250);
 }
 document.getElementById('helpBtn').addEventListener('click', () => { setMenu(false); showHelp(); });
 
 // ---------------------------------------------------------------- the menu
 function setMenu(open) {
   const m = document.getElementById('menu');
+  if (m.classList.contains('open') === open) return;   // no change: touch nothing (see below)
   m.classList.toggle('open', open);
   document.getElementById('menuBtn').setAttribute('aria-expanded', open ? 'true' : 'false');
   document.getElementById('menuBtn').setAttribute('aria-label', open ? 'Close menu' : 'Menu');
@@ -2564,10 +2551,14 @@ function setMenu(open) {
 }
 document.getElementById('menuBtn').addEventListener('click', () =>
   setMenu(!document.getElementById('menu').classList.contains('open')));
-// a tap anywhere else folds it
-document.addEventListener('pointerdown', e => {
-  if (!e.target.closest('#menu')) setMenu(false);
-});
+// A tap anywhere else folds it, on click rather than pointerdown, and only if it's
+// open. iOS cancels a tap's click if the page changes as the touch starts (it
+// takes it for a hover), so redrawing on every pointerdown broke every button.
+document.addEventListener('click', e => {
+  const t = e.target;
+  if (document.getElementById('menu').classList.contains('open') &&
+      !(t && t.closest && t.closest('#menu'))) setMenu(false);
+}, true);
 document.getElementById('closeHelp').addEventListener('click', hideHelp);
 document.getElementById('closeHelp2').addEventListener('click', hideHelp);
 document.getElementById('closeHelp3').addEventListener('click', hideHelp);
