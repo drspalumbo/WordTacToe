@@ -1145,16 +1145,15 @@ function layoutDrawer() {
 // sorted lists run ticker-style instead: each word drops in at the top.)
 const BANK_SORT_KEY = 'danagram_bank_sort';
 const bankSort = () => store.get(BANK_SORT_KEY) === 'abc' ? 'abc' : 'recent';
-function renderBankSort(show) {
-  const box = document.getElementById('bankSort');
-  box.hidden = !show;
-  box.querySelectorAll('button').forEach(b => {
-    const on = b.dataset.sort === bankSort();
-    b.classList.toggle('on', on);
-    b.setAttribute('aria-pressed', on ? 'true' : 'false');
-  });
+// the switch itself: small text in the Found header line (or its own line when
+// there's no Found list), the active one bold and underlined
+function bankSortHtml() {
+  const b = (k, label) => `<button data-sort="${k}" aria-pressed="${bankSort() === k}"` +
+    `${bankSort() === k ? ' class="on"' : ''}>${label}</button>`;
+  return `<span class="bank-sort" role="group" aria-label="Sort words">${b('recent', 'Recent')}` +
+    `<i aria-hidden="true">·</i>${b('abc', 'A–Z')}</span>`;
 }
-document.getElementById('bankSort').addEventListener('click', e => {
+document.getElementById('wordLists').addEventListener('click', e => {
   const b = e.target.closest('button[data-sort]');
   if (!b || b.dataset.sort === bankSort()) return;
   store.set(BANK_SORT_KEY, b.dataset.sort);
@@ -1168,7 +1167,6 @@ function renderWordLists(justAdded, newestFirst) {
   const sorted = arr => bankSort() === 'abc' ? arr.slice().sort()
                                              : arr.slice().sort((a, b) => when(b) - when(a));
   const order = arr => newestFirst ? arr.slice().reverse() : sorted(arr);
-  renderBankSort(!!(h.found.length + h.inList.length + h.outList.length));
   const mk = (cls, title, arr, id) => arr.length
     ? `<div class="wl ${cls}" ${id ? 'id="' + id + '"' : ''}><h4>${title}</h4><ul>` +
       order(arr).map(w => `<li${w === justAdded ? ' data-new="1"' : ''}>${w.toUpperCase()}</li>`).join('') +
@@ -1176,12 +1174,14 @@ function renderWordLists(justAdded, newestFirst) {
     : '';
   const total = h.inList.length + h.outList.length;
   const found = h.found.length
-    ? `<div class="wl found"><h4>Found <span class="wl-count">${h.found.length + total}</span></h4><ul>` +
+    ? `<div class="wl found"><h4><span>Found <span class="wl-count">${h.found.length + total}</span></span>` +
+      `${bankSortHtml()}</h4><ul>` +
       sorted(h.found).map(w => `<li${w === justAdded ? ' data-new="1"' : ''}>${w.toUpperCase()}</li>`).join('') +
       '</ul></div>'
     : '';
   el.innerHTML = total || h.found.length
-    ? found + mk('in', 'In the puzzle', h.inList, 'wlIn') + mk('out', 'Not in the puzzle', h.outList, 'wlOut')
+    ? (found || `<div class="wl-sortline">${bankSortHtml()}</div>`) +
+      mk('in', 'In the puzzle', h.inList, 'wlIn') + mk('out', 'Not in the puzzle', h.outList, 'wlOut')
     : '<p class="wl-empty">Find new words to charge up a Grid Check. Use it to see ' +
       'if any of the words on your board are in today’s puzzle, and if you’re on the right track.</p>';
   const fresh = el.querySelector('[data-new]');
