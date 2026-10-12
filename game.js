@@ -1140,20 +1140,44 @@ function layoutDrawer() {
   document.getElementById('drawerEdgePath').setAttribute('d', d);
 }
 
+// Word bank order, the player's pick (remembered): 'recent' = newest made first,
+// 'abc' = alphabetical. Applies to all three lists. (During a Grid Check the
+// sorted lists run ticker-style instead: each word drops in at the top.)
+const BANK_SORT_KEY = 'danagram_bank_sort';
+const bankSort = () => store.get(BANK_SORT_KEY) === 'abc' ? 'abc' : 'recent';
+function renderBankSort(show) {
+  const box = document.getElementById('bankSort');
+  box.hidden = !show;
+  box.querySelectorAll('button').forEach(b => {
+    const on = b.dataset.sort === bankSort();
+    b.classList.toggle('on', on);
+    b.setAttribute('aria-pressed', on ? 'true' : 'false');
+  });
+}
+document.getElementById('bankSort').addEventListener('click', e => {
+  const b = e.target.closest('button[data-sort]');
+  if (!b || b.dataset.sort === bankSort()) return;
+  store.set(BANK_SORT_KEY, b.dataset.sort);
+  renderWordLists();
+});
 function renderWordLists(justAdded, newestFirst) {
   const h = state.hints[state.idx];
   const el = document.getElementById('wordLists');
-  const order = arr => newestFirst ? arr.slice().reverse() : arr;
+  const made = new Map(h.seen.map((w, i) => [w, i]));      // when each word was first made
+  const when = w => made.has(w) ? made.get(w) : -1;
+  const sorted = arr => bankSort() === 'abc' ? arr.slice().sort()
+                                             : arr.slice().sort((a, b) => when(b) - when(a));
+  const order = arr => newestFirst ? arr.slice().reverse() : sorted(arr);
+  renderBankSort(!!(h.found.length + h.inList.length + h.outList.length));
   const mk = (cls, title, arr, id) => arr.length
     ? `<div class="wl ${cls}" ${id ? 'id="' + id + '"' : ''}><h4>${title}</h4><ul>` +
       order(arr).map(w => `<li${w === justAdded ? ' data-new="1"' : ''}>${w.toUpperCase()}</li>`).join('') +
       '</ul></div>'
     : '';
   const total = h.inList.length + h.outList.length;
-  // found is already newest-first (scoreBoard unshifts), so it skips order()
   const found = h.found.length
     ? `<div class="wl found"><h4>Found <span class="wl-count">${h.found.length + total}</span></h4><ul>` +
-      h.found.map(w => `<li${w === justAdded ? ' data-new="1"' : ''}>${w.toUpperCase()}</li>`).join('') +
+      sorted(h.found).map(w => `<li${w === justAdded ? ' data-new="1"' : ''}>${w.toUpperCase()}</li>`).join('') +
       '</ul></div>'
     : '';
   el.innerHTML = total || h.found.length

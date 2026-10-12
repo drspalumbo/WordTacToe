@@ -649,6 +649,15 @@
   /* the tab's bar growing into the button as the drawer opens */
   .bar-morph{position:fixed; z-index:60; overflow:hidden; background:var(--track); pointer-events:none;}
   .bar-morph i{position:absolute; left:0; top:0; bottom:0; background:var(--charge);}
+  /* Recent | A–Z: a small two-way switch above the lists */
+  .bank-sort{display:flex; justify-content:center; gap:2px; width:max-content; margin:2px auto 8px;
+    padding:2px; border-radius:999px; background:var(--track);}
+  .bank-sort[hidden]{display:none;}
+  #drawer.peek .bank-sort{display:none;}          /* the Grid Check ticker strip */
+  .bank-sort button{border:0; background:transparent; padding:4px 12px; border-radius:999px; cursor:pointer;
+    font:inherit; font-size:12px; font-weight:700; color:var(--ink-soft); touch-action:manipulation;}
+  .bank-sort button.on{background:var(--surface); color:var(--ink); font-weight:800;
+    box-shadow:inset 0 0 0 1px var(--tile-line);}
   .bank-hint{font-size:12.5px; font-weight:600; color:var(--ink-soft); min-height:16px;}
   .wl h4{
     margin:0 0 6px; font-size:11px; letter-spacing:.1em; text-transform:uppercase;
