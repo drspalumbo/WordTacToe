@@ -2567,6 +2567,16 @@ function hideHelp() {
 }
 document.getElementById('helpBtn').addEventListener('click', () => { setMenu(false); showHelp(); });
 
+// ------------------------------------------------------------- feedback
+// "Have feedback?" (win card, last help page) opens a heads-up first: the form
+// is a Google Form, in a new tab, so the game stays where it was.
+const feedbackOv = document.getElementById('feedbackOverlay');
+document.querySelectorAll('.feedback-link').forEach(b =>
+  b.addEventListener('click', () => feedbackOv.classList.add('show')));
+document.getElementById('feedbackCancel').addEventListener('click', () => feedbackOv.classList.remove('show'));
+document.getElementById('feedbackGo').addEventListener('click', () => feedbackOv.classList.remove('show'));
+feedbackOv.addEventListener('click', e => { if (e.target === feedbackOv) feedbackOv.classList.remove('show'); });
+
 // ---------------------------------------------------------------- the menu
 function setMenu(open) {
   const m = document.getElementById('menu');

@@ -141,6 +141,18 @@
   overflow-wrap:anywhere; text-align:left;}
 #introNote[hidden]{display:none;}
 
+/* "Have feedback?": a quiet text link; its heads-up card sits above everything */
+.feedback-link{display:block; margin:10px auto 0; padding:4px 8px; border:0; background:transparent;
+  font:inherit; font-size:13px; font-weight:700; color:var(--ink-soft); text-decoration:underline;
+  text-underline-offset:3px; cursor:pointer; touch-action:manipulation;}
+.feedback-link:hover{color:var(--ink);}
+#feedbackOverlay{position:fixed; inset:0; background:rgba(28,40,54,.45); display:none;
+  align-items:center; justify-content:center; z-index:70; padding:20px;}
+#feedbackOverlay.show{display:flex;}
+#feedbackOverlay h2{margin:0 0 10px; font-size:23px;}
+#feedbackOverlay p{margin:0 0 10px; font-size:15px; line-height:1.5; color:var(--ink); text-align:left;}
+#feedbackOverlay .btn{text-decoration:none; text-align:center;}
+
 /* → the Create page (Tools & Tips, and the win card) */
 .make-link{display:block; margin:12px auto 0; text-align:center; font-size:13.5px; font-weight:800;
   color:var(--accent); text-decoration:none; touch-action:manipulation;}
