@@ -68,11 +68,17 @@
   }
   #menu > button:hover, #menu > a:hover{color:var(--ink); border-color:var(--ink-soft);}
   #menuBtn{z-index:3 !important;}
-  /* ☰ turns into × while open */
-  #menuBtn line{transition:transform .25s ease, opacity .2s ease; transform-origin:12px 12px;}
-  #menu.open #menuBtn .m1{transform:translateY(5px) rotate(45deg);}
-  #menu.open #menuBtn .m2{opacity:0;}
-  #menu.open #menuBtn .m3{transform:translateY(-5px) rotate(-45deg);}
+  /* ☰ turns into ×: three bars, all centred in the button, offset up/down; open,
+     the outer two slide to the middle and cross. (HTML bars, not SVG lines:
+     WebKit puts an SVG line's transform-origin in the wrong place.) */
+  #menuBtn .bar{position:absolute; left:50%; top:50%; width:16px; height:2px; margin:-1px 0 0 -8px;
+    border-radius:1px; background:currentColor;
+    transition:transform .28s cubic-bezier(.4,0,.2,1), opacity .18s ease;}
+  #menuBtn .b1{transform:translateY(-5px);}
+  #menuBtn .b3{transform:translateY(5px);}
+  #menu.open #menuBtn .b1{transform:rotate(45deg);}
+  #menu.open #menuBtn .b2{opacity:0; transform:scaleX(.2);}
+  #menu.open #menuBtn .b3{transform:rotate(-45deg);}
   /* folded: tucked behind ☰ */
   #menu > #themeBtn, #menu > #timerBtn, #menu > #helpBtn, #menu > #createBtn{opacity:0; transform:scale(.6); pointer-events:none;}
   #menu.open > #themeBtn, #menu.open > #timerBtn, #menu.open > #helpBtn, #menu.open > #createBtn{opacity:1; transform:none; pointer-events:auto;}
