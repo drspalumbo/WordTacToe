@@ -223,8 +223,21 @@ $('fillBtn').addEventListener('click', () => {
     return;
   }
   $('issues').innerHTML = res === 'timeout'
-    ? '<li class="bad">That took too long. Try adding or changing a letter.</li>'
+    ? '<li class="bad">That one’s tricky. <button class="mlink" id="keepTrying">Keep trying</button> (may take a few seconds), or change a letter.</li>'
     : '<li class="bad">There’s no way to fill these in with words. Try changing a letter.</li>';
+});
+// opt-in: a search 10× longer. A beat first so "Thinking…" shows before the page is busy.
+document.addEventListener('click', e => {
+  if (!e.target.closest('#keepTrying')) return;
+  $('issues').innerHTML = '<li class="info">Thinking…</li>';
+  setTimeout(() => {
+    const base = draft.letters.map((ch, i) => draft.typed[i] ? ch : '');
+    const res = Solver.fill(base, { nodeLimit: 20000000 });
+    if (Array.isArray(res)) { draft.letters = res; saveDraft(); renderLetters(); return; }
+    $('issues').innerHTML = res === 'timeout'
+      ? '<li class="bad">Still couldn’t find one. Try changing a letter.</li>'
+      : '<li class="bad">There’s no way to fill these in with words. Try changing a letter.</li>';
+  }, 60);
 });
 
 // two taps to clear everything, so a stray tap doesn't wipe the grid
@@ -356,6 +369,40 @@ function renderPieceInfo(groups) {
   $('pieceInfo').innerHTML =
     `${multi} piece${multi === 1 ? '' : 's'} + ${singles} single tile${singles === 1 ? '' : 's'}<br>${verdict}` +
     `<br><span class="diff">Difficulty ${starRow(lastDiff.stars)} <small>${lastDiff.score}/100</small></span>`;
+  renderDiffDetail(lastDiff);
+}
+// The fold-out: the same two measures the daily puzzles are scored with, with the
+// working shown, so the number can be understood (and the model tuned).
+function fmtBig(n) {
+  if (!isFinite(n)) return 'a huge number';
+  if (n < 1e6) return Math.round(n).toLocaleString();
+  const units = [[1e12, 'trillion'], [1e9, 'billion'], [1e6, 'million']];
+  const [v, name] = units.find(([v]) => n >= v);
+  return (n / v >= 100 ? Math.round(n / v) : +(n / v).toPrecision(2)) + ' ' + name;
+}
+function renderDiffDetail(d) {
+  const pct = x => Math.round(x * 100);
+  const lineName = k => k < 4 ? `Row ${k + 1}` : `Col ${k - 3}`;
+  const oneIn = d.pSol > 0 ? fmtBig(1 / d.pSol) : 'a huge number';
+  $('diffBody').innerHTML = `
+    <p class="dd-sum"><b>${d.score}</b> = 60% × search <b>${pct(d.searchNorm)}</b>
+       + 40% × word choice <b>${pct(d.wordNorm)}</b>. Every 20 points is a star.</p>
+    <h4>Search: ${pct(d.searchNorm)}/100</h4>
+    <p>How unlikely a random arrangement is to be a solution. With
+       ${d.ominos} piece${d.ominos === 1 ? '' : 's'} and ${d.singles} single tile${d.singles === 1 ? '' : 's'}
+       there are ${fmtBig(d.space)} ways to fill the grid, and ${
+         Math.round(d.pSol * d.space) <= d.solutions
+           ? `only <b>${d.solutions} of them</b> solve${d.solutions === 1 ? 's' : ''} it`
+           : `about <b>1 in ${oneIn}</b> of them solves it${d.exact ? '' : ' (estimated by sampling)'}`}.
+       That’s ${d.search.toFixed(1)} on a scale where 1.5 scores 0 and 8.5 scores 100.
+       Single tiles make this climb fast.</p>
+    <h4>Word choice: ${pct(d.wordNorm)}/100</h4>
+    <p>How many words could go in each line, given only the letters the pieces lock
+       together. Lots of options means lots to try; a rare locked pair gives a word away.</p>
+    <div class="dd-lines">${d.perLine.map((n, k) =>
+      `<span>${lineName(k)}</span><b>${n.toLocaleString()}</b>`).join('')}</div>
+    <p>Multiplied together, that’s about 10<sup>${d.branching.toFixed(1)}</sup>, scored on a
+       scale where 10<sup>2.5</sup> is 0 and 10<sup>11</sup> is 100.</p>`;
 }
 // same scale as the daily puzzles (tools/score.py): 1–5 stars, 0–100
 let lastDiff = null;

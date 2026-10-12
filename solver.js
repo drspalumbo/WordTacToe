@@ -47,7 +47,13 @@ const Solver = (() => {
   // with a gap is filled from PUZZLE_WORDS, or failing that any valid word.
   // All 8 words are distinct. random=true varies the result from call to call.
   // Returns the 16-letter grid, null if impossible, or 'timeout' if it gave up.
-  function fill(grid, { random = true, nodeLimit = 400000 } = {}) {
+  //
+  // It fills one cell at a time (row by row), and a letter is only tried if it
+  // still starts a candidate word both across and down — so a typed letter
+  // anywhere, even in the bottom row, prunes the search from the first cell.
+  // (Picking whole row words first only discovered a clash with the bottom row
+  // after trying thousands of top rows, and gave up: "That took too long".)
+  function fill(grid, { random = true, nodeLimit = 2000000 } = {}) {
     const pats = LINES.map(cells => cells.map(i => grid[i] || ''));
     const cands = pats.map(pat => {
       if (pat.every(Boolean)) return [pat.join('')];
@@ -55,43 +61,46 @@ const Solver = (() => {
       return nice.length ? nice : matching(WORDS, pat, 'v');
     });
     if (cands.some(c => !c.length)) return null;
-    // columns as prefix sets, so each row can be checked letter by letter
-    const colPrefix = [4, 5, 6, 7].map(li => {
+    // each line's candidates as a prefix set (length 4 = the words themselves)
+    const pre = cands.map(ws => {
       const s = new Set(['']);
-      cands[li].forEach(w => { for (let k = 1; k <= 4; k++) s.add(w.slice(0, k)); });
+      ws.forEach(w => { for (let k = 1; k <= 4; k++) s.add(w.slice(0, k)); });
       return s;
     });
-    const colWords = [4, 5, 6, 7].map(li => new Set(cands[li]));
-    const order = cands.slice(0, 4).map(c => {
-      const a = c.slice();
+    const ABC = 'abcdefghijklmnopqrstuvwxyz'.split('');
+    const order = [...Array(16)].map(() => {    // per cell: the order letters are tried in
+      const a = ABC.slice();
       if (random) for (let i = a.length - 1; i > 0; i--) {
         const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]];
       }
       return a;
     });
-    const rows = [];
+    const cell = Array(16).fill('');
+    const rowSo = [0, 0, 0, 0].map(() => ''), colSo = [0, 0, 0, 0].map(() => '');
+    const used = [];                               // completed words, so all 8 differ
     let nodes = 0, timedOut = false;
-    function rec(r) {
-      if (r === 4) {
-        const cols = [0, 1, 2, 3].map(c => rows.map(w => w[c]).join(''));
-        if (!cols.every((w, c) => colWords[c].has(w))) return false;
-        return new Set([...rows, ...cols]).size === 8;
-      }
-      for (const w of order[r]) {
+    function rec(i) {
+      if (i === 16) return true;
+      const r = i >> 2, c = i & 3;
+      const letters = grid[i] ? [grid[i]] : order[i];
+      for (const ch of letters) {
         if (++nodes > nodeLimit) { timedOut = true; return false; }
-        if (rows.includes(w)) continue;
-        let ok = true;
-        for (let c = 0; c < 4 && ok; c++)
-          ok = colPrefix[c].has(rows.map(x => x[c]).join('') + w[c]);
-        if (!ok) continue;
-        rows.push(w);
-        if (rec(r + 1)) return true;
-        rows.pop();
+        const rw = rowSo[r] + ch, cw = colSo[c] + ch;
+        if (!pre[r].has(rw) || !pre[4 + c].has(cw)) continue;
+        if (c === 3 && used.includes(rw)) continue;
+        if (r === 3 && (used.includes(cw) || (c === 3 && rw === cw))) continue;
+        cell[i] = ch; rowSo[r] = rw; colSo[c] = cw;
+        if (c === 3) used.push(rw);
+        if (r === 3) used.push(cw);
+        if (rec(i + 1)) return true;
+        if (r === 3) used.pop();
+        if (c === 3) used.pop();
+        rowSo[r] = rw.slice(0, -1); colSo[c] = cw.slice(0, -1); cell[i] = '';
         if (timedOut) return false;
       }
       return false;
     }
-    if (rec(0)) return rows.join('').split('');
+    if (rec(0)) return cell.slice();
     return timedOut ? 'timeout' : null;
   }
 
@@ -172,9 +181,10 @@ const Solver = (() => {
     const omino = new Set();
     pieces.forEach(p => { if (p.cells.length > 1) p.cells.forEach(([r, c]) => omino.add(r * 4 + c)); });
     let branching = 0;
-    LINES.forEach(cells => {
+    const perLine = LINES.map(cells => {
       const n = matching(WORDS, cells.map(i => omino.has(i) ? g[i] : ''), 'v').length;
       if (n > 0) branching += Math.log10(n);
+      return n;
     });
 
     const ominos = [], singles = [];
@@ -215,7 +225,8 @@ const Solver = (() => {
       return true;
     };
     let pSol = 0;
-    if (space && space <= 300000) {                  // small: count exactly
+    const exact = space <= 300000;
+    if (space && exact) {                  // small: count exactly
       let sol = 0, seen = 0;
       const letters = Object.keys(counts);
       tilings.forEach(t => {
@@ -254,8 +265,12 @@ const Solver = (() => {
     pSol = space ? Math.max(pSol, numSolutions / space) : 1;
     const search = pSol > 0 ? -Math.log10(pSol) : 12;
     const clamp = x => Math.max(0, Math.min(1, x));
-    const score = Math.round(100 * (0.6 * clamp((search - 1.5) / 7) + 0.4 * clamp((branching - 2.5) / 8.5)));
-    return { score, stars: 1 + Math.min(4, Math.floor(score / 20)), search, branching };
+    const searchNorm = clamp((search - 1.5) / 7), wordNorm = clamp((branching - 2.5) / 8.5);
+    const score = Math.round(100 * (0.6 * searchNorm + 0.4 * wordNorm));
+    return { score, stars: 1 + Math.min(4, Math.floor(score / 20)), search, branching,
+             // the working, for the Create page's explanation
+             searchNorm, wordNorm, perLine, pSol, space, tilings: tilings.length, exact,
+             ominos: ominos.length, singles: singles.length, solutions: numSolutions };
   }
 
   function wordsOf(rows) {
