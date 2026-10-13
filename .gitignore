@@ -9,3 +9,4 @@ tools/pool_*.pkl
 tools/puzzles.json
 tools/hold.txt
 tools/retired.txt
+tools/puzzles_*.json
