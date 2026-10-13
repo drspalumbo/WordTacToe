@@ -4,3 +4,8 @@ tools/pool.pkl
 tools/__pycache__/
 .DS_Store
 tools/pool_*.pkl
+# the puzzle pipeline's plain-text answers stay on this computer (the site only
+# gets the scrambled data/puzzles.js)
+tools/puzzles.json
+tools/hold.txt
+tools/retired.txt
