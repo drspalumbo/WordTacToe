@@ -204,3 +204,21 @@ html.dark .sboard .sq.zone{background:rgba(255,255,255,.09);}
 /* Start step: the game itself, arranging (sized to its content by its messages) */
 .arrange-frame{width:calc(100% + 28px); max-width:420px; margin:0 -14px; height:480px; border:0;
   display:block; background:transparent;}
+
+/* Calendar (admin) */
+.cal-detail[hidden]{display:none;}
+.cal-body{margin-top:8px; padding:12px 14px; border-radius:12px; background:var(--surface);
+  border:1px solid var(--tile-line); text-align:left;}
+.cal-body p{margin:0 0 8px;}
+.cal-date{display:flex; align-items:center; gap:8px; font-weight:800; color:var(--ink); margin-bottom:8px;}
+.cal-date input{font:inherit; font-size:16px; padding:6px 8px; border-radius:8px; border:1px solid var(--tile-line);
+  background:var(--surface); color:var(--ink);}
+.cal-status .warn{color:#B7791F;} html.dark .cal-status .warn{color:#E5B85A;}
+.cal-body .bad{color:var(--bad);}
+.cal-steps{margin-top:8px !important;}
+.cal-steps code{font-size:12px;}
+.cal-body h4{margin:12px 0 4px; font-size:12px; letter-spacing:.06em; text-transform:uppercase; color:var(--ink-soft);}
+.cal-list{list-style:none; margin:0; padding:0; font-size:12.5px;}
+.cal-list li{display:grid; grid-template-columns:7.5em 3em 1fr; gap:6px; padding:3px 4px; border-radius:6px;}
+.cal-list li.pick{background:var(--accent-soft);}
+.cal-list b{color:var(--ink);}

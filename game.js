@@ -1,5 +1,21 @@
 const OCOLORS = ['var(--o1)','var(--o2)','var(--o3)','var(--o4)','var(--o5)','var(--o6)'];
 
+// ------------------------------------------------------------------ the daily
+// Danagram #1. PERMANENT once launched — it defines what "#47" means in every
+// shared result forever. Soft-launched as "Danagram Test" from Oct 8 2026; full name from Oct 11.
+const EPOCH = '2026-10-08';
+const LABEL = 'Danagram';        // shown in the share text
+
+const localMidnight = d =>
+  new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime();
+function epochMs() {
+  const [y, m, d] = EPOCH.split('-').map(Number);
+  return new Date(y, m - 1, d).getTime();
+}
+// Local midnight only: no timezone math, no DST. The device's own date is the input.
+function dayIndex() {
+  return Math.max(0, Math.round((localMidnight(new Date()) - epochMs()) / 86400000));
+}
 // ---------------------------------------------------------- custom puzzles
 // A link made on the Create page (?p=CODE) adds that puzzle after the daily ones
 // and opens it. A code that doesn't decode to a valid, connected puzzle is ignored.
@@ -18,13 +34,16 @@ const CUSTOM_TEXT = (() => {
            colors: q ? (q.get('c') || '').toLowerCase() : '' };
 })();
 const escHtml = s => s.replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
-const CUSTOM_IDX = (() => {
-  if (!CUSTOM_CODE || typeof Solver === 'undefined') return -1;
-  const d = Solver.decode(CUSTOM_CODE);
-  if (!d) return -1;
+// A puzzle from a Create link's parameters: p (letters and pieces), and optional
+// t (title), n (note), s (start position), c (colours). null if it isn't valid.
+const PAINT = { 1: 'var(--o1)', 2: 'var(--o2)', 3: 'var(--o3)', 4: 'var(--o4)', 5: 'var(--o5)',
+                6: 'var(--o6)', 7: 'var(--o7)', 8: 'var(--o8)', 9: 'var(--o9)', a: 'var(--tile)' };
+function puzzleFromLink(q) {
+  const code = (q.get('p') || '').toLowerCase();
+  if (!code || typeof Solver === 'undefined') return null;
+  const d = Solver.decode(code);
+  if (!d) return null;
   const rows = [0, 1, 2, 3].map(r => d.letters.slice(r * 4, r * 4 + 4).join(''));
-  // a creator may use a non-word (say, a name): it counts as a word in their puzzle
-  Solver.wordsOf(rows).forEach(w => { if (!WORDSET.has(w)) { WORDSET.add(w); WORDS.push(w); } });
   const groups = new Map();
   d.pieceOf.forEach((p, i) => { if (!groups.has(p)) groups.set(p, []); groups.get(p).push(i); });
   const connected = g => {                       // every piece one orthogonally joined shape
@@ -37,20 +56,23 @@ const CUSTOM_IDX = (() => {
     }
     return seen.size === g.length;
   };
-  if (![...groups.values()].every(connected)) return -1;
+  if (![...groups.values()].every(connected)) return null;
+  // a creator may use a non-word (say, a name): it counts as a word in their puzzle
+  Solver.wordsOf(rows).forEach(w => { if (!WORDSET.has(w)) { WORDSET.add(w); WORDS.push(w); } });
   const pieces = [...groups.values()].map(g => ({
     cells: g.map(i => [Math.floor(i / 4), i % 4]), letters: g.map(i => d.letters[i]).join('') }));
   const sols = Solver.solutions(pieces, { limit: 50 });
   const words = new Set(Solver.wordsOf(rows));
   sols.grids.forEach(g => Solver.wordsOf(g).forEach(w => words.add(w)));
   const diff = Solver.difficulty(rows, pieces, sols.grids.length || 1);
-  // the creator's starting position (&s=): one base-36 square (0–35, on the 6×6
-  // board) per piece for its first cell. Ignored unless every piece fits, no overlaps.
+  // the starting position (s): one base-36 square (0–35, on the 6×6 board) per
+  // piece for its first cell. Ignored unless every piece fits, with no overlaps.
+  const startCode = (q.get('s') || '').toLowerCase();
   let start = null;
-  if (/^[0-9a-z]+$/.test(CUSTOM_TEXT.start) && CUSTOM_TEXT.start.length === pieces.length) {
+  if (/^[0-9a-z]+$/.test(startCode) && startCode.length === pieces.length) {
     const taken = new Set();
     start = pieces.map((p, i) => {
-      const s = parseInt(CUSTOM_TEXT.start[i], 36), R = Math.floor(s / 6), C = s % 6;
+      const sq = parseInt(startCode[i], 36), R = Math.floor(sq / 6), C = sq % 6;
       const [r0, c0] = p.cells[0];
       return p.cells.map(([r, c]) => [R + r - r0, C + c - c0]);
     });
@@ -61,16 +83,65 @@ const CUSTOM_IDX = (() => {
     }));
     if (!ok) start = null;
   }
-  PUZZLES.push({ solution: rows, pieces, numSolutions: sols.grids.length || 1,
-                 solutionWords: [...words], difficulty: diff.score, stars: diff.stars, custom: true,
-                 start });
-  // the creator's colours (&c=): one code per piece, 0 = automatic (same list as Create)
-  const PAINT = { 1: 'var(--o1)', 2: 'var(--o2)', 3: 'var(--o3)', 4: 'var(--o4)', 5: 'var(--o5)',
-                  6: 'var(--o6)', 7: 'var(--o7)', 8: 'var(--o8)', 9: 'var(--o9)', a: 'var(--tile)' };
-  if (CUSTOM_TEXT.colors.length === pieces.length)
-    pieces.forEach((p, i) => { if (PAINT[CUSTOM_TEXT.colors[i]]) p.paint = PAINT[CUSTOM_TEXT.colors[i]]; });
+  // colours (c): one code per piece, 0 = automatic (the same list as Create)
+  const colorCode = (q.get('c') || '').toLowerCase();
+  if (colorCode.length === pieces.length)
+    pieces.forEach((p, i) => { if (PAINT[colorCode[i]]) p.paint = PAINT[colorCode[i]]; });
+  const clean = (v, n) => (v || '').replace(/\s+/g, ' ').trim().slice(0, n);
+  return { solution: rows, pieces, numSolutions: sols.grids.length || 1, solutionWords: [...words],
+           difficulty: diff.score, stars: diff.stars, start,
+           title: clean(q.get('t'), 40), note: (q.get('n') || '').trim().slice(0, 240) };
+}
+const CUSTOM_IDX = (() => {
+  if (!CUSTOM_CODE || typeof URLSearchParams === 'undefined') return -1;
+  const P = puzzleFromLink(new URLSearchParams(location.search || ''));
+  if (!P) return -1;
+  P.custom = true;
+  PUZZLES.push(P);
   return PUZZLES.length - 1;
 })();
+
+// ------------------------------------------------------------- the calendar
+// data/schedule.js: SCHEDULE = { 'YYYY-MM-DD': '<a share link from the Create
+// page>' }. On a scheduled date that puzzle is the daily (its #N is the date's);
+// the generated puzzles move back a day each, so none are skipped.
+const SCHEDULED_DAYS = (() => {                  // day index → the link's parameters
+  const out = new Map();
+  if (typeof SCHEDULE === 'undefined' || typeof URL === 'undefined' || typeof Solver === 'undefined') return out;
+  Object.keys(SCHEDULE).forEach(date => {
+    const m = /^(\d{4})-(\d\d)-(\d\d)$/.exec(date);
+    if (!m) return;
+    const day = Math.round((new Date(+m[1], +m[2] - 1, +m[3]).getTime() - epochMs()) / 86400000);
+    let q;
+    try { q = new URL(SCHEDULE[date], 'https://danagram.fun/').searchParams; } catch (e) { return; }
+    if (day >= 0 && Solver.decode((q.get('p') || '').toLowerCase())) out.set(day, q);
+  });
+  return out;
+})();
+// the generated puzzle for a day: days before it that were scheduled push it back
+function genIndexForDay(d) {
+  let n = 0;
+  SCHEDULED_DAYS.forEach((q, day) => { if (day < d) n++; });
+  return d - n;
+}
+const DAY_PUZZLE = new Map();                    // day index → PUZZLES index (scheduled days)
+const PUZZLE_DAY = new Map();                    // PUZZLES index → day index (today, yesterday)
+function puzzleForDay(d) {
+  if (DAY_PUZZLE.has(d)) return DAY_PUZZLE.get(d);
+  return Math.min(genIndexForDay(d), DAILY_COUNT - 1);
+}
+// today's and yesterday's puzzles are the ones a player can reach: build those
+[dayIndex(), dayIndex() - 1].forEach(d => {
+  if (d < 0 || !SCHEDULED_DAYS.has(d)) return;
+  const P = puzzleFromLink(SCHEDULED_DAYS.get(d));
+  if (!P) { SCHEDULED_DAYS.delete(d); return; }
+  P.scheduled = true;
+  PUZZLES.push(P);
+  DAY_PUZZLE.set(d, PUZZLES.length - 1);
+});
+// (yesterday first, so if both land on the last puzzle of a season, today's #N wins)
+[dayIndex() - 1, dayIndex()].forEach(d => { if (d >= 0) PUZZLE_DAY.set(puzzleForDay(d), d); });
+const dayNumber = idx => (PUZZLE_DAY.has(idx) ? PUZZLE_DAY.get(idx) : idx) + 1;   // the #N
 const isCustom = idx => idx === CUSTOM_IDX;
 // Arranging (?arrange=1, inside the Create page's Start step): just the board and
 // its controls. No scoring, saving, stats or timer. Untouched, it shows the
@@ -1701,7 +1772,7 @@ function sharedTime() {
   return t.done && store.get(SHARE_TIME_KEY) ? '⏱ ' + fmtTime(t.ms) : '';
 }
 function shareTitle() {
-  if (!isCustom(state.idx)) return `${LABEL} #${state.idx + 1}`;
+  if (!isCustom(state.idx)) return `${LABEL} #${dayNumber(state.idx)}`;
   return CUSTOM_TEXT.title ? `Danagram: “${CUSTOM_TEXT.title}”` : 'Custom Danagram';
 }
 function shareLink() {                           // https:// makes every app link it
@@ -2053,8 +2124,8 @@ function sendPlay(finished = false, idx = state.idx) {
   if (!h.play) { h.play = randomHex(8); h.playDay = localDay(); }
   const body = JSON.stringify({
     play: h.play, status: finished ? 'finished' : 'playing',
-    test: isCustom(idx) ? 0 : idx + 1, puzzle: puzzleHash(idx), day: h.playDay,
-    yesterday: dailyIdx() > 0 && idx === dailyIdx() - 1,
+    test: isCustom(idx) ? 0 : dayNumber(idx), puzzle: puzzleHash(idx), day: h.playDay,
+    yesterday: dayIndex() > 0 && idx === puzzleForDay(dayIndex() - 1),
     seconds: Math.round(timerNow(idx) / 1000),
     moves: h.moves || 0, shuffles: h.shuffles || 0,
     words: h.seen.length, crossings: h.crossings.length,
@@ -2440,26 +2511,11 @@ function setMode(mode) {
 window.addEventListener('resize', () => { metrics(); positionTiles(); clearBadges(); clearScribbles(); layoutDrawer(); });
 
 // ------------------------------------------------------------------ the daily
-// Danagram #1. PERMANENT once launched — it defines what "#47" means in every
-// shared result forever. Soft-launched as "Danagram Test" from Oct 8 2026; full name from Oct 11.
-const EPOCH = '2026-10-08';
-const LABEL = 'Danagram';        // shown in the share text
-
-const localMidnight = d =>
-  new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime();
-function epochMs() {
-  const [y, m, d] = EPOCH.split('-').map(Number);
-  return new Date(y, m - 1, d).getTime();
-}
-// Local midnight only: no timezone math, no DST. The device's own date is the input.
-function dayIndex() {
-  return Math.max(0, Math.round((localMidnight(new Date()) - epochMs()) / 86400000));
-}
-function dailyIdx() { return Math.min(dayIndex(), DAILY_COUNT - 1); }
-function seasonOver() { return dayIndex() >= DAILY_COUNT; }
+function dailyIdx() { return puzzleForDay(dayIndex()); }
+function seasonOver() { return !DAY_PUZZLE.has(dayIndex()) && genIndexForDay(dayIndex()) >= DAILY_COUNT; }
 
 // Today's puzzle, or yesterday's: the chevrons step one day back and return.
-function shownDayIdx() { return dailyIdx() - (state.dayBack && dailyIdx() > 0 ? 1 : 0); }
+function shownDay() { return dayIndex() - (state.dayBack && dayIndex() > 0 ? 1 : 0); }
 function renderDaily() {
   if (isCustom(state.idx)) {
     const today = '<a class="day-link" href="' + location.pathname + '">Today’s Danagram ›</a>';
@@ -2471,13 +2527,13 @@ function renderDaily() {
     fitDailyLine();
     return;
   }
-  const back = state.dayBack && dailyIdx() > 0;
+  const back = state.dayBack && dayIndex() > 0;
   const day = new Date();
   if (back) day.setDate(day.getDate() - 1);
   const line = date =>
-    (!back && dailyIdx() > 0
+    (!back && dayIndex() > 0
       ? '<button class="day-nav" id="dayPrev" aria-label="Play yesterday’s puzzle">‹</button>' : '') +
-    `<b>#${shownDayIdx() + 1}</b> · ${date}` +
+    `<b>#${shownDay() + 1}</b> · ${date}` +
     (!back && seasonOver() ? ' · last one for now' : '') +
     (back ? '<button class="day-nav" id="dayNext" aria-label="Back to today’s puzzle">›</button>' : '');
   dailyLines = {
@@ -2508,7 +2564,7 @@ document.getElementById('dailyLine').addEventListener('click', e => {
   if (!b || state.busy) return;
   state.dayBack = b.id === 'dayPrev';
   renderDaily();
-  loadPuzzle(shownDayIdx());
+  loadPuzzle(puzzleForDay(shownDay()));
 });
 
 function msToMidnight() {
@@ -2617,15 +2673,24 @@ if (!DEV) {
   if (meta) meta.style.display = 'none';
 }
 if (!ARRANGE) restoreProgress();
+// a scheduled daily with a title or note: show it once, on the first visit
+const introFirst = (() => {
+  const P = PUZZLES[dailyIdx()];
+  return CUSTOM_IDX < 0 && !DEV && P && P.scheduled && (P.title || P.note) && !state.sessions[dailyIdx()];
+})();
 if (CUSTOM_IDX >= 0) state.idx = CUSTOM_IDX;     // so renderDaily shows the custom line
 renderDaily();
 loadPuzzle(CUSTOM_IDX >= 0 ? CUSTOM_IDX : DEV ? 0 : dailyIdx());
 // a custom puzzle with a title or note opens with the creator's card (then help, if new)
-function showIntro() {
-  document.getElementById('introTitle').textContent = CUSTOM_TEXT.title || 'Custom Danagram';
+function showIntro(P = PUZZLES[state.idx]) {
+  const scheduled = !!(P && P.scheduled);
+  document.querySelector('.intro-kicker').textContent =
+    scheduled ? 'Today’s Danagram' : 'A Danagram made by a player';
+  document.getElementById('introTitle').textContent =
+    (scheduled ? P.title : CUSTOM_TEXT.title) || (scheduled ? 'Danagram #' + dayNumber(state.idx) : 'Custom Danagram');
   const note = document.getElementById('introNote');
-  note.textContent = CUSTOM_TEXT.note;
-  note.hidden = !CUSTOM_TEXT.note;
+  note.textContent = scheduled ? P.note : CUSTOM_TEXT.note;
+  note.hidden = !note.textContent;
   document.getElementById('introOverlay').classList.add('show');
 }
 document.getElementById('introPlay').addEventListener('click', () => {
@@ -2634,6 +2699,7 @@ document.getElementById('introPlay').addEventListener('click', () => {
 });
 if (ARRANGE) setupArrange();
 else if (isCustom(state.idx) && (CUSTOM_TEXT.title || CUSTOM_TEXT.note)) showIntro();
+else if (introFirst) showIntro();
 else if (!store.get(HELP_SEEN)) showHelp();
 
 function setupArrange() {

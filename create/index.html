@@ -110,6 +110,23 @@
     <button class="btn ghost" id="startOver">Start a new one</button>
   </div>
   <p class="share-note" id="shareNote"></p>
+  <!-- Calendar: for Dave only (create/?admin=1 turns it on for this device) -->
+  <details class="diff-detail cal-detail" id="calDetail" hidden>
+    <summary>Calendar</summary>
+    <div class="cal-body">
+      <p>Put this puzzle in the daily calendar. It replaces the generated puzzle that
+        day, and the generated ones each move back a day.</p>
+      <label class="cal-date">Date <input type="date" id="calDate"></label>
+      <p class="cal-status" id="calStatus"></p>
+      <button class="btn primary small" id="calCopy">Copy calendar line</button>
+      <p class="cal-steps">Then paste it into <a id="calEdit" target="_blank" rel="noopener"
+        href="https://github.com/drspalumbo/WordTacToe/edit/main/data/schedule.js">data/schedule.js on GitHub</a>,
+        between the <code>{</code> and the <code>};</code>, and commit. It’s live in a minute or two.</p>
+      <p class="share-note" id="calNote"></p>
+      <h4>Coming up</h4>
+      <ol class="cal-list" id="calList"></ol>
+    </div>
+  </details>
 </section>
 
 <!-- My puzzles: everything you've made, saved on this device -->
@@ -133,6 +150,8 @@
 </section>
 
 <script src="../data/words.js"></script>
+<script src="../data/puzzles.js"></script>
+<script src="../data/schedule.js"></script>
 <script src="../data/puzzle_words.js"></script>
 <script src="../solver.js"></script>
 <script src="create.js"></script>

@@ -19,6 +19,13 @@ function pieceColours(groups, paints = {}) {
   });
 }
 const $ = id => document.getElementById(id);
+// the Calendar fold-out is for Dave: ?admin=1 turns it on for this device, ?admin=0 off
+const ADMIN_KEY = 'danagram_admin';
+try {
+  const m = /[?&]admin=([01])/.exec(location.search);
+  if (m) localStorage.setItem(ADMIN_KEY, m[1]);
+} catch (e) {}
+const isAdmin = () => { try { return localStorage.getItem(ADMIN_KEY) === '1'; } catch (e) { return false; } };
 const escHtml = s => String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
 
 function loadDraft() {
@@ -662,7 +669,79 @@ function renderShare() {
   $('shareDiff').innerHTML = `Difficulty ${starRow(diff.stars)} <small>${diff.score}/100</small>`;
   shareMeta = [n, res.capped || res.timedOut, multi, diff];
   updateLink();
+  renderCalendar();
 }
+// ---- Calendar (admin): the same day arithmetic as the game. Generated puzzles
+// are never shown here (Dave plays them blind): just "generated".
+const EPOCH = '2026-10-08';
+const DAY_MS = 86400000;
+const epochDate = () => { const [y, m, d] = EPOCH.split('-').map(Number); return new Date(y, m - 1, d); };
+const dayOf = date => Math.round((new Date(date.getFullYear(), date.getMonth(), date.getDate()) - epochDate()) / DAY_MS);
+const dateOfDay = d => { const e = epochDate(); return new Date(e.getFullYear(), e.getMonth(), e.getDate() + d); };
+const iso = d => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+function scheduleDays() {                       // day → { title } for each valid entry
+  const out = new Map();
+  if (typeof SCHEDULE === 'undefined') return out;
+  Object.keys(SCHEDULE).forEach(date => {
+    const m = /^(\d{4})-(\d\d)-(\d\d)$/.exec(date);
+    if (!m) return;
+    let q;
+    try { q = new URL(SCHEDULE[date], 'https://danagram.fun/').searchParams; } catch (e) { return; }
+    if (!Solver.decode((q.get('p') || '').toLowerCase())) return;
+    out.set(dayOf(new Date(+m[1], +m[2] - 1, +m[3])), { title: q.get('t') || '', code: q.get('p') });
+  });
+  return out;
+}
+function renderCalendar() {
+  $('calDetail').hidden = !isAdmin();
+  if (!isAdmin()) return;
+  const sched = scheduleDays(), today = dayOf(new Date());
+  const gen = d => { let n = 0; sched.forEach((v, k) => { if (k < d) n++; }); return d - n; };
+  const total = typeof PUZZLES !== 'undefined' ? PUZZLES.length : 0;
+  // the date: keep the one picked, else the first open day after today
+  if (!$('calDate').value) {
+    let d = today + 1;
+    while (sched.has(d)) d++;
+    $('calDate').value = iso(dateOfDay(d));
+  }
+  $('calDate').min = iso(dateOfDay(today + 1));
+  const pick = dayOf(new Date($('calDate').value + 'T00:00'));
+  const mine = sched.get(pick);
+  const label = d => dateOfDay(d).toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' });
+  $('calStatus').innerHTML = isNaN(pick) ? '' :
+    `${label(pick)} is <b>#${pick + 1}</b>. ` +
+    (pick <= today ? '<span class="bad">That’s today or earlier: players may already have played it.</span>'
+      : mine ? (mine.code === shareCode() ? 'This puzzle is already there.'
+                : `<span class="warn">Already taken by “${escHtml(mine.title || 'an untitled puzzle')}”: yours would replace it.</span>`)
+      : 'Free.');
+  // the next three weeks
+  const rows = [];
+  for (let d = today; d < today + 21; d++) {
+    const s = sched.get(d);
+    const what = s ? `<b>★ ${escHtml(s.title || 'Your puzzle')}</b>`
+                   : gen(d) < total ? 'Generated' : '<span class="bad">No puzzle yet</span>';
+    rows.push(`<li${d === pick ? ' class="pick"' : ''}><span>${label(d)}${d === today ? ' (today)' : ''}</span>` +
+              `<span>#${d + 1}</span><span>${what}</span></li>`);
+  }
+  $('calList').innerHTML = rows.join('');
+}
+$('calDate').addEventListener('change', renderCalendar);
+$('calDetail').addEventListener('toggle', renderCalendar);
+$('calCopy').addEventListener('click', async () => {
+  const pick = $('calDate').value;
+  if (!pick) return;
+  const q = new URL($('shareUrl').value).search;          // the link's ?p=…&t=… part
+  const line = `  "${pick}": "${q}",`;
+  try {
+    if (navigator.clipboard && window.isSecureContext) {
+      await navigator.clipboard.writeText(line);
+      $('calNote').textContent = 'Copied! Paste it into schedule.js.';
+      return;
+    }
+  } catch (e) {}
+  window.prompt('Copy this line into data/schedule.js:', line);
+});
+
 $('shareBtn').addEventListener('click', async () => {
   const url = $('shareUrl').value;
   if (navigator.share) {
