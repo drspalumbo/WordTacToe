@@ -795,6 +795,13 @@
   .share-time input:focus-visible + .st-switch{outline:2px solid var(--ink); outline-offset:2px;}
   .share-timeline{margin-top:4px;}
   .card-actions .btn{width:100%; box-sizing:border-box; margin:0;}
+  /* secondary buttons in cards: a soft fill so they read as buttons (flat, no shadow) */
+  .card .btn.ghost{background:var(--track); color:var(--ink); padding:11px 14px;}
+  .card .btn.ghost:hover{background:var(--track-2);}
+  .card .btn.ghost:active, .card .btn.ghost.pressed{background:var(--track-2);}
+  /* ← Back and the next page share a row */
+  .card-nav{display:flex; gap:9px;}
+  .card-nav .btn{flex:1; min-width:0;}
 
   .confetti{
     position:fixed; z-index:70; pointer-events:none;
