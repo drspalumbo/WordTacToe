@@ -3,10 +3,11 @@
 days already scheduled. Prints counts only — never answers (Dave plays blind).
 
 Usage:
-    python extend.py 300            # append 300 days
-    python extend.py 300 --dry-run  # report what it would do, write nothing
+    python extend.py 300                # append 300 days
+    python extend.py 300 --from 9       # re-pick from day #9 on (keeps #1-#8 exactly)
+    python extend.py 300 --dry-run      # report what it would do, write nothing
 
-Each new day gets a puzzle in its weekday's difficulty band (DAILY_SPEC.md §2;
+Each new day gets a puzzle in its weekday's difficulty band (BANDS below;
 Sunday prefers 8+ single tiles), from every pool*.pkl here, with:
   - exactly one solution, and pieces that pass the omino blocklist
   - nothing already shipped or retired, and no repeated 16-letter multiset
@@ -22,8 +23,11 @@ EPOCH = datetime.date(2026, 10, 8)              # Danagram #1 (game.js EPOCH)
 WINDOW, WINDOW_MAX = 30, 2                      # an answer word: at most twice in any 30 days
 # and at most MAX_USES times in the whole season (--max-uses K to change; 8 fills 300 days)
 MAX_USES = int(sys.argv[sys.argv.index('--max-uses') + 1]) if '--max-uses' in sys.argv else 8
-# weekday (Mon=0) -> difficulty band (DAILY_SPEC.md §2)
-BANDS = {0: (30, 42), 1: (40, 52), 2: (50, 62), 3: (55, 72), 4: (70, 82), 5: (78, 92), 6: (62, 76)}
+# weekday (Mon=0) -> difficulty band. Stars are 20-point bands (1* 0-19 ... 5* 80-100).
+# Dave's week (Oct 15 2026): Mon 1*, Tue 3*, Wed 2*, Thu 4*, Fri 3*, Sat 4*, Sun 5*.
+# Monday aims at the top half of 1*: the lowest scores are close to trivial.
+BANDS = {0: (10, 19), 1: (40, 59), 2: (20, 39), 3: (60, 79), 4: (40, 59), 5: (60, 79), 6: (80, 100)}
+FROM = int(sys.argv[sys.argv.index('--from') + 1]) if '--from' in sys.argv else None
 
 import generate                                 # word lists, blocklist, emit_site_data
 
@@ -32,6 +36,8 @@ multiset = lambda g: ''.join(sorted(''.join(g)))
 singles = lambda p: sum(1 for pc in p['pieces'] if len(pc['cells']) == 1)
 
 season = json.load(open('puzzles.json'))
+if FROM:                                        # re-pick: keep days #1..#FROM-1 exactly
+    season = season[:FROM - 1]
 retired = []
 try:
     retired = [l.split() for l in open('retired.txt') if l.strip() and not l.startswith('#')]
