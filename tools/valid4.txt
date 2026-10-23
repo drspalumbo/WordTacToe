@@ -88,7 +88,6 @@ awes
 awls
 awry
 axed
-axel
 axes
 axis
 axle
@@ -426,6 +425,7 @@ daft
 dais
 dale
 dame
+damn
 damp
 dams
 dana
@@ -594,6 +594,7 @@ emus
 ends
 envy
 eons
+epee
 epic
 eras
 ergo
@@ -896,6 +897,7 @@ heel
 heft
 heir
 held
+hell
 helm
 help
 heme
@@ -1017,6 +1019,7 @@ jams
 jane
 jape
 jars
+java
 jaws
 jays
 jazz
@@ -1355,6 +1358,7 @@ muds
 mugs
 mule
 mull
+mums
 muon
 murk
 murr
@@ -1405,6 +1409,7 @@ node
 nods
 noel
 noes
+noir
 none
 nook
 noon
@@ -1415,7 +1420,6 @@ nose
 nosy
 note
 noun
-nous
 nova
 nowt
 nubs
@@ -1838,6 +1842,7 @@ sews
 sexy
 shad
 shag
+shah
 sham
 shaw
 shed
@@ -1886,6 +1891,7 @@ skis
 skit
 slab
 slag
+slam
 slap
 slat
 slaw
@@ -2100,7 +2106,6 @@ toga
 togs
 toil
 told
-tole
 toll
 tomb
 tome
@@ -2250,6 +2255,7 @@ waxy
 ways
 weak
 weal
+wean
 wear
 webs
 weds
@@ -2346,8 +2352,11 @@ yoke
 yolk
 yore
 your
+yowl
+yuan
 yuca
 yuck
+yule
 yurt
 zany
 zaps

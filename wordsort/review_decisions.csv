@@ -1,0 +1,152 @@
+#,YOUR DECISION,Your notes,Word,Flag,Priority,Claude's reasoning,Current decision,Your earlier reason,Uses per million,In dictionaries,Definition,Claude's suggestion
+144,,,vape,Not in list,Add?,"Not in words.json at all, so it currently can't be accepted. Common modern word; would need adding to the list.",Not in list,,,,,Valid only
+145,,,wifi,Not in list,Add?,"Not in words.json at all, so it currently can't be accepted. Common modern word; would need adding to the list.",Not in list,,,,,Valid only
+146,,,vlog,Not in list,Add?,"Not in words.json at all, so it currently can't be accepted. Common modern word; would need adding to the list.",Not in list,,,,,Valid only
+147,,,noob,Not in list,Add?,Not in words.json at all. Online slang; may feel dated or too niche.,Not in list,,,,,Your call
+148,,,yeet,Not in list,Add?,Not in words.json at all. Online slang; may feel dated or too niche.,Not in list,,,,,Your call
+9,Keep Mine,"it's barely profane, but would rather not have puzzles with it.",boob,Likely mis-swipe,Check,"Valid only with no reason noted. Probably deliberate (crude or suggestive), but worth confirming.",Valid only,,3,"ENABLE, Scrabble, SUBTLEX",,Valid only
+10,Keep Mine,"it's barely profane, but would rather not have puzzles with it.",peed,Likely mis-swipe,Check,"Valid only with no reason noted. Probably deliberate (crude or suggestive), but worth confirming.",Valid only,,2.63,"ENABLE, Scrabble, SUBTLEX",,Valid only
+11,Keep Mine,"it's barely profane, but would rather not have puzzles with it.",shag,Likely mis-swipe,Check,"Valid only with no reason noted. Probably deliberate (crude or suggestive), but worth confirming.",Valid only,,1.9,"ENABLE, Scrabble, SUBTLEX",,Valid only
+1,Fix,,slam,Mistake,Fix,"Marked for puzzles but NOT valid, with no reason. The only word in the list in this impossible state. Ordinary word.",Puzzle only (invalid state),,5.8,"ENABLE, Scrabble, SUBTLEX",,Puzzle + Valid
+2,Fix,,spic,Mistake,Fix,"Ethnic slur accepted as valid, while you rejected kike, dago, wops, coon, gook and wogs.",Valid only,Profane,1.16,"ENABLE, Scrabble, SUBTLEX",,Reject
+3,Fix,,quiz,Likely mis-swipe,Fix,"Plain everyday word accepted as valid but kept out of puzzles, with no reason noted. Looks like an accidental swipe down.",Valid only,,4.94,"ENABLE, Scrabble, SUBTLEX",,Puzzle + Valid
+4,Fix,,idle,Likely mis-swipe,Fix,"Plain everyday word accepted as valid but kept out of puzzles, with no reason noted. Looks like an accidental swipe down.",Valid only,,2.76,"ENABLE, Scrabble, SUBTLEX",,Puzzle + Valid
+5,Fix,,idol,Likely mis-swipe,Fix,"Plain everyday word accepted as valid but kept out of puzzles, with no reason noted. Looks like an accidental swipe down.",Valid only,,2.76,"ENABLE, Scrabble, SUBTLEX",,Puzzle + Valid
+6,Fix,,tame,Likely mis-swipe,Fix,"Plain everyday word accepted as valid but kept out of puzzles, with no reason noted. Looks like an accidental swipe down.",Valid only,,2.73,"ENABLE, Scrabble, SUBTLEX",,Puzzle + Valid
+7,Fix,,pail,Likely mis-swipe,Fix,"Plain everyday word accepted as valid but kept out of puzzles, with no reason noted. Looks like an accidental swipe down.",Valid only,,0.94,"ENABLE, Scrabble, SUBTLEX",,Puzzle + Valid
+8,Keep Mine,"This has taken on a new, profane meaning. Fine to check, but not to put into puzzles",goon,Likely mis-swipe,Fix,"Plain everyday word accepted as valid but kept out of puzzles, with no reason noted. Looks like an accidental swipe down.",Valid only,,2.27,"ENABLE, Scrabble, SUBTLEX",,Puzzle + Valid
+12,Fix,,exam,Reason doesn't fit,Fix,"Kept out of puzzles as ""Slang"", but exam is standard English.",Valid only,Slang,13.41,"ENABLE, Scrabble, SUBTLEX",,Puzzle + Valid
+13,Fix,,axle,Reason doesn't fit,Fix,"Kept out of puzzles with reason ""?"". Ordinary car-part word.",Valid only,?,1.24,"ENABLE, Scrabble, SUBTLEX",,Puzzle + Valid
+14,Fix,,thus,Reason doesn't fit,Fix,"Kept out of puzzles as ""Old"", but it's in everyday use.",Valid only,Old,12.31,"ENABLE, Scrabble, SUBTLEX",,Puzzle + Valid
+15,,,geez,Conflict,High,"You accepted jeez. Same word, other spelling.",Reject,Exclamation,11.27,"ENABLE, Scrabble, SUBTLEX",,Valid only
+16,,,bros,Conflict,High,gals is accepted as valid. bros is the male equivalent and more common.,Reject,Slang,1.1,"ENABLE, Scrabble, SUBTLEX",,Valid only
+17,,,pics,Conflict,High,mics and apps are accepted. pics is more common than either.,Reject,Shortening,0.22,"ENABLE, Scrabble, SUBTLEX","(noun) A picture, especially a photographic image.",Valid only
+21,,,frat,Conflict,High,"Very common US college word; similar shortenings (grad, prep) accepted.",Reject,Slang,3.14,"ENABLE, Scrabble, SUBTLEX",,Valid only
+24,,,semi,Conflict,High,The truck; semifinals. Very common in the US. Shortenings like info are accepted.,Reject,Slang,2.33,"ENABLE, Scrabble, SUBTLEX",,Valid only
+25,,,mayo,Conflict,High,Universal in the US. Shortenings like info are accepted.,Reject,Slang,3.25,"ENABLE, Scrabble, SUBTLEX",,Valid only
+39,,,oops,Conflict,High,"Everyday word. You accepted whoa, blah, yuck, meow and woof.",Reject,Exclamation,10.9,"ENABLE, Scrabble, SUBTLEX",,Valid only
+40,,,whew,Conflict,High,"Everyday word. You accepted whoa, blah, yuck, meow and woof.",Reject,Exclamation,6.27,"ENABLE, Scrabble, SUBTLEX",,Valid only
+41,,,phew,Conflict,High,"Everyday word. You accepted whoa, blah, yuck, meow and woof.",Reject,Exclamation,2.1,"ENABLE, Scrabble, SUBTLEX",,Valid only
+48,,,mike,Conflict,High,"Standard word for microphone (""mike someone up""); valid in Scrabble. Name-words like jake, rick and hank were accepted.",Reject,Proper,111.9,"ENABLE, Scrabble, SUBTLEX",,Valid only
+56,Fix,,hell,Conflict,High,"Milder than crap, piss and dick, which are accepted as valid (dang is too).",Reject,Profane,470.82,"ENABLE, Scrabble, SUBTLEX",,Valid only
+57,Fix,,damn,Conflict,High,"Milder than crap, piss and dick, which are accepted as valid (dang is too).",Reject,Profane,283.53,"ENABLE, Scrabble, SUBTLEX",,Valid only
+59,Fix,,wean,Upset risk,High,"Standard verb (""wean off""). The ""?"" reason suggests you were unsure.",Reject,?,0.25,"ENABLE, Scrabble, SUBTLEX",,Puzzle + Valid
+60,,,dibs,Upset risk,High,"Everyone knows ""I call dibs.""",Reject,Slang,2.31,"ENABLE, Scrabble, SUBTLEX",,Valid only
+61,,,carb,Upset risk,High,"Low-carb, carbs. Very common.",Reject,Shortening,0,"ENABLE, Scrabble",(noun) Clipping of carbohydrate,Valid only
+62,,,fave,Upset risk,High,Very common casual word.,Reject,Slang,0.12,"ENABLE, Scrabble, SUBTLEX",(noun) Favorite (US) or favourite (UK),Valid only
+18,,,vids,Conflict,Low,"mics and apps are accepted. Same kind of shortening, less common.",Reject,Shortening,0,Scrabble,(noun) plural of vid,Valid only
+29,,,rand,Conflict,Low,Currency. euro and lira are accepted; peso is a puzzle word. Less familiar to Americans.,Reject,Odd,2.35,"ENABLE, Scrabble, SUBTLEX",,Valid only
+30,,,baht,Conflict,Low,Currency. euro and lira are accepted; peso is a puzzle word. Less familiar to Americans.,Reject,Odd,0.37,"ENABLE, Scrabble, SUBTLEX","(noun) The official currency of Thailand, equal to 100 satang.",Valid only
+32,,,amir,Conflict,Low,"Variant spelling of emir, which is accepted.",Reject,Proper,1.2,"ENABLE, Scrabble, SUBTLEX",,Valid only
+47,,,egad,Conflict,Low,"Exclamation, dated. Similar ones accepted (whoa, blah).",Reject,Exclamation,0.1,"ENABLE, Scrabble, SUBTLEX","(interjection) A mild exclamation of surprise, contempt, outrage, etc.",Valid only
+51,,,troy,Conflict,Low,Troy weight (for gold). Mostly read as a name.,Reject,Old,12.47,"ENABLE, Scrabble, SUBTLEX",,Valid only
+52,,,kirk,Conflict,Low,Scottish for church. Little American recognition.,Reject,Old,18.9,"ENABLE, Scrabble, SUBTLEX",,Your call
+53,,,matt,Conflict,Low,Variant spelling of matte. Mostly read as a name.,Reject,Proper,31.45,"ENABLE, Scrabble, SUBTLEX",,Your call
+54,,,toby,Conflict,Low,"Has a dictionary meaning (toby jug; kent is archaic), but most people read it as a name.",Reject,Old,6.92,"ENABLE, Scrabble, SUBTLEX",,Your call
+55,,,kent,Conflict,Low,"Has a dictionary meaning (toby jug; kent is archaic), but most people read it as a name.",Reject,Proper,8.2,"ENABLE, Scrabble, SUBTLEX",,Your call
+106,,,trey,Upset risk,Low,"Real word but niche, dated or a nonstandard spelling. Few players would miss it.",Reject,Slang,6.75,"ENABLE, Scrabble, SUBTLEX",,Your call
+107,,,nite,Upset risk,Low,"Real word but niche, dated or a nonstandard spelling. Few players would miss it.",Reject,Contraction,0.92,"ENABLE, Scrabble, SUBTLEX",,Your call
+108,,,lite,Upset risk,Low,"Real word but niche, dated or a nonstandard spelling. Few players would miss it.",Reject,Slang,0.61,"ENABLE, Scrabble, SUBTLEX",,Your call
+109,,,thru,Upset risk,Low,"Real word but niche, dated or a nonstandard spelling. Few players would miss it.",Reject,Slang,0.61,"ENABLE, Scrabble, SUBTLEX",,Your call
+110,,,perv,Upset risk,Low,"Real word but niche, dated or a nonstandard spelling. Few players would miss it.",Reject,Slang,1.67,"Scrabble, SUBTLEX",,Your call
+111,,,phat,Upset risk,Low,"Real word but niche, dated or a nonstandard spelling. Few players would miss it.",Reject,Slang,1.37,"ENABLE, Scrabble, SUBTLEX",,Your call
+112,,,lats,Upset risk,Low,"Real word but niche, dated or a nonstandard spelling. Few players would miss it.",Reject,Contraction,0.92,"ENABLE, Scrabble, SUBTLEX",,Your call
+113,,,nips,Upset risk,Low,"Real word but niche, dated or a nonstandard spelling. Few players would miss it.",Reject,Slang,0.61,"ENABLE, Scrabble, SUBTLEX",,Your call
+114,,,debs,Upset risk,Low,"Real word but niche, dated or a nonstandard spelling. Few players would miss it.",Reject,Shortening,0.27,"ENABLE, Scrabble, SUBTLEX",(noun) Debutante ball or debut.,Your call
+115,,,lino,Upset risk,Low,"Real word but niche, dated or a nonstandard spelling. Few players would miss it.",Reject,Shortening,0.35,"ENABLE, Scrabble, SUBTLEX","(noun) An inexpensive waterproof covering used especially for floors, made from solidified linseed oil over a burlap or canvas backing, or from ...",Your call
+116,,,secs,Upset risk,Low,"Real word but niche, dated or a nonstandard spelling. Few players would miss it.",Reject,Shortening,0.12,"ENABLE, Scrabble, SUBTLEX","(noun) Second, 1/60 of a minute.",Your call
+117,,,veep,Upset risk,Low,"Real word but niche, dated or a nonstandard spelling. Few players would miss it.",Reject,Slang,0,"ENABLE, Scrabble","(noun) Abbreviation of Vice President of the United States; the office of Vice President of the United States, especially during an election cyc...",Your call
+118,,,prez,Upset risk,Low,"Real word but niche, dated or a nonstandard spelling. Few players would miss it.",Reject,Shortening,0,"ENABLE, Scrabble",(noun) Clipping of president.,Your call
+119,,,regs,Upset risk,Low,"Real word but niche, dated or a nonstandard spelling. Few players would miss it.",Reject,Shortening,0,"ENABLE, Scrabble",(noun) plural of reg,Your call
+120,,,recs,Upset risk,Low,"Real word but niche, dated or a nonstandard spelling. Few players would miss it.",Reject,Shortening,0,"ENABLE, Scrabble",(noun) plural of rec,Your call
+121,,,gibe,Upset risk,Low,"Real word but niche, dated or a nonstandard spelling. Few players would miss it.",Reject,?,0.04,"ENABLE, Scrabble, SUBTLEX",(noun) Alternative spelling of gybe,Your call
+122,Other (see notes),Since it might be interesting for puzzle fans make it valid,epee,Upset risk,Low,"Real word but niche, dated or a nonstandard spelling. Few players would miss it.",Reject,Foreign,0,"ENABLE, Scrabble","(noun) A sharp-pointed dueling sword with a bell-shaped guard, used (with the end blunted) in sport fencing.",Your call
+123,,,adze,Upset risk,Low,"Real word but niche, dated or a nonstandard spelling. Few players would miss it.",Reject,Jargon,0,"ENABLE, Scrabble",(noun) A cutting tool that has a curved blade set at a right angle to the handle and is used in shaping wood.,Your call
+124,,,sloe,Upset risk,Low,"Real word but niche, dated or a nonstandard spelling. Few players would miss it.",Reject,Old,0.06,"ENABLE, Scrabble, SUBTLEX","(noun) The small, bitter, wild fruit of the blackthorn (Prunus spinosa).",Your call
+125,,,ague,Upset risk,Low,"Real word but niche, dated or a nonstandard spelling. Few players would miss it.",Reject,Old,0.04,"ENABLE, Scrabble, SUBTLEX",(noun) An acute fever.,Your call
+126,,,bier,Upset risk,Low,"Real word but niche, dated or a nonstandard spelling. Few players would miss it.",Reject,Old,0.04,"ENABLE, Scrabble, SUBTLEX",(noun) A litter to transport the corpse of a dead person.,Your call
+127,,,stet,Upset risk,Low,"Real word but niche, dated or a nonstandard spelling. Few players would miss it.",Reject,Jargon,0,"ENABLE, Scrabble",(noun) A symbol used by proofreaders and typesetters to indicate that a word or phrase that was crossed out or changed should remain as it was.,Your call
+128,,,kohl,Upset risk,Low,"Real word but niche, dated or a nonstandard spelling. Few players would miss it.",Reject,Foreign,0,"ENABLE, Scrabble","(noun) A dark powder, usually powdered stibnite (an antimony ore), used as eye makeup, especially in Eastern countries.",Your call
+129,,,koan,Upset risk,Low,"Real word but niche, dated or a nonstandard spelling. Few players would miss it.",Reject,Foreign,0,"ENABLE, Scrabble","(noun) A story about a Zen master and his student, sometimes like a riddle, other times like a fable or parable, which has become an object of Z...",Your call
+130,,,brio,Upset risk,Low,"Real word but niche, dated or a nonstandard spelling. Few players would miss it.",Reject,Foreign,0,"ENABLE, Scrabble",(noun) Vigour or vivacity.,Your call
+131,,,myna,Upset risk,Low,"Real word but niche, dated or a nonstandard spelling. Few players would miss it.",Reject,Jargon,0,"ENABLE, Scrabble",(noun) One of the South and East Asian birds of the starling family Sturnidae.,Your call
+132,,,zonk,Upset risk,Low,"Real word but niche, dated or a nonstandard spelling. Few players would miss it.",Reject,Slang,0,"ENABLE, Scrabble","(noun) An unfavorable card or token, or undesirable or worthless item used as a prize in a contest or game show (such as Let's Make a Deal).",Your call
+133,,,gran,Upset risk,Low,"Real word but niche, dated or a nonstandard spelling. Few players would miss it.",Reject,Slang,2.14,"ENABLE, Scrabble, SUBTLEX",,Your call
+134,,,whit,Upset risk,Low,"Real word but niche, dated or a nonstandard spelling. Few players would miss it.",Reject,Foreign,1.94,"ENABLE, Scrabble, SUBTLEX",,Your call
+19,,,docs,Conflict,Medium,"info, grad, prep and tech are accepted. docs is just as common (doctors, Google Docs).",Reject,Slang,1,"ENABLE, Scrabble, SUBTLEX",,Valid only
+20,,,prof,Conflict,Medium,grad and prep are accepted. Same campus shortening.,Reject,Slang,2.96,"ENABLE, Scrabble, SUBTLEX",,Valid only
+22,,,meds,Conflict,Medium,"nuke and ammo are accepted. meds is everyday US usage. (In Scrabble, not ENABLE.)",Reject,Slang,4.75,"Scrabble, SUBTLEX",,Valid only
+23,,,pecs,Conflict,Medium,quad is accepted. Same kind of gym word.,Reject,Shortening,0.63,"ENABLE, Scrabble, SUBTLEX",,Valid only
+26,,,midi,Conflict,Medium,mini and maxi are both accepted.,Reject,Slang,0.1,"ENABLE, Scrabble, SUBTLEX",(noun) A native or inhabitant of Berlin.,Valid only
+27,,,zeta,Conflict,Medium,beta is accepted and iota is a puzzle word.,Reject,Foreign,0.41,"ENABLE, Scrabble, SUBTLEX","(noun) The sixth letter of the modern Greek alphabet (Ζ, ζ) preceded by epsilon (Ε, ε) and followed by eta, (Η, η); or the seventh letter in the...",Valid only
+28,Fix,,yuan,Conflict,Medium,euro and lira are accepted; peso is a puzzle word. yuan is in US news constantly.,Reject,Foreign,2.18,"ENABLE, Scrabble, SUBTLEX",,Valid only
+31,Fix,,shah,Conflict,Medium,"tsar, emir, raja and khan are accepted. shah is better known than raja.",Reject,Foreign,0.84,"ENABLE, Scrabble, SUBTLEX",,Valid only
+33,,,ciao,Conflict,Medium,"Rejected as Foreign, but hula, tiki, sumo, taro and ouzo are accepted. This is just as familiar to Americans.",Reject,Foreign,4.88,"ENABLE, Scrabble, SUBTLEX",,Valid only
+34,,,nada,Conflict,Medium,"Rejected as Foreign, but hula, tiki, sumo, taro and ouzo are accepted. This is just as familiar to Americans.",Reject,Foreign,2.55,"ENABLE, Scrabble, SUBTLEX",,Valid only
+35,,,vino,Conflict,Medium,"Rejected as Foreign, but hula, tiki, sumo, taro and ouzo are accepted. This is just as familiar to Americans.",Reject,Foreign,0.76,"ENABLE, Scrabble, SUBTLEX",,Valid only
+36,,,loco,Conflict,Medium,"Rejected as Foreign, but hula, tiki, sumo, taro and ouzo are accepted. This is just as familiar to Americans.",Reject,Foreign,1.98,"ENABLE, Scrabble, SUBTLEX",,Valid only
+37,Fix,,noir,Conflict,Medium,"Rejected as Foreign, but hula, tiki, sumo, taro and ouzo are accepted. This is just as familiar to Americans.",Reject,Foreign,0.8,"ENABLE, Scrabble, SUBTLEX",,Valid only
+38,,,sans,Conflict,Medium,"Rejected as Foreign, but hula, tiki, sumo, taro and ouzo are accepted. This is just as familiar to Americans.",Reject,Foreign,0.47,"ENABLE, Scrabble, SUBTLEX",(adjective) Short for sans serif.,Valid only
+42,,,ahem,Conflict,Medium,"Common exclamation. You accepted whoa, blah, yuck, meow and woof.",Reject,Exclamation,7.67,"ENABLE, Scrabble, SUBTLEX",,Valid only
+43,,,psst,Conflict,Medium,"Common exclamation. You accepted whoa, blah, yuck, meow and woof.",Reject,Exclamation,4.96,"ENABLE, Scrabble, SUBTLEX",,Valid only
+44,,,ahoy,Conflict,Medium,"Common exclamation. You accepted whoa, blah, yuck, meow and woof.",Reject,Exclamation,3.71,"ENABLE, Scrabble, SUBTLEX",,Valid only
+45,,,haha,Conflict,Medium,"Common exclamation. You accepted whoa, blah, yuck, meow and woof.",Reject,Onomatopoeia,0.47,"ENABLE, Scrabble, SUBTLEX",,Valid only
+46,,,drat,Conflict,Medium,"Common exclamation. You accepted whoa, blah, yuck, meow and woof.",Reject,Exclamation,0.9,"ENABLE, Scrabble, SUBTLEX",,Valid only
+49,,,tony,Conflict,Medium,"Adjective meaning stylish (""a tony neighborhood""). Name-words like jake and rick were accepted.",Reject,Proper,68.69,"ENABLE, Scrabble, SUBTLEX",,Valid only
+50,,,dirk,Conflict,Medium,A dagger. Name-words like jake and rick were accepted.,Reject,Old,2.69,"ENABLE, Scrabble, SUBTLEX",,Valid only
+58,,,slut,Conflict,Medium,"tits and cock are accepted, but this one targets people. Reasonable to keep rejected.",Reject,Profane,11.35,"ENABLE, Scrabble, SUBTLEX",,Your call
+63,,,feds,Upset risk,Medium,Familiar to most American adults; a reasonable player might type it and expect it to count.,Reject,Slang,7.04,"ENABLE, Scrabble, SUBTLEX",,Valid only
+64,,,reps,Upset risk,Medium,Familiar to most American adults; a reasonable player might type it and expect it to count.,Reject,Slang,0.9,"ENABLE, Scrabble, SUBTLEX",,Valid only
+65,,,refs,Upset risk,Medium,Familiar to most American adults; a reasonable player might type it and expect it to count.,Reject,Slang,0.04,"ENABLE, Scrabble, SUBTLEX",(noun) A referee.,Valid only
+66,,,tots,Upset risk,Medium,Familiar to most American adults; a reasonable player might type it and expect it to count.,Reject,Slang,0.9,"ENABLE, Scrabble, SUBTLEX",,Valid only
+67,,,trig,Upset risk,Medium,Familiar to most American adults; a reasonable player might type it and expect it to count.,Reject,Slang,0.76,"ENABLE, Scrabble, SUBTLEX",,Valid only
+68,,,spec,Upset risk,Medium,Familiar to most American adults; a reasonable player might type it and expect it to count.,Reject,Slang,0.86,"ENABLE, Scrabble, SUBTLEX",,Valid only
+69,,,awol,Upset risk,Medium,Familiar to most American adults; a reasonable player might type it and expect it to count.,Reject,Slang,2.29,"ENABLE, Scrabble, SUBTLEX",,Valid only
+70,,,meth,Upset risk,Medium,Familiar to most American adults; a reasonable player might type it and expect it to count.,Reject,Slang,2.35,"ENABLE, Scrabble, SUBTLEX",,Valid only
+71,,,wuss,Upset risk,Medium,Familiar to most American adults; a reasonable player might type it and expect it to count.,Reject,Slang,1.86,"ENABLE, Scrabble, SUBTLEX",,Valid only
+72,,,narc,Upset risk,Medium,Familiar to most American adults; a reasonable player might type it and expect it to count.,Reject,Slang,1.45,"ENABLE, Scrabble, SUBTLEX",,Valid only
+73,,,wack,Upset risk,Medium,Familiar to most American adults; a reasonable player might type it and expect it to count.,Reject,Slang,1.71,"ENABLE, Scrabble, SUBTLEX",,Valid only
+74,,,croc,Upset risk,Medium,Familiar to most American adults; a reasonable player might type it and expect it to count.,Reject,Slang,1.18,"ENABLE, Scrabble, SUBTLEX",,Valid only
+75,Fix,,java,Upset risk,Medium,Familiar to most American adults; a reasonable player might type it and expect it to count.,Reject,Slang,1.53,"ENABLE, Scrabble, SUBTLEX",,Valid only
+76,,,keno,Upset risk,Medium,Familiar to most American adults; a reasonable player might type it and expect it to count.,Reject,Jargon,0.84,"ENABLE, Scrabble, SUBTLEX",,Valid only
+77,,,anti,Upset risk,Medium,Familiar to most American adults; a reasonable player might type it and expect it to count.,Reject,Prefix,0.51,"ENABLE, Scrabble, SUBTLEX",,Valid only
+78,,,mega,Upset risk,Medium,Familiar to most American adults; a reasonable player might type it and expect it to count.,Reject,Prefix,0.78,"Scrabble, SUBTLEX",,Valid only
+79,,,mono,Upset risk,Medium,Familiar to most American adults; a reasonable player might type it and expect it to count.,Reject,Prefix,0.73,"ENABLE, Scrabble, SUBTLEX",,Valid only
+80,,,revs,Upset risk,Medium,Familiar to most American adults; a reasonable player might type it and expect it to count.,Reject,Shortening,0.65,"ENABLE, Scrabble, SUBTLEX",,Valid only
+81,,,pled,Upset risk,Medium,Familiar to most American adults; a reasonable player might type it and expect it to count.,Reject,Shortening,0.24,"ENABLE, Scrabble, SUBTLEX","(verb) To present (an argument or a plea), especially in a legal case.",Valid only
+82,,,faun,Upset risk,Medium,Familiar to most American adults; a reasonable player might type it and expect it to count.,Reject,Old,0.51,"ENABLE, Scrabble, SUBTLEX",,Valid only
+83,Fix,,yule,Upset risk,Medium,Familiar to most American adults; a reasonable player might type it and expect it to count.,Reject,Shortening,0.37,"ENABLE, Scrabble, SUBTLEX",(noun) Alternative letter-case form of Yule,Valid only
+84,,,deco,Upset risk,Medium,Familiar to most American adults; a reasonable player might type it and expect it to count.,Reject,Shortening,0.43,"ENABLE, Scrabble, SUBTLEX",(noun) (underwater diving) Decompression.,Valid only
+85,,,obit,Upset risk,Medium,Familiar to most American adults; a reasonable player might type it and expect it to count.,Reject,Shortening,0.12,"ENABLE, Scrabble, SUBTLEX",(noun) Death of a person.,Valid only
+86,,,kart,Upset risk,Medium,Familiar to most American adults; a reasonable player might type it and expect it to count.,Reject,Slang,0.08,"ENABLE, Scrabble, SUBTLEX",(noun) A go-cart.,Valid only
+87,,,zine,Upset risk,Medium,Familiar to most American adults; a reasonable player might type it and expect it to count.,Reject,Slang,0.08,"Scrabble, SUBTLEX","(noun) A low-circulation, non-commercial publication of original or appropriated texts and images, especially one of minority interest.",Valid only
+88,,,nosh,Upset risk,Medium,Familiar to most American adults; a reasonable player might type it and expect it to count.,Reject,Slang,0.12,"ENABLE, Scrabble, SUBTLEX",(noun) Food; a light meal or snack.,Valid only
+89,,,bios,Upset risk,Medium,Familiar to most American adults; a reasonable player might type it and expect it to count.,Reject,Shortening,0.1,"ENABLE, Scrabble, SUBTLEX",(noun) Biographical sketch,Valid only
+90,,,repo,Upset risk,Medium,Familiar to most American adults; a reasonable player might type it and expect it to count.,Reject,Shortening,0,"ENABLE, Scrabble","(noun) Clipping of repossession, most commonly of a vehicle, house or condominium.",Valid only
+91,,,keto,Upset risk,Medium,Familiar to most American adults; a reasonable player might type it and expect it to count.,Reject,Shortening,0,"ENABLE, Scrabble",(noun) The carbonyl group of a ketone.,Valid only
+92,,,camo,Upset risk,Medium,Familiar to most American adults; a reasonable player might type it and expect it to count.,Reject,Shortening,0,Scrabble,"(noun) A pattern on clothing consisting of irregularly shaped patches that are either greenish/brownish, brownish/whitish, or bluish/whitish, as...",Valid only
+93,,,cigs,Upset risk,Medium,Familiar to most American adults; a reasonable player might type it and expect it to count.,Reject,Slang,0,Scrabble,(noun) plural of cig,Valid only
+94,,,mods,Upset risk,Medium,Familiar to most American adults; a reasonable player might type it and expect it to count.,Reject,Shortening,0,"ENABLE, Scrabble",(noun) plural of mod,Valid only
+95,,,pleb,Upset risk,Medium,Familiar to most American adults; a reasonable player might type it and expect it to count.,Reject,Shortening,0,"ENABLE, Scrabble",(noun) A commoner; a member of the lower class of a society.,Valid only
+96,,,fete,Upset risk,Medium,Familiar to most American adults; a reasonable player might type it and expect it to count.,Reject,Foreign,0.31,"ENABLE, Scrabble, SUBTLEX","(noun) A festival open to the public, the proceeds from which are often given to charity.",Valid only
+97,,,lama,Upset risk,Medium,Familiar to most American adults; a reasonable player might type it and expect it to count.,Reject,Foreign,3.08,"ENABLE, Scrabble, SUBTLEX",,Valid only
+98,,,loch,Upset risk,Medium,Familiar to most American adults; a reasonable player might type it and expect it to count.,Reject,Foreign,1.73,"ENABLE, Scrabble, SUBTLEX",,Valid only
+99,Other (see notes),puzzle + valid (also a flower),mums,Upset risk,Medium,Familiar to most American adults; a reasonable player might type it and expect it to count.,Reject,Foreign,0.29,"ENABLE, Scrabble, SUBTLEX",(noun) Mother.,Valid only
+100,,,orgy,Upset risk,Medium,Familiar to most American adults; a reasonable player might type it and expect it to count.,Reject,Profane,1.71,"ENABLE, Scrabble, SUBTLEX",,Valid only
+101,,,smut,Upset risk,Medium,Familiar to most American adults; a reasonable player might type it and expect it to count.,Reject,Profane,1.37,"ENABLE, Scrabble, SUBTLEX",,Valid only
+102,,,hick,Upset risk,Medium,Familiar to most American adults; a reasonable player might type it and expect it to count.,Reject,Profane,2,"ENABLE, Scrabble, SUBTLEX",,Valid only
+103,,,putz,Upset risk,Medium,Familiar to most American adults; a reasonable player might type it and expect it to count.,Reject,Slang,2.35,"ENABLE, Scrabble, SUBTLEX",,Valid only
+104,,,bonk,Upset risk,Medium,Familiar to most American adults; a reasonable player might type it and expect it to count.,Reject,Slang,0.33,"ENABLE, Scrabble, SUBTLEX",(noun) A bump on the head.,Valid only
+105,,,wham,Upset risk,Medium,Familiar to most American adults; a reasonable player might type it and expect it to count.,Reject,Onomatopoeia,1.92,"ENABLE, Scrabble, SUBTLEX",,Valid only
+135,,,yews,Undecided,Pending,Never decided. Ordinary if uncommon word (yew trees; a cat's yowl).,Undecided,,0,"ENABLE, Scrabble",(noun) plural of yew,Valid only
+136,Fix,,yowl,Undecided,Pending,Never decided. Ordinary if uncommon word (yew trees; a cat's yowl).,Undecided,,0,"ENABLE, Scrabble","(noun) A prolonged, loud cry, like the sound of an animal; a wail; a howl.",Valid only
+137,,reject,yaws,Undecided,Pending,Never decided. A tropical disease; also plural of yaw (aircraft motion).,Undecided,,0,"ENABLE, Scrabble","(noun) A contagious tropical disease, caused by the spirochete Treponema pertenue, characterized by yellowish or reddish tumors, which often res...",Valid only
+138,,reject,yays,Undecided,Pending,Never decided. Casual plural of an interjection.,Undecided,,0,"ENABLE, Scrabble",(noun) plural of yay,Your call
+139,,reject,yeps,Undecided,Pending,Never decided. Casual plural of an interjection.,Undecided,,0,Scrabble,(noun) plural of yep,Your call
+140,,reject,yups,Undecided,Pending,Never decided. Casual plural of an interjection.,Undecided,,0,"ENABLE, Scrabble",(noun) plural of yup,Your call
+141,,reject,yutz,Undecided,Pending,Never decided. Yiddish-derived slang for a fool; known in some US regions.,Undecided,,0,Scrabble,"(noun) A foolish, incompetent, awkward, or contemptible person.",Your call
+142,,reject,zoic,Undecided,Pending,Never decided. Technical biology term nobody will type.,Undecided,,0,"ENABLE, Scrabble",(adjective) Showing traces of life; containing organic remains.,Reject
+143,,reject,zyme,Undecided,Pending,Never decided. Technical biology term nobody will type.,Undecided,,0,"ENABLE, Scrabble",(noun) A ferment.,Reject
+,Other (see notes),Reject,Tole,,,,,,,,,
+,Other (see notes),Reject,Nous,,,,,,,,,
+,Other (see notes),reject (jargon),axel,,,,,,,,,

@@ -69,9 +69,9 @@ awed
 awls
 awry
 axed
-axel
 axes
 axis
+axle
 axon
 babe
 baby
@@ -497,6 +497,7 @@ even
 ever
 evil
 ewes
+exam
 exec
 exed
 exes
@@ -829,7 +830,9 @@ icky
 icon
 idea
 ides
+idle
 idly
+idol
 iffy
 ills
 imam
@@ -1140,6 +1143,7 @@ muds
 mugs
 mule
 mull
+mums
 murk
 muse
 mush
@@ -1248,6 +1252,7 @@ pact
 pads
 page
 paid
+pail
 pain
 pair
 pale
@@ -1379,6 +1384,7 @@ pyre
 quay
 quip
 quit
+quiz
 race
 rack
 racy
@@ -1580,6 +1586,7 @@ skis
 skit
 slab
 slag
+slam
 slap
 slat
 slaw
@@ -1701,6 +1708,7 @@ talc
 tale
 talk
 tall
+tame
 tamp
 tang
 tank
@@ -1741,6 +1749,7 @@ they
 thin
 this
 thug
+thus
 tick
 tics
 tide
@@ -1895,6 +1904,7 @@ wavy
 waxy
 ways
 weak
+wean
 wear
 webs
 weds

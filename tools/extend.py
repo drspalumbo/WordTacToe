@@ -57,6 +57,12 @@ for path in sorted(glob.glob('pool*.pkl')):
             continue
         if not generate.pieces_are_clean(p['solution'], [pc['cells'] for pc in p['pieces']]):
             continue
+        # re-check against today's word lists (they change as words are reviewed):
+        # every answer a puzzle word, and still exactly one solution
+        if not all(w in generate.WORDSET for w in words_of(list(g))):
+            continue
+        if len(generate.count_solutions(list(g), [[tuple(c) for c in pc['cells']] for pc in p['pieces']])) != 1:
+            continue
         seen.add(g)
         pool.append(p)
 print(f'pool: {len(pool)} usable puzzles (from {len(glob.glob("pool*.pkl"))} pool files)')
