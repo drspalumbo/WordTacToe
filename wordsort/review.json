@@ -1,0 +1,1582 @@
+{
+"round": "r2",
+"title": "Round 2: dubious words",
+"items": [
+{
+"word": "asea",
+"tier": "Strong",
+"category": "Archaic",
+"meaning": "at sea; confused",
+"suggestion": "Reject",
+"inPuzzles": true
+},
+{
+"word": "vail",
+"tier": "Strong",
+"category": "Archaic",
+"meaning": "to lower; a tip",
+"suggestion": "Reject",
+"inPuzzles": true
+},
+{
+"word": "cobb",
+"tier": "Strong",
+"category": "Obscure",
+"meaning": "a gull (variant of cob); mostly read as a name / Cobb salad",
+"suggestion": "Reject",
+"inPuzzles": true
+},
+{
+"word": "exed",
+"tier": "Strong",
+"category": "Obscure",
+"meaning": "crossed out with an X",
+"suggestion": "Reject",
+"inPuzzles": true
+},
+{
+"word": "huck",
+"tier": "Strong",
+"category": "Obscure",
+"meaning": "huckaback, a towel fabric",
+"suggestion": "Reject",
+"inPuzzles": true
+},
+{
+"word": "kane",
+"tier": "Strong",
+"category": "Obscure",
+"meaning": "a tax paid in produce (variant of kain); reads as a name",
+"suggestion": "Reject",
+"inPuzzles": true
+},
+{
+"word": "mara",
+"tier": "Strong",
+"category": "Obscure",
+"meaning": "a Patagonian rodent",
+"suggestion": "Reject",
+"inPuzzles": true
+},
+{
+"word": "marc",
+"tier": "Strong",
+"category": "Obscure",
+"meaning": "grape skins left after pressing; a brandy made from them",
+"suggestion": "Reject",
+"inPuzzles": true
+},
+{
+"word": "turk",
+"tier": "Strong",
+"category": "Proper noun",
+"meaning": "lowercase only in \"young turk\"; reads as a nationality",
+"suggestion": "Reject",
+"inPuzzles": true
+},
+{
+"word": "holt",
+"tier": "Strong",
+"category": "Regional (British)",
+"meaning": "an otter's den; a wood",
+"suggestion": "Reject",
+"inPuzzles": true
+},
+{
+"word": "sark",
+"tier": "Strong",
+"category": "Regional (Scottish)",
+"meaning": "a shirt",
+"suggestion": "Reject",
+"inPuzzles": true
+},
+{
+"word": "vera",
+"tier": "Strong",
+"category": "Regional (Scottish)",
+"meaning": "\"very\"; mostly read as a name (aloe vera)",
+"suggestion": "Reject",
+"inPuzzles": true
+},
+{
+"word": "hart",
+"tier": "Your call",
+"category": "Archaic",
+"meaning": "a male deer",
+"suggestion": "Valid only",
+"inPuzzles": true
+},
+{
+"word": "nobs",
+"tier": "Your call",
+"category": "British",
+"meaning": "posh people; heads",
+"suggestion": "Your call",
+"inPuzzles": true
+},
+{
+"word": "cels",
+"tier": "Your call",
+"category": "Jargon (animation)",
+"meaning": "hand-painted animation frames",
+"suggestion": "Valid only",
+"inPuzzles": true
+},
+{
+"word": "apse",
+"tier": "Your call",
+"category": "Jargon (architecture)",
+"meaning": "a rounded recess in a church",
+"suggestion": "Valid only",
+"inPuzzles": true
+},
+{
+"word": "axon",
+"tier": "Your call",
+"category": "Jargon (biology)",
+"meaning": "the long part of a nerve cell",
+"suggestion": "Your call",
+"inPuzzles": true
+},
+{
+"word": "loge",
+"tier": "Your call",
+"category": "Jargon (theater)",
+"meaning": "a box or front balcony section",
+"suggestion": "Valid only",
+"inPuzzles": true
+},
+{
+"word": "alit",
+"tier": "Your call",
+"category": "Literary",
+"meaning": "landed (past of alight)",
+"suggestion": "Valid only",
+"inPuzzles": true
+},
+{
+"word": "gyre",
+"tier": "Your call",
+"category": "Literary",
+"meaning": "a spiral or vortex",
+"suggestion": "Valid only",
+"inPuzzles": true
+},
+{
+"word": "mien",
+"tier": "Your call",
+"category": "Literary",
+"meaning": "a person's look or manner",
+"suggestion": "Valid only",
+"inPuzzles": true
+},
+{
+"word": "wont",
+"tier": "Your call",
+"category": "Literary",
+"meaning": "accustomed (\"as is his wont\")",
+"suggestion": "Your call",
+"inPuzzles": true
+},
+{
+"word": "busk",
+"tier": "Your call",
+"category": "Mostly British",
+"meaning": "to perform on the street for tips",
+"suggestion": "Valid only",
+"inPuzzles": true
+},
+{
+"word": "brad",
+"tier": "Your call",
+"category": "Name-word",
+"meaning": "a small thin nail; reads as a name",
+"suggestion": "Valid only",
+"inPuzzles": true
+},
+{
+"word": "john",
+"tier": "Your call",
+"category": "Name-word",
+"meaning": "a toilet; a prostitute's client; reads as a name",
+"suggestion": "Valid only",
+"inPuzzles": true
+},
+{
+"word": "bola",
+"tier": "Your call",
+"category": "Obscure",
+"meaning": "a throwing weapon of weighted cords",
+"suggestion": "Valid only",
+"inPuzzles": true
+},
+{
+"word": "tapa",
+"tier": "Your call",
+"category": "Obscure",
+"meaning": "bark cloth; one of a plate of tapas",
+"suggestion": "Valid only",
+"inPuzzles": true
+},
+{
+"word": "muds",
+"tier": "Your call",
+"category": "Odd plural",
+"meaning": "plural of mud (\"muds\" is rarely said)",
+"suggestion": "Your call",
+"inPuzzles": true
+},
+{
+"word": "peon",
+"tier": "Your call",
+"category": "Possibly pejorative",
+"meaning": "a low-paid laborer",
+"suggestion": "Valid only",
+"inPuzzles": true
+},
+{
+"word": "cess",
+"tier": "Strong",
+"category": "Archaic",
+"meaning": "a tax",
+"suggestion": "Reject",
+"inPuzzles": false
+},
+{
+"word": "chid",
+"tier": "Strong",
+"category": "Archaic",
+"meaning": "chided",
+"suggestion": "Reject",
+"inPuzzles": false
+},
+{
+"word": "dere",
+"tier": "Strong",
+"category": "Archaic",
+"meaning": "dire",
+"suggestion": "Reject",
+"inPuzzles": false
+},
+{
+"word": "dido",
+"tier": "Strong",
+"category": "Archaic",
+"meaning": "a prank",
+"suggestion": "Reject",
+"inPuzzles": false
+},
+{
+"word": "doit",
+"tier": "Strong",
+"category": "Archaic",
+"meaning": "a small coin; a trifle",
+"suggestion": "Reject",
+"inPuzzles": false
+},
+{
+"word": "erst",
+"tier": "Strong",
+"category": "Archaic",
+"meaning": "formerly",
+"suggestion": "Reject",
+"inPuzzles": false
+},
+{
+"word": "fain",
+"tier": "Strong",
+"category": "Archaic",
+"meaning": "gladly",
+"suggestion": "Reject",
+"inPuzzles": false
+},
+{
+"word": "fets",
+"tier": "Strong",
+"category": "Archaic",
+"meaning": "fetches",
+"suggestion": "Reject",
+"inPuzzles": false
+},
+{
+"word": "iwis",
+"tier": "Strong",
+"category": "Archaic",
+"meaning": "certainly",
+"suggestion": "Reject",
+"inPuzzles": false
+},
+{
+"word": "lade",
+"tier": "Strong",
+"category": "Archaic",
+"meaning": "to load",
+"suggestion": "Reject",
+"inPuzzles": false
+},
+{
+"word": "lave",
+"tier": "Strong",
+"category": "Archaic",
+"meaning": "to wash",
+"suggestion": "Reject",
+"inPuzzles": false
+},
+{
+"word": "lief",
+"tier": "Strong",
+"category": "Archaic",
+"meaning": "willingly",
+"suggestion": "Reject",
+"inPuzzles": false
+},
+{
+"word": "meed",
+"tier": "Strong",
+"category": "Archaic",
+"meaning": "a reward",
+"suggestion": "Reject",
+"inPuzzles": false
+},
+{
+"word": "moil",
+"tier": "Strong",
+"category": "Archaic",
+"meaning": "to toil; turmoil",
+"suggestion": "Reject",
+"inPuzzles": false
+},
+{
+"word": "oped",
+"tier": "Strong",
+"category": "Archaic",
+"meaning": "opened",
+"suggestion": "Reject",
+"inPuzzles": false
+},
+{
+"word": "opes",
+"tier": "Strong",
+"category": "Archaic",
+"meaning": "opens",
+"suggestion": "Reject",
+"inPuzzles": false
+},
+{
+"word": "orts",
+"tier": "Strong",
+"category": "Archaic",
+"meaning": "scraps of food",
+"suggestion": "Reject",
+"inPuzzles": false
+},
+{
+"word": "reft",
+"tier": "Strong",
+"category": "Archaic",
+"meaning": "robbed, bereft",
+"suggestion": "Reject",
+"inPuzzles": false
+},
+{
+"word": "ruly",
+"tier": "Strong",
+"category": "Archaic",
+"meaning": "orderly (the opposite of unruly)",
+"suggestion": "Reject",
+"inPuzzles": false
+},
+{
+"word": "shew",
+"tier": "Strong",
+"category": "Archaic",
+"meaning": "show",
+"suggestion": "Reject",
+"inPuzzles": false
+},
+{
+"word": "tope",
+"tier": "Strong",
+"category": "Archaic",
+"meaning": "to drink heavily; a Buddhist shrine",
+"suggestion": "Reject",
+"inPuzzles": false
+},
+{
+"word": "vill",
+"tier": "Strong",
+"category": "Archaic",
+"meaning": "a township",
+"suggestion": "Reject",
+"inPuzzles": false
+},
+{
+"word": "wast",
+"tier": "Strong",
+"category": "Archaic",
+"meaning": "was (\"thou wast\")",
+"suggestion": "Reject",
+"inPuzzles": false
+},
+{
+"word": "weal",
+"tier": "Strong",
+"category": "Archaic",
+"meaning": "well-being; a welt",
+"suggestion": "Reject",
+"inPuzzles": false
+},
+{
+"word": "yean",
+"tier": "Strong",
+"category": "Archaic",
+"meaning": "to give birth (of a sheep)",
+"suggestion": "Reject",
+"inPuzzles": false
+},
+{
+"word": "clew",
+"tier": "Strong",
+"category": "Archaic / nautical",
+"meaning": "a ball of thread; a corner of a sail",
+"suggestion": "Reject",
+"inPuzzles": false
+},
+{
+"word": "dawk",
+"tier": "Strong",
+"category": "Archaic / regional",
+"meaning": "mail carried by relay runners (India)",
+"suggestion": "Reject",
+"inPuzzles": false
+},
+{
+"word": "gage",
+"tier": "Strong",
+"category": "Archaic / variant",
+"meaning": "a pledge; variant of gauge",
+"suggestion": "Reject",
+"inPuzzles": false
+},
+{
+"word": "glim",
+"tier": "Strong",
+"category": "Archaic slang",
+"meaning": "a light or candle",
+"suggestion": "Reject",
+"inPuzzles": false
+},
+{
+"word": "gawp",
+"tier": "Strong",
+"category": "British",
+"meaning": "to stare stupidly",
+"suggestion": "Reject",
+"inPuzzles": false
+},
+{
+"word": "jink",
+"tier": "Strong",
+"category": "British",
+"meaning": "to dodge quickly",
+"suggestion": "Reject",
+"inPuzzles": false
+},
+{
+"word": "nett",
+"tier": "Strong",
+"category": "British spelling",
+"meaning": "net (as in net profit)",
+"suggestion": "Reject",
+"inPuzzles": false
+},
+{
+"word": "mozo",
+"tier": "Strong",
+"category": "Foreign",
+"meaning": "a manservant (Spanish)",
+"suggestion": "Reject",
+"inPuzzles": false
+},
+{
+"word": "alar",
+"tier": "Strong",
+"category": "Jargon",
+"meaning": "of or like wings",
+"suggestion": "Reject",
+"inPuzzles": false
+},
+{
+"word": "ansa",
+"tier": "Strong",
+"category": "Jargon",
+"meaning": "a handle-like loop (anatomy, astronomy)",
+"suggestion": "Reject",
+"inPuzzles": false
+},
+{
+"word": "bast",
+"tier": "Strong",
+"category": "Jargon",
+"meaning": "plant fiber",
+"suggestion": "Reject",
+"inPuzzles": false
+},
+{
+"word": "batt",
+"tier": "Strong",
+"category": "Jargon",
+"meaning": "a sheet of cotton batting",
+"suggestion": "Reject",
+"inPuzzles": false
+},
+{
+"word": "derm",
+"tier": "Strong",
+"category": "Jargon",
+"meaning": "skin (dermis)",
+"suggestion": "Reject",
+"inPuzzles": false
+},
+{
+"word": "gibs",
+"tier": "Strong",
+"category": "Jargon",
+"meaning": "machine wedges; male cats",
+"suggestion": "Reject",
+"inPuzzles": false
+},
+{
+"word": "hame",
+"tier": "Strong",
+"category": "Jargon",
+"meaning": "part of a horse collar",
+"suggestion": "Reject",
+"inPuzzles": false
+},
+{
+"word": "kerf",
+"tier": "Strong",
+"category": "Jargon",
+"meaning": "the cut made by a saw",
+"suggestion": "Reject",
+"inPuzzles": false
+},
+{
+"word": "neve",
+"tier": "Strong",
+"category": "Jargon",
+"meaning": "granular snow on a glacier",
+"suggestion": "Reject",
+"inPuzzles": false
+},
+{
+"word": "pica",
+"tier": "Strong",
+"category": "Jargon",
+"meaning": "a type size; craving to eat non-food",
+"suggestion": "Reject",
+"inPuzzles": false
+},
+{
+"word": "ilia",
+"tier": "Strong",
+"category": "Jargon (anatomy)",
+"meaning": "hip bones",
+"suggestion": "Reject",
+"inPuzzles": false
+},
+{
+"word": "ossa",
+"tier": "Strong",
+"category": "Jargon (anatomy)",
+"meaning": "bones (plural of os)",
+"suggestion": "Reject",
+"inPuzzles": false
+},
+{
+"word": "tali",
+"tier": "Strong",
+"category": "Jargon (anatomy)",
+"meaning": "ankle bones",
+"suggestion": "Reject",
+"inPuzzles": false
+},
+{
+"word": "diel",
+"tier": "Strong",
+"category": "Jargon (biology)",
+"meaning": "lasting 24 hours",
+"suggestion": "Reject",
+"inPuzzles": false
+},
+{
+"word": "heme",
+"tier": "Strong",
+"category": "Jargon (biology)",
+"meaning": "the iron part of hemoglobin",
+"suggestion": "Reject",
+"inPuzzles": false
+},
+{
+"word": "lyse",
+"tier": "Strong",
+"category": "Jargon (biology)",
+"meaning": "to burst a cell",
+"suggestion": "Reject",
+"inPuzzles": false
+},
+{
+"word": "sial",
+"tier": "Strong",
+"category": "Jargon (geology)",
+"meaning": "a layer of the earth's crust",
+"suggestion": "Reject",
+"inPuzzles": false
+},
+{
+"word": "lune",
+"tier": "Strong",
+"category": "Jargon (geometry)",
+"meaning": "a crescent shape",
+"suggestion": "Reject",
+"inPuzzles": false
+},
+{
+"word": "rale",
+"tier": "Strong",
+"category": "Jargon (medicine)",
+"meaning": "a rattling breath sound",
+"suggestion": "Reject",
+"inPuzzles": false
+},
+{
+"word": "alan",
+"tier": "Strong",
+"category": "Name-word",
+"meaning": "a breed of hunting dog",
+"suggestion": "Reject",
+"inPuzzles": false
+},
+{
+"word": "carl",
+"tier": "Strong",
+"category": "Name-word",
+"meaning": "a churl, a peasant (archaic)",
+"suggestion": "Reject",
+"inPuzzles": false
+},
+{
+"word": "jane",
+"tier": "Strong",
+"category": "Name-word",
+"meaning": "slang for a woman",
+"suggestion": "Reject",
+"inPuzzles": false
+},
+{
+"word": "jess",
+"tier": "Strong",
+"category": "Name-word",
+"meaning": "a strap on a falcon's leg",
+"suggestion": "Reject",
+"inPuzzles": false
+},
+{
+"word": "jill",
+"tier": "Strong",
+"category": "Name-word",
+"meaning": "a female ferret",
+"suggestion": "Reject",
+"inPuzzles": false
+},
+{
+"word": "ruth",
+"tier": "Strong",
+"category": "Name-word",
+"meaning": "pity (archaic)",
+"suggestion": "Reject",
+"inPuzzles": false
+},
+{
+"word": "shaw",
+"tier": "Strong",
+"category": "Name-word",
+"meaning": "a thicket (archaic)",
+"suggestion": "Reject",
+"inPuzzles": false
+},
+{
+"word": "ager",
+"tier": "Strong",
+"category": "Obscure",
+"meaning": "one that ages",
+"suggestion": "Reject",
+"inPuzzles": false
+},
+{
+"word": "blin",
+"tier": "Strong",
+"category": "Obscure",
+"meaning": "one blini (pancake)",
+"suggestion": "Reject",
+"inPuzzles": false
+},
+{
+"word": "bole",
+"tier": "Strong",
+"category": "Obscure",
+"meaning": "a tree trunk",
+"suggestion": "Reject",
+"inPuzzles": false
+},
+{
+"word": "ceil",
+"tier": "Strong",
+"category": "Obscure",
+"meaning": "to put a ceiling in",
+"suggestion": "Reject",
+"inPuzzles": false
+},
+{
+"word": "dace",
+"tier": "Strong",
+"category": "Obscure",
+"meaning": "a small freshwater fish",
+"suggestion": "Reject",
+"inPuzzles": false
+},
+{
+"word": "fumy",
+"tier": "Strong",
+"category": "Obscure",
+"meaning": "full of fumes",
+"suggestion": "Reject",
+"inPuzzles": false
+},
+{
+"word": "laic",
+"tier": "Strong",
+"category": "Obscure",
+"meaning": "a layperson",
+"suggestion": "Reject",
+"inPuzzles": false
+},
+{
+"word": "ling",
+"tier": "Strong",
+"category": "Obscure",
+"meaning": "a fish; heather",
+"suggestion": "Reject",
+"inPuzzles": false
+},
+{
+"word": "miry",
+"tier": "Strong",
+"category": "Obscure",
+"meaning": "swampy, muddy",
+"suggestion": "Reject",
+"inPuzzles": false
+},
+{
+"word": "murr",
+"tier": "Strong",
+"category": "Obscure",
+"meaning": "a seabird (variant of murre)",
+"suggestion": "Reject",
+"inPuzzles": false
+},
+{
+"word": "nebs",
+"tier": "Strong",
+"category": "Obscure",
+"meaning": "beaks; nibs",
+"suggestion": "Reject",
+"inPuzzles": false
+},
+{
+"word": "parr",
+"tier": "Strong",
+"category": "Obscure",
+"meaning": "a young salmon",
+"suggestion": "Reject",
+"inPuzzles": false
+},
+{
+"word": "pood",
+"tier": "Strong",
+"category": "Obscure",
+"meaning": "a Russian unit of weight",
+"suggestion": "Reject",
+"inPuzzles": false
+},
+{
+"word": "quag",
+"tier": "Strong",
+"category": "Obscure",
+"meaning": "a quagmire",
+"suggestion": "Reject",
+"inPuzzles": false
+},
+{
+"word": "redd",
+"tier": "Strong",
+"category": "Obscure",
+"meaning": "to tidy up; a fish nest",
+"suggestion": "Reject",
+"inPuzzles": false
+},
+{
+"word": "scad",
+"tier": "Strong",
+"category": "Obscure",
+"meaning": "a fish (horse mackerel)",
+"suggestion": "Reject",
+"inPuzzles": false
+},
+{
+"word": "sept",
+"tier": "Strong",
+"category": "Obscure",
+"meaning": "a clan",
+"suggestion": "Reject",
+"inPuzzles": false
+},
+{
+"word": "sice",
+"tier": "Strong",
+"category": "Obscure",
+"meaning": "the six on a die",
+"suggestion": "Reject",
+"inPuzzles": false
+},
+{
+"word": "sord",
+"tier": "Strong",
+"category": "Obscure",
+"meaning": "a flock of mallards",
+"suggestion": "Reject",
+"inPuzzles": false
+},
+{
+"word": "taos",
+"tier": "Strong",
+"category": "Obscure",
+"meaning": "plural of tao; reads as a place",
+"suggestion": "Reject",
+"inPuzzles": false
+},
+{
+"word": "topi",
+"tier": "Strong",
+"category": "Obscure",
+"meaning": "an antelope; a sun helmet",
+"suggestion": "Reject",
+"inPuzzles": false
+},
+{
+"word": "wans",
+"tier": "Strong",
+"category": "Obscure",
+"meaning": "grows pale",
+"suggestion": "Reject",
+"inPuzzles": false
+},
+{
+"word": "bren",
+"tier": "Strong",
+"category": "Proper noun",
+"meaning": "a machine gun (the Bren gun)",
+"suggestion": "Reject",
+"inPuzzles": false
+},
+{
+"word": "sook",
+"tier": "Strong",
+"category": "Regional (Australia, Scotland)",
+"meaning": "a crybaby",
+"suggestion": "Reject",
+"inPuzzles": false
+},
+{
+"word": "dene",
+"tier": "Strong",
+"category": "Regional (British)",
+"meaning": "a small valley",
+"suggestion": "Reject",
+"inPuzzles": false
+},
+{
+"word": "nowt",
+"tier": "Strong",
+"category": "Regional (British)",
+"meaning": "nothing",
+"suggestion": "Reject",
+"inPuzzles": false
+},
+{
+"word": "snye",
+"tier": "Strong",
+"category": "Regional (Canada)",
+"meaning": "a side channel of a river",
+"suggestion": "Reject",
+"inPuzzles": false
+},
+{
+"word": "ghat",
+"tier": "Strong",
+"category": "Regional (India)",
+"meaning": "steps down to a river",
+"suggestion": "Reject",
+"inPuzzles": false
+},
+{
+"word": "brae",
+"tier": "Strong",
+"category": "Regional (Scottish)",
+"meaning": "a hillside",
+"suggestion": "Reject",
+"inPuzzles": false
+},
+{
+"word": "keek",
+"tier": "Strong",
+"category": "Regional (Scottish)",
+"meaning": "to peek",
+"suggestion": "Reject",
+"inPuzzles": false
+},
+{
+"word": "linn",
+"tier": "Strong",
+"category": "Regional (Scottish)",
+"meaning": "a waterfall",
+"suggestion": "Reject",
+"inPuzzles": false
+},
+{
+"word": "okeh",
+"tier": "Strong",
+"category": "Variant spelling",
+"meaning": "OK",
+"suggestion": "Reject",
+"inPuzzles": false
+},
+{
+"word": "pean",
+"tier": "Strong",
+"category": "Variant spelling",
+"meaning": "paean; a heraldic fur",
+"suggestion": "Reject",
+"inPuzzles": false
+},
+{
+"word": "soja",
+"tier": "Strong",
+"category": "Variant spelling",
+"meaning": "soy",
+"suggestion": "Reject",
+"inPuzzles": false
+},
+{
+"word": "tike",
+"tier": "Strong",
+"category": "Variant spelling",
+"meaning": "tyke",
+"suggestion": "Reject",
+"inPuzzles": false
+},
+{
+"word": "abed",
+"tier": "Your call",
+"category": "Archaic",
+"meaning": "in bed",
+"suggestion": "Your call",
+"inPuzzles": false
+},
+{
+"word": "cote",
+"tier": "Your call",
+"category": "Archaic",
+"meaning": "a shelter for birds (dovecote)",
+"suggestion": "Your call",
+"inPuzzles": false
+},
+{
+"word": "dost",
+"tier": "Your call",
+"category": "Archaic",
+"meaning": "do (\"thou dost\"); thou, thee, hath and doth are accepted",
+"suggestion": "Your call",
+"inPuzzles": false
+},
+{
+"word": "doth",
+"tier": "Your call",
+"category": "Archaic",
+"meaning": "does",
+"suggestion": "Your call",
+"inPuzzles": false
+},
+{
+"word": "haps",
+"tier": "Your call",
+"category": "Archaic",
+"meaning": "happenings",
+"suggestion": "Your call",
+"inPuzzles": false
+},
+{
+"word": "hoar",
+"tier": "Your call",
+"category": "Archaic",
+"meaning": "frost; grey with age",
+"suggestion": "Your call",
+"inPuzzles": false
+},
+{
+"word": "kith",
+"tier": "Your call",
+"category": "Archaic",
+"meaning": "friends (\"kith and kin\")",
+"suggestion": "Your call",
+"inPuzzles": false
+},
+{
+"word": "lich",
+"tier": "Your call",
+"category": "Archaic",
+"meaning": "a corpse; an undead wizard in games",
+"suggestion": "Your call",
+"inPuzzles": false
+},
+{
+"word": "twas",
+"tier": "Your call",
+"category": "Archaic",
+"meaning": "it was",
+"suggestion": "Your call",
+"inPuzzles": false
+},
+{
+"word": "kens",
+"tier": "Your call",
+"category": "Archaic / Scottish",
+"meaning": "knows (\"beyond my ken\")",
+"suggestion": "Your call",
+"inPuzzles": false
+},
+{
+"word": "dozy",
+"tier": "Your call",
+"category": "British",
+"meaning": "drowsy; slow-witted",
+"suggestion": "Your call",
+"inPuzzles": false
+},
+{
+"word": "hobs",
+"tier": "Your call",
+"category": "British",
+"meaning": "stove tops",
+"suggestion": "Your call",
+"inPuzzles": false
+},
+{
+"word": "kips",
+"tier": "Your call",
+"category": "British",
+"meaning": "naps; untanned hides",
+"suggestion": "Your call",
+"inPuzzles": false
+},
+{
+"word": "togs",
+"tier": "Your call",
+"category": "British",
+"meaning": "clothes",
+"suggestion": "Your call",
+"inPuzzles": false
+},
+{
+"word": "tosh",
+"tier": "Your call",
+"category": "British",
+"meaning": "nonsense",
+"suggestion": "Your call",
+"inPuzzles": false
+},
+{
+"word": "kerb",
+"tier": "Your call",
+"category": "British spelling",
+"meaning": "curb",
+"suggestion": "Your call",
+"inPuzzles": false
+},
+{
+"word": "gent",
+"tier": "Your call",
+"category": "Casual",
+"meaning": "a gentleman",
+"suggestion": "Your call",
+"inPuzzles": false
+},
+{
+"word": "pees",
+"tier": "Your call",
+"category": "Crude",
+"meaning": "urinates",
+"suggestion": "Your call",
+"inPuzzles": false
+},
+{
+"word": "mots",
+"tier": "Your call",
+"category": "Foreign",
+"meaning": "witty sayings (bons mots)",
+"suggestion": "Your call",
+"inPuzzles": false
+},
+{
+"word": "shul",
+"tier": "Your call",
+"category": "Foreign (Yiddish)",
+"meaning": "a synagogue",
+"suggestion": "Your call",
+"inPuzzles": false
+},
+{
+"word": "boll",
+"tier": "Your call",
+"category": "Jargon",
+"meaning": "a cotton seed pod (boll weevil)",
+"suggestion": "Your call",
+"inPuzzles": false
+},
+{
+"word": "lath",
+"tier": "Your call",
+"category": "Jargon",
+"meaning": "a thin strip of wood",
+"suggestion": "Your call",
+"inPuzzles": false
+},
+{
+"word": "peen",
+"tier": "Your call",
+"category": "Jargon",
+"meaning": "the end of a hammer head",
+"suggestion": "Your call",
+"inPuzzles": false
+},
+{
+"word": "sump",
+"tier": "Your call",
+"category": "Jargon",
+"meaning": "a pit that collects liquid",
+"suggestion": "Your call",
+"inPuzzles": false
+},
+{
+"word": "tare",
+"tier": "Your call",
+"category": "Jargon",
+"meaning": "container weight; a weed",
+"suggestion": "Your call",
+"inPuzzles": false
+},
+{
+"word": "uvea",
+"tier": "Your call",
+"category": "Jargon (anatomy)",
+"meaning": "the middle layer of the eye",
+"suggestion": "Your call",
+"inPuzzles": false
+},
+{
+"word": "nock",
+"tier": "Your call",
+"category": "Jargon (archery)",
+"meaning": "the notch of an arrow",
+"suggestion": "Your call",
+"inPuzzles": false
+},
+{
+"word": "jete",
+"tier": "Your call",
+"category": "Jargon (ballet)",
+"meaning": "a leap",
+"suggestion": "Your call",
+"inPuzzles": false
+},
+{
+"word": "wort",
+"tier": "Your call",
+"category": "Jargon (brewing)",
+"meaning": "unfermented beer; a plant",
+"suggestion": "Your call",
+"inPuzzles": false
+},
+{
+"word": "agar",
+"tier": "Your call",
+"category": "Jargon (lab)",
+"meaning": "a gel for growing bacteria",
+"suggestion": "Your call",
+"inPuzzles": false
+},
+{
+"word": "muon",
+"tier": "Your call",
+"category": "Jargon (physics)",
+"meaning": "a subatomic particle",
+"suggestion": "Your call",
+"inPuzzles": false
+},
+{
+"word": "iamb",
+"tier": "Your call",
+"category": "Jargon (poetry)",
+"meaning": "a metrical foot",
+"suggestion": "Your call",
+"inPuzzles": false
+},
+{
+"word": "aver",
+"tier": "Your call",
+"category": "Literary",
+"meaning": "to assert",
+"suggestion": "Your call",
+"inPuzzles": false
+},
+{
+"word": "bade",
+"tier": "Your call",
+"category": "Literary",
+"meaning": "asked, told (past of bid)",
+"suggestion": "Your call",
+"inPuzzles": false
+},
+{
+"word": "espy",
+"tier": "Your call",
+"category": "Literary",
+"meaning": "to catch sight of",
+"suggestion": "Your call",
+"inPuzzles": false
+},
+{
+"word": "limn",
+"tier": "Your call",
+"category": "Literary",
+"meaning": "to depict",
+"suggestion": "Your call",
+"inPuzzles": false
+},
+{
+"word": "rill",
+"tier": "Your call",
+"category": "Literary",
+"meaning": "a small stream",
+"suggestion": "Your call",
+"inPuzzles": false
+},
+{
+"word": "rime",
+"tier": "Your call",
+"category": "Literary",
+"meaning": "frost; old spelling of rhyme",
+"suggestion": "Your call",
+"inPuzzles": false
+},
+{
+"word": "sere",
+"tier": "Your call",
+"category": "Literary",
+"meaning": "dry, withered",
+"suggestion": "Your call",
+"inPuzzles": false
+},
+{
+"word": "wend",
+"tier": "Your call",
+"category": "Literary",
+"meaning": "to go (\"wend your way\")",
+"suggestion": "Your call",
+"inPuzzles": false
+},
+{
+"word": "yawp",
+"tier": "Your call",
+"category": "Literary",
+"meaning": "a harsh cry (\"barbaric yawp\")",
+"suggestion": "Your call",
+"inPuzzles": false
+},
+{
+"word": "cole",
+"tier": "Your call",
+"category": "Name-word",
+"meaning": "cabbage (coleslaw)",
+"suggestion": "Your call",
+"inPuzzles": false
+},
+{
+"word": "dana",
+"tier": "Your call",
+"category": "Name-word",
+"meaning": "not a standard word; maybe a deliberate Easter egg?",
+"suggestion": "Your call",
+"inPuzzles": false
+},
+{
+"word": "rick",
+"tier": "Your call",
+"category": "Name-word",
+"meaning": "a haystack",
+"suggestion": "Your call",
+"inPuzzles": false
+},
+{
+"word": "alee",
+"tier": "Your call",
+"category": "Nautical",
+"meaning": "away from the wind",
+"suggestion": "Your call",
+"inPuzzles": false
+},
+{
+"word": "hove",
+"tier": "Your call",
+"category": "Nautical",
+"meaning": "came (\"hove into view\")",
+"suggestion": "Your call",
+"inPuzzles": false
+},
+{
+"word": "scow",
+"tier": "Your call",
+"category": "Nautical",
+"meaning": "a flat-bottomed boat",
+"suggestion": "Your call",
+"inPuzzles": false
+},
+{
+"word": "yawl",
+"tier": "Your call",
+"category": "Nautical",
+"meaning": "a two-masted sailboat",
+"suggestion": "Your call",
+"inPuzzles": false
+},
+{
+"word": "auks",
+"tier": "Your call",
+"category": "Obscure",
+"meaning": "seabirds",
+"suggestion": "Your call",
+"inPuzzles": false
+},
+{
+"word": "bock",
+"tier": "Your call",
+"category": "Obscure",
+"meaning": "a strong dark beer",
+"suggestion": "Your call",
+"inPuzzles": false
+},
+{
+"word": "caul",
+"tier": "Your call",
+"category": "Obscure",
+"meaning": "a membrane over a newborn's head",
+"suggestion": "Your call",
+"inPuzzles": false
+},
+{
+"word": "cays",
+"tier": "Your call",
+"category": "Obscure",
+"meaning": "small low islands",
+"suggestion": "Your call",
+"inPuzzles": false
+},
+{
+"word": "coca",
+"tier": "Your call",
+"category": "Obscure",
+"meaning": "the plant cocaine comes from",
+"suggestion": "Your call",
+"inPuzzles": false
+},
+{
+"word": "coir",
+"tier": "Your call",
+"category": "Obscure",
+"meaning": "coconut fiber (doormats)",
+"suggestion": "Your call",
+"inPuzzles": false
+},
+{
+"word": "craw",
+"tier": "Your call",
+"category": "Obscure",
+"meaning": "a crop (sticks in my craw)",
+"suggestion": "Your call",
+"inPuzzles": false
+},
+{
+"word": "dory",
+"tier": "Your call",
+"category": "Obscure",
+"meaning": "a small boat; a fish",
+"suggestion": "Your call",
+"inPuzzles": false
+},
+{
+"word": "dray",
+"tier": "Your call",
+"category": "Obscure",
+"meaning": "a low cart (dray horse)",
+"suggestion": "Your call",
+"inPuzzles": false
+},
+{
+"word": "goby",
+"tier": "Your call",
+"category": "Obscure",
+"meaning": "a small fish",
+"suggestion": "Your call",
+"inPuzzles": false
+},
+{
+"word": "guar",
+"tier": "Your call",
+"category": "Obscure",
+"meaning": "a bean (guar gum)",
+"suggestion": "Your call",
+"inPuzzles": false
+},
+{
+"word": "hasp",
+"tier": "Your call",
+"category": "Obscure",
+"meaning": "a hinged clasp for a padlock",
+"suggestion": "Your call",
+"inPuzzles": false
+},
+{
+"word": "kola",
+"tier": "Your call",
+"category": "Obscure",
+"meaning": "the cola nut",
+"suggestion": "Your call",
+"inPuzzles": false
+},
+{
+"word": "kudu",
+"tier": "Your call",
+"category": "Obscure",
+"meaning": "an antelope",
+"suggestion": "Your call",
+"inPuzzles": false
+},
+{
+"word": "lees",
+"tier": "Your call",
+"category": "Obscure",
+"meaning": "wine sediment",
+"suggestion": "Your call",
+"inPuzzles": false
+},
+{
+"word": "shad",
+"tier": "Your call",
+"category": "Obscure",
+"meaning": "a fish",
+"suggestion": "Your call",
+"inPuzzles": false
+},
+{
+"word": "sibs",
+"tier": "Your call",
+"category": "Obscure",
+"meaning": "siblings",
+"suggestion": "Your call",
+"inPuzzles": false
+},
+{
+"word": "viny",
+"tier": "Your call",
+"category": "Obscure",
+"meaning": "covered in vines",
+"suggestion": "Your call",
+"inPuzzles": false
+},
+{
+"word": "ilks",
+"tier": "Your call",
+"category": "Odd plural",
+"meaning": "kinds (\"of that ilk\")",
+"suggestion": "Your call",
+"inPuzzles": false
+},
+{
+"word": "ires",
+"tier": "Your call",
+"category": "Odd plural",
+"meaning": "angers",
+"suggestion": "Your call",
+"inPuzzles": false
+},
+{
+"word": "lyes",
+"tier": "Your call",
+"category": "Odd plural",
+"meaning": "caustic solutions",
+"suggestion": "Your call",
+"inPuzzles": false
+},
+{
+"word": "mach",
+"tier": "Your call",
+"category": "Proper noun",
+"meaning": "a speed (Mach 2)",
+"suggestion": "Your call",
+"inPuzzles": false
+},
+{
+"word": "bris",
+"tier": "Your call",
+"category": "Religious",
+"meaning": "a Jewish circumcision ceremony",
+"suggestion": "Your call",
+"inPuzzles": false
+},
+{
+"word": "drek",
+"tier": "Your call",
+"category": "Variant spelling",
+"meaning": "dreck, rubbish",
+"suggestion": "Your call",
+"inPuzzles": false
+},
+{
+"word": "pouf",
+"tier": "Your call",
+"category": "Variant spelling",
+"meaning": "a hassock (pouffe); a puffy hairdo",
+"suggestion": "Your call",
+"inPuzzles": false
+},
+{
+"word": "yuca",
+"tier": "Your call",
+"category": "Variant spelling",
+"meaning": "cassava root",
+"suggestion": "Your call",
+"inPuzzles": false
+}
+]
+}

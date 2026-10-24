@@ -130,6 +130,20 @@
   .dg-modalcard .rowbtns{display:flex;gap:.5rem;margin-top:1rem}
   .dg-modalcard .rowbtns button{flex:1;padding:.7rem;border-radius:10px;border:1px solid var(--line);background:var(--bg);color:var(--ink);font-weight:600;cursor:pointer}
   .dg-modalcard .rowbtns button.primary{background:var(--peek);border-color:var(--peek);color:#0c1420}
+  /* review rounds: the extra box on each card, and the Keep button */
+  .dg-rev{width:100%;text-align:left;border:1px solid var(--line);border-radius:12px;padding:.55rem .7rem;margin:.2rem 0 .6rem;font-size:.82rem;line-height:1.4}
+  .dg-rev .now{color:var(--mut)} .dg-rev .now b{color:var(--ink)}
+  .dg-rev .meaning{color:var(--ink);margin:.25rem 0}
+  .dg-rev .sugg{color:var(--peek);font-weight:700}
+  .dg-rev .tier{font-size:.66rem;font-weight:800;text-transform:uppercase;letter-spacing:.04em;padding:.1rem .45rem;border-radius:999px;border:1px solid var(--line);color:var(--mut);margin-right:.3rem}
+  .dg-rev .tier.strong{color:var(--reject);border-color:var(--reject)}
+  .dg-rev .tier.puz{color:var(--check);border-color:var(--check)}
+  .dg-btn.keep{display:none}
+  body.reviewing .dg-btn.keep{display:inline-block}
+  /* six buttons in review: tighter, so the row fits a phone */
+  body.reviewing .dg-controls{gap:.3rem;padding-left:.5rem;padding-right:.5rem}
+  body.reviewing .dg-btn{padding:.6rem .2rem;font-size:.85rem;min-width:0}
+  body.reviewing .dg-btn.small{flex:1 1 0;padding:.6rem .2rem}
   @media (prefers-reduced-motion: reduce){*{transition:none!important}}
 </style>
 </head>
@@ -144,6 +158,7 @@
   <div class="dg-tabs" role="tablist">
     <button class="dg-tab" id="tab-swipe" role="tab" aria-selected="true">Swipe</button>
     <button class="dg-tab" id="tab-search" role="tab" aria-selected="false">Search</button>
+    <button class="dg-tab" id="tab-review" role="tab" aria-selected="false" hidden>Round 2</button>
   </div>
 
   <main>
@@ -155,6 +170,7 @@
         <button class="dg-btn reject" id="c-reject">✕ Reject</button>
         <button class="dg-btn check" id="c-check">↓ Check</button>
         <button class="dg-btn accept" id="c-accept">✓ Accept</button>
+        <button class="dg-btn small keep" id="c-keep" title="Keep as it is (K)">= Keep</button>
         <button class="dg-btn small" id="c-skip" title="Skip (Space)">Skip →</button>
       </div>
       <!-- note prompt -->
@@ -209,6 +225,10 @@ const $=s=>document.querySelector(s);
 
 let corpus=[], byWord=new Map(), progress={}, defs={};
 let queue=[];               // corpus indices, undecided, freq order; current = queue[0]
+// A review round (review.json): already-decided words to look at again. Each one
+// re-decided (or kept) gets progress[word].rev = the round, which syncs like any decision.
+let review=null, reviewing=false;
+const reviewInfo=new Map();   // word -> {tier, category, meaning, suggestion, inPuzzles}
 let history=[];             // {type:'decide'|'skip', ci, prev}
 let cfg=loadJSON(CFG_KEY,{});
 let progDirty=false, defsDirty=false, flushTimer=null;
@@ -237,16 +257,35 @@ async function boot(){
   if(localDefs){ defs=localDefs; }
   else { try{ defs=await (await fetch('./definitions.json',{cache:'no-store'})).json(); }catch{ defs={}; } }
 
-  buildQueue(); buildCats(); render(); updateSync();
+  try{ const r=await fetch('./review.json',{cache:'no-store'}); if(r.ok) review=await r.json(); }catch{ review=null; }
+  if(review&&review.items){
+    review.items.forEach(it=>reviewInfo.set(it.word,it));
+    $('#tab-review').hidden=false;
+    $('#tab-review').textContent=review.title?review.title.split(':')[0]:'Review';
+    reviewing=reviewLeft()>0;
+  }
+  buildQueue(); buildCats(); render(); updateSync(); syncTabs();
 }
-function buildQueue(){ queue=[]; for(let i=0;i<corpus.length;i++){ if(!progress[corpus[i].word]) queue.push(i); } }
+function reviewLeft(){ return review?review.items.filter(it=>!(progress[it.word]&&progress[it.word].rev===review.round)).length:0; }
+function buildQueue(){
+  queue=[];
+  document.body.classList.toggle('reviewing',reviewing);
+  if(reviewing){
+    review.items.forEach(it=>{ const ci=byWord.get(it.word);
+      if(ci!=null&&!(progress[it.word]&&progress[it.word].rev===review.round)) queue.push(ci); });
+    return;
+  }
+  for(let i=0;i<corpus.length;i++){ if(!progress[corpus[i].word]) queue.push(i); }
+}
 
 /* ---------- swipe card ---------- */
 const stack=$('#stack');
 function render(){
   stack.innerHTML='';
   if(queue.length===0){
-    stack.innerHTML='<div class="dg-empty"><b>Queue clear.</b><br>Every untouched word has a decision. Use Search to revisit any call, or Undo to step back.</div>';
+    stack.innerHTML=reviewing
+      ? '<div class="dg-empty"><b>Round done.</b><br>Every word in this review has a decision. Tell Claude, and the word lists and upcoming puzzles get updated.</div>'
+      : '<div class="dg-empty"><b>Queue clear.</b><br>Every untouched word has a decision. Use Search to revisit any call, or Undo to step back.</div>';
     updateCount(); return;
   }
   if(queue[1]!=null) stack.appendChild(cardEl(corpus[queue[1]],true));
@@ -265,10 +304,20 @@ function cardEl(rec,under){
     <div class="dg-hint down">Check only</div>
     <div class="dg-wordbig">${rec.word}</div>
     <div class="dg-flags">${flags}</div>
+    ${reviewing?reviewBox(rec.word):''}
     <button class="dg-mw" type="button">Merriam-Webster ↗</button>
     <div class="dg-def" data-def>${defBody(rec.word)}</div>`;
   c.querySelector('.dg-mw').addEventListener('click',ev=>{ev.stopPropagation();openMW(rec.word);});
   return c;
+}
+function reviewBox(word){
+  const it=reviewInfo.get(word); if(!it) return '';
+  const now={accept:'Puzzle + valid',check:'Valid only',reject:'Not accepted',none:'Undecided'}[decisionOf(word)];
+  return `<div class="dg-rev">
+    <div><span class="tier ${it.tier==='Strong'?'strong':''}">${it.tier}</span>${it.inPuzzles?'<span class="tier puz">In puzzles</span>':''}<span class="now">${it.category}</span></div>
+    <div class="meaning">${it.meaning}</div>
+    <div class="now">Now: <b>${now}</b> · Claude suggests: <span class="sugg">${it.suggestion}</span></div>
+  </div>`;
 }
 function openMW(word){ window.open('https://www.merriam-webster.com/dictionary/'+encodeURIComponent(word),'mwlookup'); }
 /* Flags common regional/register labels straight out of the definition text — American
@@ -370,10 +419,16 @@ function decideAcceptFlag(){
 }
 function commit(ci,dec){
   const word=corpus[ci].word;
+  if(reviewing) dec={...dec,rev:review.round};
   history.push({type:'decide',ci,prev:progress[word]?{...progress[word]}:null});
   progress[word]=dec; queue.shift();
   progDirty=true; saveJSON(PROG_KEY,progress); scheduleFlush();
   render();
+}
+function keep(){                 // review: leave the decision as it is
+  if(!reviewing||queue.length===0||pending)return;
+  const ci=queue[0], word=corpus[ci].word;
+  commit(ci,{...(progress[word]||{check:false,gen:false,note:null})});
 }
 function skip(){
   if(queue.length<2)return;
@@ -584,12 +639,14 @@ function refreshRow(r,row){ row.replaceWith(rowEl(r)); }
 /* ---------- ui plumbing ---------- */
 function updateCount(){
   const decided=Object.keys(progress).length;
-  $('#count').textContent=`${queue.length} left · ${decided} done`;
+  $('#count').textContent=reviewing?`${queue.length} left in ${review.title?review.title.split(':')[0]:'review'}`
+                                   :`${queue.length} left · ${decided} done`;
 }
 $('#c-reject').onclick=()=>decide('reject');
 $('#c-check').onclick=()=>decide('check');
 $('#c-accept').onclick=()=>decide('accept');
 $('#c-skip').onclick=skip;
+$('#c-keep').onclick=keep;
 $('#c-undo').onclick=undo;
 $('#sync').onclick=flush;
 $('#sheet-cancel').onclick=cancelSheet;
@@ -600,15 +657,28 @@ document.addEventListener('keydown',e=>{
   else if(e.key==='ArrowDown')decide('check');
   else if((e.key==='m'||e.key==='M')&&queue.length)openMW(corpus[queue[0]].word);
   else if(e.key==='Backspace'){e.preventDefault();undo();} else if(e.key===' '){e.preventDefault();skip();}
+  else if((e.key==='k'||e.key==='K')&&reviewing)keep();
 });
 $('#sheet').addEventListener('click',e=>{if(e.target===$('#sheet'))cancelSheet();});
+function syncTabs(){
+  const onSwipe=$('#view-swipe').classList.contains('on');
+  $('#tab-swipe').setAttribute('aria-selected',onSwipe&&!reviewing);
+  $('#tab-review').setAttribute('aria-selected',onSwipe&&reviewing);
+}
 function tab(which){
+  if(which==='review'||which==='swipe'){
+    const want=which==='review';
+    if(want!==reviewing){ reviewing=want; history=[]; buildQueue(); render(); }
+    which='swipe';
+  }
   const sw=which==='swipe';
   $('#tab-swipe').setAttribute('aria-selected',sw);$('#tab-search').setAttribute('aria-selected',!sw);
   $('#view-swipe').classList.toggle('on',sw);$('#view-search').classList.toggle('on',!sw);
   if(!sw)setTimeout(()=>$('#q').focus(),50);
+  syncTabs();
 }
 $('#tab-swipe').onclick=()=>tab('swipe'); $('#tab-search').onclick=()=>tab('search');
+$('#tab-review').onclick=()=>tab('review');
 
 /* settings */
 function setStatus(t){$('#s-status').textContent=t;}
