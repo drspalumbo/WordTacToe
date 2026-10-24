@@ -1,0 +1,198 @@
+YOUR DECISION,Your notes,Word,In puzzles?,Tier,Category,Meaning,Uses per million,Claude's suggestion
+,,asea,Yes,Strong,Archaic,at sea; confused,0.0,Reject
+,,vail,Yes,Strong,Archaic,to lower; a tip,1.59,Reject
+,,cobb,Yes,Strong,Obscure,a gull (variant of cob); mostly read as a name / Cobb salad,3.47,Reject
+,,exed,Yes,Strong,Obscure,crossed out with an X,0.0,Reject
+,,huck,Yes,Strong,Obscure,"huckaback, a towel fabric",0.35,Reject
+,,kane,Yes,Strong,Obscure,a tax paid in produce (variant of kain); reads as a name,10.29,Reject
+,,mara,Yes,Strong,Obscure,a Patagonian rodent,3.02,Reject
+,,marc,Yes,Strong,Obscure,grape skins left after pressing; a brandy made from them,5.14,Reject
+,,turk,Yes,Strong,Proper noun,"lowercase only in ""young turk""; reads as a nationality",3.02,Reject
+,,holt,Yes,Strong,Regional (British),an otter's den; a wood,5.33,Reject
+,,sark,Yes,Strong,Regional (Scottish),a shirt,5.96,Reject
+,,vera,Yes,Strong,Regional (Scottish),"""very""; mostly read as a name (aloe vera)",5.55,Reject
+,,hart,Yes,Your call,Archaic,a male deer,11.76,Valid only
+,,nobs,Yes,Your call,British,posh people; heads,0.12,Your call
+,,cels,Yes,Your call,Jargon (animation),hand-painted animation frames,0.0,Valid only
+,,apse,Yes,Your call,Jargon (architecture),a rounded recess in a church,0.0,Valid only
+,,axon,Yes,Your call,Jargon (biology),the long part of a nerve cell,0.04,Your call
+,,loge,Yes,Your call,Jargon (theater),a box or front balcony section,0.0,Valid only
+,,alit,Yes,Your call,Literary,landed (past of alight),0.04,Valid only
+,,gyre,Yes,Your call,Literary,a spiral or vortex,0.04,Valid only
+,,mien,Yes,Your call,Literary,a person's look or manner,0.0,Valid only
+,,wont,Yes,Your call,Literary,"accustomed (""as is his wont"")",1.59,Your call
+,,busk,Yes,Your call,Mostly British,to perform on the street for tips,0.0,Valid only
+,,brad,Yes,Your call,Name-word,a small thin nail; reads as a name,30.22,Valid only
+,,john,Yes,Your call,Name-word,a toilet; a prostitute's client; reads as a name,193.67,Valid only
+,,bola,Yes,Your call,Obscure,a throwing weapon of weighted cords,0.0,Valid only
+,,tapa,Yes,Your call,Obscure,bark cloth; one of a plate of tapas,0.0,Valid only
+,,muds,Yes,Your call,Odd plural,"plural of mud (""muds"" is rarely said)",0.04,Your call
+,,peon,Yes,Your call,Possibly pejorative,a low-paid laborer,0.22,Valid only
+,,cess,No,Strong,Archaic,a tax,0.06,Reject
+,,chid,No,Strong,Archaic,chided,0.06,Reject
+,,dere,No,Strong,Archaic,dire,0.18,Reject
+,,dido,No,Strong,Archaic,a prank,0.08,Reject
+,,doit,No,Strong,Archaic,a small coin; a trifle,0.06,Reject
+,,erst,No,Strong,Archaic,formerly,0.0,Reject
+,,fain,No,Strong,Archaic,gladly,0.29,Reject
+,,fets,No,Strong,Archaic,fetches,0.14,Reject
+,,iwis,No,Strong,Archaic,certainly,0.0,Reject
+,,lade,No,Strong,Archaic,to load,0.0,Reject
+,,lave,No,Strong,Archaic,to wash,0.1,Reject
+,,lief,No,Strong,Archaic,willingly,0.16,Reject
+,,meed,No,Strong,Archaic,a reward,0.04,Reject
+,,moil,No,Strong,Archaic,to toil; turmoil,0.0,Reject
+,,oped,No,Strong,Archaic,opened,0.0,Reject
+,,opes,No,Strong,Archaic,opens,0.0,Reject
+,,orts,No,Strong,Archaic,scraps of food,0.06,Reject
+,,reft,No,Strong,Archaic,"robbed, bereft",0.06,Reject
+,,ruly,No,Strong,Archaic,orderly (the opposite of unruly),0.0,Reject
+,,shew,No,Strong,Archaic,show,0.0,Reject
+,,tope,No,Strong,Archaic,to drink heavily; a Buddhist shrine,0.0,Reject
+,,vill,No,Strong,Archaic,a township,0.25,Reject
+,,wast,No,Strong,Archaic,"was (""thou wast"")",0.18,Reject
+,,weal,No,Strong,Archaic,well-being; a welt,0.1,Reject
+,,yean,No,Strong,Archaic,to give birth (of a sheep),0.33,Reject
+,,clew,No,Strong,Archaic / nautical,a ball of thread; a corner of a sail,0.1,Reject
+,,dawk,No,Strong,Archaic / regional,mail carried by relay runners (India),0.0,Reject
+,,gage,No,Strong,Archaic / variant,a pledge; variant of gauge,2.51,Reject
+,,glim,No,Strong,Archaic slang,a light or candle,0.0,Reject
+,,gawp,No,Strong,British,to stare stupidly,0.0,Reject
+,,jink,No,Strong,British,to dodge quickly,0.08,Reject
+,,nett,No,Strong,British spelling,net (as in net profit),0.0,Reject
+,,mozo,No,Strong,Foreign,a manservant (Spanish),0.06,Reject
+,,alar,No,Strong,Jargon,of or like wings,0.14,Reject
+,,ansa,No,Strong,Jargon,"a handle-like loop (anatomy, astronomy)",0.0,Reject
+,,bast,No,Strong,Jargon,plant fiber,0.25,Reject
+,,batt,No,Strong,Jargon,a sheet of cotton batting,0.08,Reject
+,,derm,No,Strong,Jargon,skin (dermis),0.06,Reject
+,,gibs,No,Strong,Jargon,machine wedges; male cats,0.08,Reject
+,,hame,No,Strong,Jargon,part of a horse collar,0.06,Reject
+,,kerf,No,Strong,Jargon,the cut made by a saw,0.08,Reject
+,,neve,No,Strong,Jargon,granular snow on a glacier,0.06,Reject
+,,pica,No,Strong,Jargon,a type size; craving to eat non-food,0.08,Reject
+,,ilia,No,Strong,Jargon (anatomy),hip bones,0.22,Reject
+,,ossa,No,Strong,Jargon (anatomy),bones (plural of os),0.04,Reject
+,,tali,No,Strong,Jargon (anatomy),ankle bones,0.24,Reject
+,,diel,No,Strong,Jargon (biology),lasting 24 hours,0.08,Reject
+,,heme,No,Strong,Jargon (biology),the iron part of hemoglobin,0.1,Reject
+,,lyse,No,Strong,Jargon (biology),to burst a cell,0.04,Reject
+,,sial,No,Strong,Jargon (geology),a layer of the earth's crust,0.0,Reject
+,,lune,No,Strong,Jargon (geometry),a crescent shape,0.16,Reject
+,,rale,No,Strong,Jargon (medicine),a rattling breath sound,0.1,Reject
+,,alan,No,Strong,Name-word,a breed of hunting dog,32.86,Reject
+,,carl,No,Strong,Name-word,"a churl, a peasant (archaic)",27.27,Reject
+,,jane,No,Strong,Name-word,slang for a woman,42.98,Reject
+,,jess,No,Strong,Name-word,a strap on a falcon's leg,21.06,Reject
+,,jill,No,Strong,Name-word,a female ferret,13.08,Reject
+,,ruth,No,Strong,Name-word,pity (archaic),20.67,Reject
+,,shaw,No,Strong,Name-word,a thicket (archaic),10.04,Reject
+,,ager,No,Strong,Obscure,one that ages,0.0,Reject
+,,blin,No,Strong,Obscure,one blini (pancake),0.0,Reject
+,,bole,No,Strong,Obscure,a tree trunk,0.0,Reject
+,,ceil,No,Strong,Obscure,to put a ceiling in,0.39,Reject
+,,dace,No,Strong,Obscure,a small freshwater fish,0.1,Reject
+,,fumy,No,Strong,Obscure,full of fumes,0.0,Reject
+,,laic,No,Strong,Obscure,a layperson,0.0,Reject
+,,ling,No,Strong,Obscure,a fish; heather,15.39,Reject
+,,miry,No,Strong,Obscure,"swampy, muddy",0.0,Reject
+,,murr,No,Strong,Obscure,a seabird (variant of murre),0.0,Reject
+,,nebs,No,Strong,Obscure,beaks; nibs,0.22,Reject
+,,parr,No,Strong,Obscure,a young salmon,0.27,Reject
+,,pood,No,Strong,Obscure,a Russian unit of weight,0.0,Reject
+,,quag,No,Strong,Obscure,a quagmire,0.0,Reject
+,,redd,No,Strong,Obscure,to tidy up; a fish nest,0.27,Reject
+,,scad,No,Strong,Obscure,a fish (horse mackerel),0.0,Reject
+,,sept,No,Strong,Obscure,a clan,0.1,Reject
+,,sice,No,Strong,Obscure,the six on a die,0.0,Reject
+,,sord,No,Strong,Obscure,a flock of mallards,0.1,Reject
+,,taos,No,Strong,Obscure,plural of tao; reads as a place,0.31,Reject
+,,topi,No,Strong,Obscure,an antelope; a sun helmet,0.04,Reject
+,,wans,No,Strong,Obscure,grows pale,0.0,Reject
+,,bren,No,Strong,Proper noun,a machine gun (the Bren gun),0.2,Reject
+,,sook,No,Strong,"Regional (Australia, Scotland)",a crybaby,0.27,Reject
+,,dene,No,Strong,Regional (British),a small valley,0.08,Reject
+,,nowt,No,Strong,Regional (British),nothing,0.18,Reject
+,,snye,No,Strong,Regional (Canada),a side channel of a river,0.0,Reject
+,,ghat,No,Strong,Regional (India),steps down to a river,0.06,Reject
+,,brae,No,Strong,Regional (Scottish),a hillside,0.08,Reject
+,,keek,No,Strong,Regional (Scottish),to peek,0.08,Reject
+,,linn,No,Strong,Regional (Scottish),a waterfall,0.12,Reject
+,,okeh,No,Strong,Variant spelling,OK,0.0,Reject
+,,pean,No,Strong,Variant spelling,paean; a heraldic fur,0.04,Reject
+,,soja,No,Strong,Variant spelling,soy,0.0,Reject
+,,tike,No,Strong,Variant spelling,tyke,0.12,Reject
+,,abed,No,Your call,Archaic,in bed,0.2,Your call
+,,cote,No,Your call,Archaic,a shelter for birds (dovecote),0.06,Your call
+,,dost,No,Your call,Archaic,"do (""thou dost""); thou, thee, hath and doth are accepted",1.16,Your call
+,,doth,No,Your call,Archaic,does,2.29,Your call
+,,haps,No,Your call,Archaic,happenings,0.27,Your call
+,,hoar,No,Your call,Archaic,frost; grey with age,0.0,Your call
+,,kith,No,Your call,Archaic,"friends (""kith and kin"")",0.1,Your call
+,,lich,No,Your call,Archaic,a corpse; an undead wizard in games,0.0,Your call
+,,twas,No,Your call,Archaic,it was,1.41,Your call
+,,kens,No,Your call,Archaic / Scottish,"knows (""beyond my ken"")",0.08,Your call
+,,dozy,No,Your call,British,drowsy; slow-witted,0.1,Your call
+,,hobs,No,Your call,British,stove tops,0.04,Your call
+,,kips,No,Your call,British,naps; untanned hides,0.08,Your call
+,,togs,No,Your call,British,clothes,0.24,Your call
+,,tosh,No,Your call,British,nonsense,0.24,Your call
+,,kerb,No,Your call,British spelling,curb,0.35,Your call
+,,gent,No,Your call,Casual,a gentleman,1.61,Your call
+,,pees,No,Your call,Crude,urinates,0.45,Your call
+,,mots,No,Your call,Foreign,witty sayings (bons mots),0.1,Your call
+,,shul,No,Your call,Foreign (Yiddish),a synagogue,0.18,Your call
+,,boll,No,Your call,Jargon,a cotton seed pod (boll weevil),0.18,Your call
+,,lath,No,Your call,Jargon,a thin strip of wood,0.06,Your call
+,,peen,No,Your call,Jargon,the end of a hammer head,0.1,Your call
+,,sump,No,Your call,Jargon,a pit that collects liquid,0.27,Your call
+,,tare,No,Your call,Jargon,container weight; a weed,0.08,Your call
+,,uvea,No,Your call,Jargon (anatomy),the middle layer of the eye,0.0,Your call
+,,nock,No,Your call,Jargon (archery),the notch of an arrow,0.1,Your call
+,,jete,No,Your call,Jargon (ballet),a leap,0.04,Your call
+,,wort,No,Your call,Jargon (brewing),unfermented beer; a plant,0.37,Your call
+,,agar,No,Your call,Jargon (lab),a gel for growing bacteria,0.0,Your call
+,,muon,No,Your call,Jargon (physics),a subatomic particle,0.0,Your call
+,,iamb,No,Your call,Jargon (poetry),a metrical foot,0.04,Your call
+,,aver,No,Your call,Literary,to assert,0.08,Your call
+,,bade,No,Your call,Literary,"asked, told (past of bid)",0.43,Your call
+,,espy,No,Your call,Literary,to catch sight of,0.04,Your call
+,,limn,No,Your call,Literary,to depict,0.0,Your call
+,,rill,No,Your call,Literary,a small stream,0.12,Your call
+,,rime,No,Your call,Literary,frost; old spelling of rhyme,0.12,Your call
+,,sere,No,Your call,Literary,"dry, withered",0.0,Your call
+,,wend,No,Your call,Literary,"to go (""wend your way"")",0.08,Your call
+,,yawp,No,Your call,Literary,"a harsh cry (""barbaric yawp"")",0.25,Your call
+,,cole,No,Your call,Name-word,cabbage (coleslaw),29.24,Your call
+,,dana,No,Your call,Name-word,not a standard word; maybe a deliberate Easter egg?,12.33,Your call
+,,rick,No,Your call,Name-word,a haystack,26.2,Your call
+,,alee,No,Your call,Nautical,away from the wind,0.1,Your call
+,,hove,No,Your call,Nautical,"came (""hove into view"")",0.16,Your call
+,,scow,No,Your call,Nautical,a flat-bottomed boat,0.33,Your call
+,,yawl,No,Your call,Nautical,a two-masted sailboat,0.24,Your call
+,,auks,No,Your call,Obscure,seabirds,0.0,Your call
+,,bock,No,Your call,Obscure,a strong dark beer,0.39,Your call
+,,caul,No,Your call,Obscure,a membrane over a newborn's head,0.0,Your call
+,,cays,No,Your call,Obscure,small low islands,0.04,Your call
+,,coca,No,Your call,Obscure,the plant cocaine comes from,4.2,Your call
+,,coir,No,Your call,Obscure,coconut fiber (doormats),0.0,Your call
+,,craw,No,Your call,Obscure,a crop (sticks in my craw),0.33,Your call
+,,dory,No,Your call,Obscure,a small boat; a fish,3.63,Your call
+,,dray,No,Your call,Obscure,a low cart (dray horse),0.1,Your call
+,,goby,No,Your call,Obscure,a small fish,0.04,Your call
+,,guar,No,Your call,Obscure,a bean (guar gum),0.04,Your call
+,,hasp,No,Your call,Obscure,a hinged clasp for a padlock,0.06,Your call
+,,kola,No,Your call,Obscure,the cola nut,0.08,Your call
+,,kudu,No,Your call,Obscure,an antelope,0.08,Your call
+,,lees,No,Your call,Obscure,wine sediment,0.1,Your call
+,,shad,No,Your call,Obscure,a fish,0.45,Your call
+,,sibs,No,Your call,Obscure,siblings,0.04,Your call
+,,viny,No,Your call,Obscure,covered in vines,0.0,Your call
+,,ilks,No,Your call,Odd plural,"kinds (""of that ilk"")",0.0,Your call
+,,ires,No,Your call,Odd plural,angers,0.0,Your call
+,,lyes,No,Your call,Odd plural,caustic solutions,0.0,Your call
+,,mach,No,Your call,Proper noun,a speed (Mach 2),1.86,Your call
+,,bris,No,Your call,Religious,a Jewish circumcision ceremony,0.0,Your call
+,,drek,No,Your call,Variant spelling,"dreck, rubbish",0.06,Your call
+,,pouf,No,Your call,Variant spelling,a hassock (pouffe); a puffy hairdo,0.0,Your call
+,,yuca,No,Your call,Variant spelling,cassava root,0.12,Your call
