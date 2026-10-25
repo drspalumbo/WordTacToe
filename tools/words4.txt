@@ -1,3 +1,4 @@
+abed
 abet
 able
 ably
@@ -53,7 +54,6 @@ arid
 arms
 army
 arts
-asea
 ashy
 asks
 asps
@@ -157,7 +157,6 @@ bode
 body
 bogs
 boil
-bola
 bold
 bolt
 bomb
@@ -178,7 +177,6 @@ bowl
 bows
 boxy
 boys
-brad
 brag
 bran
 bras
@@ -244,7 +242,6 @@ cats
 cave
 cede
 cell
-cels
 cent
 chai
 chap
@@ -279,7 +276,6 @@ clue
 coal
 coat
 coax
-cobb
 cobs
 coda
 code
@@ -309,6 +305,7 @@ cork
 corn
 cost
 cosy
+cote
 cots
 coup
 cove
@@ -344,6 +341,7 @@ cyan
 cyst
 czar
 dabs
+dace
 dads
 daft
 dais
@@ -713,7 +711,6 @@ gust
 guts
 guys
 gyms
-gyre
 gyro
 hack
 hags
@@ -731,7 +728,6 @@ hard
 hare
 harm
 harp
-hart
 hash
 hast
 hate
@@ -776,6 +772,7 @@ hire
 hiss
 hits
 hive
+hoar
 hoax
 hobo
 hock
@@ -803,7 +800,6 @@ hots
 hour
 howl
 hubs
-huck
 hues
 huff
 huge
@@ -876,7 +872,6 @@ jinx
 jive
 jobs
 jogs
-john
 join
 joke
 jolt
@@ -892,7 +887,6 @@ jury
 just
 juts
 kale
-kane
 keel
 keen
 keep
@@ -1058,8 +1052,6 @@ mana
 mane
 many
 maps
-mara
-marc
 mare
 mark
 mash
@@ -1139,7 +1131,6 @@ mown
 mows
 much
 muck
-muds
 mugs
 mule
 mull
@@ -1178,7 +1169,6 @@ nice
 nick
 nine
 nits
-nobs
 node
 nods
 none
@@ -1508,7 +1498,6 @@ sang
 sank
 saps
 sari
-sark
 sash
 sass
 sate
@@ -1713,7 +1702,6 @@ tamp
 tang
 tank
 tans
-tapa
 tape
 taps
 tarp
@@ -1814,7 +1802,6 @@ tugs
 tuna
 tune
 turf
-turk
 turn
 tusk
 tutu
@@ -1838,7 +1825,6 @@ urns
 used
 user
 uses
-vail
 vain
 vamp
 vane
@@ -1853,7 +1839,6 @@ veil
 vein
 vend
 vent
-vera
 verb
 very
 vest

@@ -142,6 +142,13 @@ function puzzleForDay(d) {
 // (yesterday first, so if both land on the last puzzle of a season, today's #N wins)
 [dayIndex() - 1, dayIndex()].forEach(d => { if (d >= 0) PUZZLE_DAY.set(puzzleForDay(d), d); });
 const dayNumber = idx => (PUZZLE_DAY.has(idx) ? PUZZLE_DAY.get(idx) : idx) + 1;   // the #N
+// A word dropped from the list after a puzzle shipped still counts in that puzzle,
+// so today's and yesterday's puzzles can always be solved.
+[dayIndex(), dayIndex() - 1].forEach(d => {
+  const P = d >= 0 && PUZZLES[puzzleForDay(d)];
+  if (P && typeof Solver !== 'undefined')
+    Solver.wordsOf(P.solution).forEach(w => { if (!WORDSET.has(w)) { WORDSET.add(w); WORDS.push(w); } });
+});
 const isCustom = idx => idx === CUSTOM_IDX;
 // Arranging (?arrange=1, inside the Create page's Start step): just the board and
 // its controls. No scoring, saving, stats or timer. Untouched, it shows the

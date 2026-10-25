@@ -18,7 +18,6 @@ afar
 afro
 agar
 aged
-ager
 ages
 agog
 aide
@@ -29,8 +28,6 @@ airs
 airy
 ajar
 akin
-alan
-alar
 alas
 alee
 ales
@@ -50,7 +47,6 @@ anal
 anew
 ankh
 anon
-ansa
 ante
 ants
 anus
@@ -69,7 +65,6 @@ arks
 arms
 army
 arts
-asea
 ashy
 asks
 asps
@@ -122,11 +117,9 @@ base
 bash
 bask
 bass
-bast
 bate
 bath
 bats
-batt
 bawl
 bays
 bead
@@ -172,7 +165,6 @@ blab
 blah
 bled
 blew
-blin
 blip
 blob
 bloc
@@ -192,7 +184,6 @@ bogs
 boil
 bola
 bold
-bole
 boll
 bolt
 bomb
@@ -220,14 +211,12 @@ boxy
 boys
 bozo
 brad
-brae
 brag
 bran
 bras
 brat
 bray
 bred
-bren
 brew
 brie
 brig
@@ -283,7 +272,6 @@ capo
 caps
 card
 care
-carl
 carp
 cars
 cart
@@ -296,11 +284,9 @@ caul
 cave
 cays
 cede
-ceil
 cell
 cels
 cent
-cess
 chad
 chai
 chap
@@ -310,7 +296,6 @@ chef
 chew
 chia
 chic
-chid
 chin
 chip
 chit
@@ -328,7 +313,6 @@ clap
 claw
 clay
 clef
-clew
 clip
 clod
 clog
@@ -339,7 +323,6 @@ clue
 coal
 coat
 coax
-cobb
 cobs
 coca
 cock
@@ -439,7 +422,6 @@ dash
 data
 date
 daub
-dawk
 dawn
 days
 daze
@@ -459,21 +441,16 @@ defy
 deli
 dell
 demo
-dene
 dens
 dent
 deny
-dere
-derm
 desk
 dews
 dewy
 dial
 dice
 dick
-dido
 died
-diel
 dies
 diet
 digs
@@ -501,7 +478,6 @@ doer
 does
 doff
 dogs
-doit
 dojo
 dole
 doll
@@ -517,9 +493,7 @@ dork
 dorm
 dory
 dose
-dost
 dote
-doth
 dots
 dour
 dove
@@ -599,7 +573,6 @@ epic
 eras
 ergo
 errs
-erst
 espy
 etch
 euro
@@ -621,7 +594,6 @@ fact
 fade
 fads
 fail
-fain
 fair
 fake
 fall
@@ -651,7 +623,6 @@ fens
 fern
 fess
 feta
-fets
 feud
 fiat
 fibs
@@ -729,7 +700,6 @@ from
 fuel
 full
 fume
-fumy
 fund
 funk
 furl
@@ -742,7 +712,6 @@ fuzz
 gabs
 gaff
 gaga
-gage
 gags
 gain
 gait
@@ -771,9 +740,7 @@ gene
 gent
 germ
 gets
-ghat
 ghee
-gibs
 gift
 gigs
 gild
@@ -789,7 +756,6 @@ glam
 glee
 glen
 glib
-glim
 glob
 glom
 glow
@@ -867,13 +833,11 @@ hams
 hand
 hang
 hank
-haps
 hard
 hare
 hark
 harm
 harp
-hart
 hash
 hasp
 hast
@@ -900,7 +864,6 @@ held
 hell
 helm
 help
-heme
 hemp
 hems
 hens
@@ -953,7 +916,6 @@ hour
 hove
 howl
 hubs
-huck
 hued
 hues
 huff
@@ -987,7 +949,6 @@ idle
 idly
 idol
 iffy
-ilia
 ilks
 ills
 imam
@@ -1007,7 +968,6 @@ iron
 isle
 itch
 item
-iwis
 jabs
 jack
 jade
@@ -1016,7 +976,6 @@ jail
 jake
 jamb
 jams
-jane
 jape
 jars
 java
@@ -1028,7 +987,6 @@ jeep
 jeer
 jeez
 jerk
-jess
 jest
 jete
 jets
@@ -1036,16 +994,13 @@ jibe
 jibs
 jiff
 jigs
-jill
 jilt
-jink
 jinx
 jive
 jobs
 jock
 joey
 jogs
-john
 join
 joke
 jolt
@@ -1063,8 +1018,6 @@ just
 jute
 juts
 kale
-kane
-keek
 keel
 keen
 keep
@@ -1073,7 +1026,6 @@ kelp
 kens
 kept
 kerb
-kerf
 kern
 keys
 khan
@@ -1128,7 +1080,6 @@ late
 lath
 laud
 lava
-lave
 lawn
 laws
 lays
@@ -1156,11 +1107,9 @@ levy
 lewd
 liar
 lice
-lich
 lick
 lids
 lied
-lief
 lien
 lies
 lieu
@@ -1175,9 +1124,7 @@ limn
 limo
 limp
 line
-ling
 link
-linn
 lint
 lion
 lips
@@ -1228,7 +1175,6 @@ lugs
 lull
 lulu
 lump
-lune
 lung
 lure
 lurk
@@ -1239,7 +1185,6 @@ luxe
 lyes
 lynx
 lyre
-lyse
 mace
 mach
 made
@@ -1258,8 +1203,6 @@ mana
 mane
 many
 maps
-mara
-marc
 mare
 mark
 mars
@@ -1280,7 +1223,6 @@ mead
 meal
 mean
 meat
-meed
 meek
 meet
 meld
@@ -1326,7 +1268,6 @@ moat
 mobs
 mock
 mode
-moil
 mojo
 mold
 mole
@@ -1351,7 +1292,6 @@ mots
 move
 mown
 mows
-mozo
 much
 muck
 muds
@@ -1361,7 +1301,6 @@ mull
 mums
 muon
 murk
-murr
 muse
 mush
 musk
@@ -1384,7 +1323,6 @@ navy
 nays
 near
 neat
-nebs
 neck
 need
 nene
@@ -1392,8 +1330,6 @@ neon
 nerd
 nest
 nets
-nett
-neve
 news
 newt
 next
@@ -1403,7 +1339,6 @@ nick
 nigh
 nine
 nits
-nobs
 nock
 node
 nods
@@ -1421,7 +1356,6 @@ nosy
 note
 noun
 nova
-nowt
 nubs
 nude
 nuke
@@ -1448,7 +1382,6 @@ oils
 oily
 oink
 okay
-okeh
 okra
 omen
 omit
@@ -1461,19 +1394,15 @@ onyx
 ooze
 oozy
 opal
-oped
 open
-opes
 opts
 opus
 oral
 orbs
 orca
 ores
-orts
 oryx
 orzo
-ossa
 ouch
 ours
 oust
@@ -1509,7 +1438,6 @@ papa
 paps
 pare
 park
-parr
 pars
 part
 pass
@@ -1523,7 +1451,6 @@ paws
 pays
 peak
 peal
-pean
 pear
 peas
 peat
@@ -1548,7 +1475,6 @@ peso
 pest
 pets
 pews
-pica
 pick
 pied
 pier
@@ -1595,7 +1521,6 @@ pomp
 pond
 pone
 pony
-pood
 poof
 pool
 poop
@@ -1651,7 +1576,6 @@ putt
 pyre
 pyro
 quad
-quag
 quay
 quid
 quip
@@ -1669,7 +1593,6 @@ rail
 rain
 raja
 rake
-rale
 ramp
 rams
 rang
@@ -1691,14 +1614,12 @@ real
 ream
 reap
 rear
-redd
 redo
 reds
 reed
 reef
 reek
 reel
-reft
 rein
 rely
 rend
@@ -1767,7 +1688,6 @@ ruff
 rugs
 ruin
 rule
-ruly
 rump
 rums
 rune
@@ -1777,7 +1697,6 @@ runt
 ruse
 rush
 rust
-ruth
 ruts
 ryes
 sack
@@ -1798,7 +1717,6 @@ sang
 sank
 saps
 sari
-sark
 sash
 sass
 sate
@@ -1807,7 +1725,6 @@ sawn
 saws
 says
 scab
-scad
 scam
 scan
 scar
@@ -1833,7 +1750,6 @@ self
 sell
 send
 sent
-sept
 sere
 serf
 sets
@@ -1844,9 +1760,7 @@ shad
 shag
 shah
 sham
-shaw
 shed
-shew
 shim
 shin
 ship
@@ -1860,9 +1774,7 @@ show
 shul
 shun
 shut
-sial
 sibs
-sice
 sick
 side
 sift
@@ -1921,7 +1833,6 @@ snot
 snow
 snub
 snug
-snye
 soak
 soap
 soar
@@ -1933,18 +1844,15 @@ sods
 sofa
 soft
 soil
-soja
 sold
 sole
 solo
 some
 song
 sons
-sook
 soon
 soot
 sops
-sord
 sore
 sort
 sots
@@ -2022,7 +1930,6 @@ tail
 take
 talc
 tale
-tali
 talk
 tall
 tame
@@ -2030,7 +1937,6 @@ tamp
 tang
 tank
 tans
-taos
 tapa
 tape
 taps
@@ -2084,7 +1990,6 @@ tied
 tier
 ties
 tiff
-tike
 tiki
 tile
 till
@@ -2116,7 +2021,6 @@ took
 tool
 toon
 toot
-tope
 topi
 tops
 tore
@@ -2153,12 +2057,10 @@ tuna
 tune
 turd
 turf
-turk
 turn
 tusk
 tuts
 tutu
-twas
 twee
 twig
 twin
@@ -2183,7 +2085,6 @@ used
 user
 uses
 uvea
-vail
 vain
 vamp
 vane
@@ -2198,7 +2099,6 @@ veil
 vein
 vend
 vent
-vera
 verb
 very
 vest
@@ -2211,7 +2111,6 @@ vied
 vies
 view
 vile
-vill
 vine
 viny
 visa
@@ -2247,14 +2146,12 @@ wart
 wary
 wash
 wasp
-wast
 watt
 wave
 wavy
 waxy
 ways
 weak
-weal
 wean
 wear
 webs
@@ -2339,7 +2236,6 @@ yawl
 yawn
 yawp
 yeah
-yean
 year
 yell
 yelp
