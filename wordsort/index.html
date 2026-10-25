@@ -212,6 +212,9 @@
           <button id="s-save" class="primary">Save</button>
         </div>
         <div class="hint" id="s-status" style="margin-top:.6rem"></div>
+        <label style="margin-top:1rem">No sync? Send your decisions to Claude</label>
+        <div class="rowbtns"><button id="s-export">Export review decisions</button></div>
+        <textarea id="s-exportbox" readonly rows="5" style="display:none;width:100%;margin-top:.5rem;font-size:.72rem;background:var(--bg);color:var(--ink);border:1px solid var(--line);border-radius:8px"></textarea>
       </div>
     </div>
   </main>
@@ -694,6 +697,25 @@ $('#s-save').onclick=()=>{
   if(queue.length)ensureDef(corpus[queue[0]].word);
 };
 $('#s-pull').onclick=pullLatest;
+// Export: the words decided in the current review round, as JSON to paste to Claude.
+// Share sheet first, then the clipboard, then a visible pre-selected box (iOS can
+// refuse the clipboard silently, so never claim "copied" without it working).
+$('#s-export').onclick=async()=>{
+  const round=review&&review.round;
+  const picked={};
+  Object.keys(progress).forEach(w=>{ if(round&&progress[w].rev===round) picked[w]=progress[w]; });
+  const n=Object.keys(picked).length;
+  if(!n){ setStatus(round?'Nothing decided in this review round yet.':'No review round is loaded.'); return; }
+  const text=JSON.stringify({round, exported:new Date().toISOString(), decisions:picked});
+  const box=$('#s-exportbox');
+  if(navigator.share){
+    try{ await navigator.share({title:'Danagram review decisions', text}); setStatus(`Shared ${n} decisions.`); return; }
+    catch(e){ if(e&&e.name==='AbortError') return; }
+  }
+  try{ if(navigator.clipboard&&window.isSecureContext){ await navigator.clipboard.writeText(text); setStatus(`Copied ${n} decisions. Paste them to Claude.`); return; } }catch(e){}
+  box.style.display='block'; box.value=text; box.focus(); box.select();
+  setStatus(`${n} decisions: copy the text below and paste it to Claude.`);
+};
 $('#modal').addEventListener('click',e=>{if(e.target===$('#modal'))$('#modal').classList.remove('on');});
 
 /* best-effort save when leaving */

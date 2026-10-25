@@ -10,3 +10,5 @@ tools/puzzles.json
 tools/hold.txt
 tools/retired.txt
 tools/puzzles_*.json
+# word familiarity data (Brysbaert prevalence: non-commercial, not ours to redistribute)
+tools/freqdata/
