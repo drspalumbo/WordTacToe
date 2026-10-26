@@ -98,11 +98,12 @@ function puzzleFromLink(q) {
 // 5) and confetti colours (k: up to 6 hex colours, dash-separated)
 function celebrationFromLink(q) {
   const th = (q.get('th') || '').toLowerCase();
-  const hop = /^[0-9a-f]{1,16}$/.test((q.get('h') || '').toLowerCase())
-    ? [...q.get('h').toLowerCase()].map(ch => parseInt(ch, 16)) : null;
+  const hexCells = k => /^[0-9a-f]{1,16}$/.test((q.get(k) || '').toLowerCase())
+    ? [...q.get(k).toLowerCase()].map(ch => parseInt(ch, 16)) : null;
+  const hop = hexCells('h'), introHop = hexCells('ih');      // after the solve / when it opens
   const emoji = splitEmoji(q.get('e') || '');
   const confetti = (q.get('k') || '').toLowerCase().split('-').filter(c => /^[0-9a-f]{6}$/.test(c)).slice(0, 6);
-  return { theme: typeof THEMES !== 'undefined' && THEMES[th] ? th : null, hop,
+  return { theme: typeof THEMES !== 'undefined' && THEMES[th] ? th : null, hop, introHop,
            emoji: emoji.length ? emoji : null, confetti: confetti.length ? confetti.map(c => '#' + c) : null };
 }
 // up to 5 emoji (or other symbols), never plain letters or digits
@@ -178,7 +179,8 @@ const ARRANGE = CUSTOM_IDX >= 0 && /[?&]arrange=1/.test(location.search || '');
 // Previewing a celebration (?celebrate=1, from the Create page): the solved board and
 // its celebration, with nothing saved or sent, like arranging
 const PREVIEW = CUSTOM_IDX >= 0 && /[?&]celebrate=1/.test(location.search || '');
-const NOSAVE = ARRANGE || PREVIEW;
+const PREVIEW_INTRO = CUSTOM_IDX >= 0 && /[?&]intro=1/.test(location.search || '');   // the intro hops
+const NOSAVE = ARRANGE || PREVIEW || PREVIEW_INTRO;
 let arrangeTouched = ARRANGE && !!PUZZLES[CUSTOM_IDX].start;   // a valid &s= start: already arranged
 if (ARRANGE) document.documentElement.classList.add('arrange');
 // a shared puzzle isn't the daily: say so in the heading (and the tab)
@@ -1806,7 +1808,7 @@ function sharedTime() {
 function extrasParam() {
   const q = typeof URLSearchParams !== 'undefined' ? new URLSearchParams(location.search || '') : null;
   if (!q) return '';
-  return ['th', 'h', 'e', 'k'].filter(k => q.get(k)).map(k => '&' + k + '=' + encodeURIComponent(q.get(k))).join('');
+  return ['th', 'h', 'ih', 'e', 'k'].filter(k => q.get(k)).map(k => '&' + k + '=' + encodeURIComponent(q.get(k))).join('');
 }
 function shareTitle() {
   if (!isCustom(state.idx)) return `${LABEL} #${dayNumber(state.idx)}`;
@@ -2037,10 +2039,13 @@ function onWin(g) {
 // The creator's chosen letters hop one after another, a real parabola each
 // (y = -4h·t(1-t), sampled), with a little squash on landing. Cells are 0-15 of the
 // target 4×4. Resolves when the last one lands (at once under reduced motion).
-function hopWave(cells) {
+function hopWave(cells, byTile = false) {
   const reduce = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
   if (reduce) return Promise.resolve();
   const off = innerOff(), occ = occupancy(), STEP = 150, DUR = 560, H = Math.round(S * 0.42);
+  // byTile: the tile that belongs at that cell of the answer, wherever it is now
+  const owner = new Map();
+  PUZZLES[state.idx].pieces.forEach((p, pi) => p.cells.forEach(([r, c], ci) => owner.set(r * 4 + c, { pi, ci })));
   const frames = [];
   for (let k = 0; k <= 10; k++) {
     const t = k / 10;
@@ -2050,7 +2055,7 @@ function hopWave(cells) {
   frames.push({ transform: 'translateY(0) scale(1, 1)', offset: 1 });
   let last = 0;
   cells.forEach((cell, n) => {
-    const hit = occ.get(key(Math.floor(cell / 4) + off, cell % 4 + off));
+    const hit = byTile ? owner.get(cell) : occ.get(key(Math.floor(cell / 4) + off, cell % 4 + off));
     const tile = hit && state.pieces[hit.pi].tiles[hit.ci];
     const letter = tile && tile.querySelector('.letter');
     if (!letter || !letter.animate) return;
@@ -2058,6 +2063,30 @@ function hopWave(cells) {
     last = n * STEP + DUR;
   });
   return new Promise(res => setTimeout(res, last + 250));
+}
+// The intro: the creator's chosen tiles hop when an unsolved puzzle opens, once any
+// card over the board (how to play, the creator's note) is closed
+function introHops() {
+  const P = PUZZLES[state.idx];
+  if (!P.introHop || !P.introHop.length || isSolved() || NOSAVE) return;
+  const covered = () => ['helpOverlay', 'introOverlay', 'overlay', 'feedbackOverlay']
+    .some(id => { const el = document.getElementById(id); return el && el.classList.contains('show'); });
+  let waited = 0;
+  const go = () => {
+    if (covered() && waited < 120000) { waited += 300; setTimeout(go, 300); return; }
+    setTimeout(() => hopWave(P.introHop, true), 450);
+  };
+  go();
+}
+// ?intro=1: the start position and its intro hops; tap the board to replay
+function setupIntroPreview() {
+  const P = PUZZLES[state.idx];
+  document.getElementById('helpOverlay').classList.remove('show');
+  document.getElementById('introOverlay').classList.remove('show');
+  const play = () => { if (P.introHop) hopWave(P.introHop, true); };
+  setMsg('Intro preview. Tap the board to play it again.');
+  setTimeout(play, 500);
+  document.getElementById('board').addEventListener('click', play);
 }
 // ?celebrate=1: show the puzzle solved and play its celebration; tap the board to replay
 function setupPreview() {
@@ -2862,9 +2891,11 @@ document.getElementById('introPlay').addEventListener('click', () => {
 });
 if (ARRANGE) setupArrange();
 else if (PREVIEW) setupPreview();
+else if (PREVIEW_INTRO) setupIntroPreview();
 else if (isCustom(state.idx) && (CUSTOM_TEXT.title || CUSTOM_TEXT.note)) showIntro();
 else if (introFirst) showIntro();
 else if (!store.get(HELP_SEEN)) showHelp();
+introHops();                                     // after any card that will cover the board
 
 function setupArrange() {
   const say = () => setMsg(arrangeTouched

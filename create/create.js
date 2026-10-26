@@ -500,9 +500,11 @@ function splitEmoji(s) {                         // up to 5 emoji, never letters
 }
 function extrasParam(d = draft) {
   const hop = (d.hop || []).map(i => i.toString(16)).join('');
+  const ihop = (d.introHop || []).map(i => i.toString(16)).join('');
   const emoji = splitEmoji(d.emoji || '').join('');
   const conf = (d.confetti || []).map(c => c.slice(1).toLowerCase()).join('-');
   return (d.theme && THEMES[d.theme] ? '&th=' + d.theme : '') + (hop ? '&h=' + hop : '') +
+         (ihop ? '&ih=' + ihop : '') +
          (emoji ? '&e=' + encodeURIComponent(emoji) : '') + (conf ? '&k=' + conf : '');
 }
 function extrasFrom(str) {                       // a saved '&th=…&h=…' string back into draft fields
@@ -510,6 +512,7 @@ function extrasFrom(str) {                       // a saved '&th=…&h=…' stri
   const th = q.get('th') || '';
   return { theme: THEMES[th] ? th : '',
            hop: /^[0-9a-f]{1,16}$/.test(q.get('h') || '') ? [...q.get('h')].map(ch => parseInt(ch, 16)) : [],
+           introHop: /^[0-9a-f]{1,16}$/.test(q.get('ih') || '') ? [...q.get('ih')].map(ch => parseInt(ch, 16)) : [],
            emoji: splitEmoji(q.get('e') || '').join(''),
            confetti: (q.get('k') || '').split('-').filter(c => /^[0-9a-f]{6}$/.test(c)).map(c => '#' + c).slice(0, 6) };
 }
@@ -525,21 +528,26 @@ function extrasFrom(str) {                       // a saved '&th=…&h=…' stri
 })();
 function paintTheme() {
   $('themeSel').value = draft.theme || '';
-  ['pieceGrid', 'swatches', 'hopGrid'].forEach(id => applyBoardTheme($(id), draft.theme));
+  ['pieceGrid', 'swatches', 'hopGrid', 'introGrid'].forEach(id => applyBoardTheme($(id), draft.theme));
 }
 // Celebration fold-out
 (function buildCelebrate() {
-  const grid = $('hopGrid');
-  for (let i = 0; i < 16; i++) {
-    const b = document.createElement('button');
-    b.className = 'hop-cell'; b.dataset.i = i;
-    b.addEventListener('click', () => {
-      const hop = (draft.hop || []).slice(), at = hop.indexOf(i);
-      if (at > -1) hop.splice(at, 1); else if (hop.length < 16) hop.push(i);
-      draft.hop = hop; saveDraft(); renderCelebrate(); updateLink();
-    });
-    grid.appendChild(b);
-  }
+  [['hopGrid', 'hop', 'hopClear'], ['introGrid', 'introHop', 'introClear']].forEach(([id, field, clear]) => {
+    for (let i = 0; i < 16; i++) {
+      const b = document.createElement('button');
+      b.className = 'hop-cell'; b.dataset.i = i;
+      b.addEventListener('click', () => {
+        const hop = (draft[field] || []).slice(), at = hop.indexOf(i);
+        if (at > -1) hop.splice(at, 1); else if (hop.length < 16) hop.push(i);
+        draft[field] = hop; saveDraft(); renderCelebrate(); updateLink();
+      });
+      $(id).appendChild(b);
+    }
+    $(clear).addEventListener('click', () => { draft[field] = []; saveDraft(); renderCelebrate(); updateLink(); });
+  });
+  $('previewIntro').addEventListener('click', () => {
+    window.open($('shareUrl').value + '&intro=1', '_blank', 'noopener');
+  });
   CONFETTI_CHOICES.forEach(c => {
     const b = document.createElement('button');
     b.className = 'swatch'; b.style.background = c; b.dataset.c = c; b.setAttribute('aria-label', 'Confetti ' + c);
@@ -550,7 +558,6 @@ function paintTheme() {
     });
     $('confettiChips').appendChild(b);
   });
-  $('hopClear').addEventListener('click', () => { draft.hop = []; saveDraft(); renderCelebrate(); updateLink(); });
   $('emojiIn').addEventListener('input', () => {
     draft.emoji = splitEmoji($('emojiIn').value).join(''); saveDraft(); updateLink();
   });
@@ -560,14 +567,17 @@ function paintTheme() {
   });
 })();
 function renderCelebrate() {
-  const hop = draft.hop || [];
-  document.querySelectorAll('.hop-cell').forEach(b => {
-    const i = +b.dataset.i, n = hop.indexOf(i);
-    b.textContent = (draft.letters[i] || '').toUpperCase();
-    b.classList.toggle('on', n > -1);
-    b.dataset.n = n > -1 ? n + 1 : '';
+  [['hopGrid', 'hop', 'hopClear'], ['introGrid', 'introHop', 'introClear']].forEach(([id, field, clear]) => {
+    const hop = draft[field] || [];
+    $(id).querySelectorAll('.hop-cell').forEach(b => {
+      const i = +b.dataset.i, n = hop.indexOf(i);
+      b.textContent = (draft.letters[i] || '').toUpperCase();
+      b.classList.toggle('on', n > -1);
+      b.dataset.n = n > -1 ? n + 1 : '';
+    });
+    $(clear).hidden = !hop.length;
   });
-  $('hopClear').hidden = !hop.length;
+  $('previewIntro').hidden = !(draft.introHop || []).length;
   if (document.activeElement !== $('emojiIn')) $('emojiIn').value = draft.emoji || '';
   document.querySelectorAll('#confettiChips .swatch').forEach(b =>
     b.classList.toggle('on', (draft.confetti || []).includes(b.dataset.c)));
@@ -861,7 +871,7 @@ $('backToPieces').addEventListener('click', () => showStep('start'));
 function newPuzzle() {
   Object.assign(draft, { id: newId(), letters: Array(16).fill(''), typed: Array(16).fill(false), joins: [],
                          title: '', note: '', start: null, startFor: null, colors: {},
-                         theme: '', hop: [], emoji: '', confetti: [] });
+                         theme: '', hop: [], introHop: [], emoji: '', confetti: [] });
   shareMeta = null;
   cursor = 0; across = true; showStep('letters');
 }
