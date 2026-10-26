@@ -27,8 +27,7 @@ MAX_USES = int(sys.argv[sys.argv.index('--max-uses') + 1]) if '--max-uses' in sy
 # stars (Oct 25 2026): 16-30 1*, 31-50 2*, 51-70 3*, 71-85 4*, 86-100 5*; under 16 is
 # too easy and over 100 is for special challenges, so regular days stay in 16-100.
 # Dave's week (Oct 15 2026): Mon 1*, Tue 3*, Wed 2*, Thu 4*, Fri 3*, Sat 4*, Sun 5*.
-# Monday aims at the top of 1* (Oct 26 2026: the median Monday, 23, felt too easy)
-BANDS = {0: (26, 30), 1: (51, 70), 2: (31, 50), 3: (71, 85), 4: (51, 70), 5: (71, 85), 6: (86, 100)}
+BANDS = {0: (16, 30), 1: (51, 70), 2: (31, 50), 3: (71, 85), 4: (51, 70), 5: (71, 85), 6: (86, 100)}
 SCORE_MIN, SCORE_MAX = 16, 100
 FROM = int(sys.argv[sys.argv.index('--from') + 1]) if '--from' in sys.argv else None
 
