@@ -248,3 +248,28 @@ html.dark .sboard .sq.zone{background:rgba(255,255,255,.09);}
 #previewCelebrate{display:block; margin:14px auto 0;}
 #hopClear[hidden], #introClear[hidden], #previewIntro[hidden]{display:none;}
 #previewIntro{display:block; margin:8px auto 4px;}
+
+/* custom colours: Light / Dark tabs and native colour pickers */
+.custom-colors{margin:0 0 12px; padding:10px; border-radius:12px; border:1px solid var(--tile-line); text-align:left;}
+.custom-colors[hidden]{display:none;}
+.mode-tabs{display:flex; gap:2px; padding:2px; border-radius:999px; background:var(--track); width:max-content; margin:0 auto 10px;}
+.mode-tabs button{border:0; background:transparent; padding:5px 12px; border-radius:999px; font:inherit; font-size:12.5px;
+  font-weight:700; color:var(--ink-soft); cursor:pointer; touch-action:manipulation;}
+.mode-tabs button.on{background:var(--surface); color:var(--ink); font-weight:800; box-shadow:inset 0 0 0 1px var(--tile-line);}
+.cc-list{display:grid; grid-template-columns:1fr 1fr; gap:6px 10px;}
+.cc-item{display:flex; align-items:center; gap:8px; font-size:13px; font-weight:700; color:var(--ink);}
+.cc-item input[type=color]{width:34px; height:30px; padding:0; border:1px solid var(--tile-line); border-radius:8px;
+  background:none; cursor:pointer; flex:none;}
+.cc-sub{margin:10px 0 4px; font-size:12px; font-weight:800; letter-spacing:.04em; text-transform:uppercase; color:var(--ink-soft);}
+.cc-pieces{display:grid; grid-template-columns:repeat(5, auto); gap:6px 10px; justify-content:start;}
+.cc-pieces .cc-item{font-size:11px; color:var(--ink-soft); gap:4px;}
+.cc-copy{margin-top:10px; font-size:13px; font-weight:700; color:var(--ink); display:flex; align-items:center; gap:6px; flex-wrap:wrap;}
+.cc-copy select{font:inherit; font-size:16px; padding:3px 6px; border-radius:8px; border:1px solid var(--tile-line);
+  background:var(--surface); color:var(--ink);}
+
+.cc-chip{width:22px; height:22px; border-radius:6px; box-shadow:inset 0 0 0 1px var(--tile-line); flex:none;}
+.cc-item.typed input{width:98px; height:28px; padding:0 6px; font:inherit; font-size:16px; font-weight:600;
+  border:1px solid var(--tile-line); border-radius:8px; background:var(--surface); color:var(--ink);}
+.cc-pieces .cc-item.typed{flex-direction:column; align-items:flex-start;}
+.cc-pieces:has(.typed){grid-template-columns:repeat(3, auto);}
+.cc-list:has(.typed){grid-template-columns:1fr;}

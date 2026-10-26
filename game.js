@@ -103,7 +103,11 @@ function celebrationFromLink(q) {
   const hop = hexCells('h'), introHop = hexCells('ih');      // after the solve / when it opens
   const emoji = splitEmoji(q.get('e') || '');
   const confetti = (q.get('k') || '').toLowerCase().split('-').filter(c => /^[0-9a-f]{6}$/.test(c)).slice(0, 6);
-  return { theme: typeof THEMES !== 'undefined' && THEMES[th] ? th : null, hop, introHop,
+  // custom colours: both modes (dark falls back to light if it's missing)
+  const light = typeof decodeColors === 'function' ? decodeColors(q.get('tc')) : null;
+  const customTheme = th === 'custom' && light ? { light, dark: decodeColors(q.get('td')) || light } : null;
+  return { theme: customTheme ? 'custom' : typeof THEMES !== 'undefined' && THEMES[th] ? th : null, customTheme,
+           hop, introHop,
            emoji: emoji.length ? emoji : null, confetti: confetti.length ? confetti.map(c => '#' + c) : null };
 }
 // up to 5 emoji (or other symbols), never plain letters or digits
@@ -1808,7 +1812,7 @@ function sharedTime() {
 function extrasParam() {
   const q = typeof URLSearchParams !== 'undefined' ? new URLSearchParams(location.search || '') : null;
   if (!q) return '';
-  return ['th', 'h', 'ih', 'e', 'k'].filter(k => q.get(k)).map(k => '&' + k + '=' + encodeURIComponent(q.get(k))).join('');
+  return ['th', 'tc', 'td', 'h', 'ih', 'e', 'k'].filter(k => q.get(k)).map(k => '&' + k + '=' + encodeURIComponent(q.get(k))).join('');
 }
 function shareTitle() {
   if (!isCustom(state.idx)) return `${LABEL} #${dayNumber(state.idx)}`;
@@ -1953,7 +1957,8 @@ document.getElementById('shareBtn').addEventListener('click', () => {
 function confetti(P = PUZZLES[state.idx]) {
   if (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
   const theme = P && P.theme && typeof THEMES !== 'undefined' ? THEMES[P.theme] : null;
-  const COLORS = (P && P.confetti) || (theme && theme.confetti) ||
+  const own = P && P.customTheme ? ['--o1', '--o2', '--o3', '--o4', '--o5'].map(k => P.customTheme.light[k]) : null;
+  const COLORS = (P && P.confetti) || (theme && theme.confetti) || own ||
                  ['var(--gold)', 'var(--accent)', 'var(--good)', 'var(--o1)', 'var(--o2)', 'var(--o4)', 'var(--o6)'];
   const EMOJI = (P && P.emoji) || [];
   const N = 70;
@@ -2184,6 +2189,10 @@ function applyTheme() {
   const b = document.getElementById('themeBtn');
   b.setAttribute('aria-label', dark ? 'Switch to light mode' : 'Switch to dark mode');
   b.title = dark ? 'Light mode' : 'Dark mode';
+  // a puzzle with its own light and dark colours follows the switch
+  const P = PUZZLES[state.idx];
+  if (P && P.theme === 'custom' && typeof applyBoardTheme === 'function')
+    applyBoardTheme(document.getElementById('boardWrap'), P.theme, P.customTheme);
 }
 document.getElementById('themeBtn').addEventListener('click', () => {
   store.set(THEME_KEY, document.documentElement.classList.contains('dark') ? 'light' : 'dark');
@@ -2463,7 +2472,7 @@ function loadPuzzle(idx) {
   state.idx = (idx + PUZZLES.length) % PUZZLES.length;
   state.mode = 'free';
   const P = PUZZLES[state.idx];
-  if (typeof applyBoardTheme === 'function') applyBoardTheme(document.getElementById('boardWrap'), P.theme);
+  if (typeof applyBoardTheme === 'function') applyBoardTheme(document.getElementById('boardWrap'), P.theme, P.customTheme);
   state.pieces = P.pieces.map((p, i) => ({
     letters: p.letters,
     paint: p.paint,

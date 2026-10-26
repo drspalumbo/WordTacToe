@@ -503,14 +503,21 @@ function extrasParam(d = draft) {
   const ihop = (d.introHop || []).map(i => i.toString(16)).join('');
   const emoji = splitEmoji(d.emoji || '').join('');
   const conf = (d.confetti || []).map(c => c.slice(1).toLowerCase()).join('-');
-  return (d.theme && THEMES[d.theme] ? '&th=' + d.theme : '') + (hop ? '&h=' + hop : '') +
+  return themeParam(d) + (hop ? '&h=' + hop : '') +
          (ihop ? '&ih=' + ihop : '') +
          (emoji ? '&e=' + encodeURIComponent(emoji) : '') + (conf ? '&k=' + conf : '');
+}
+function themeParam(d = draft) {                 // &th=, plus both modes' colours for a custom theme
+  if (d.theme === 'custom' && d.customTheme)
+    return '&th=custom&tc=' + encodeColors(d.customTheme.light) + '&td=' + encodeColors(d.customTheme.dark);
+  return d.theme && THEMES[d.theme] ? '&th=' + d.theme : '';
 }
 function extrasFrom(str) {                       // a saved '&th=…&h=…' string back into draft fields
   const q = new URLSearchParams(String(str || '').replace(/^&/, ''));
   const th = q.get('th') || '';
-  return { theme: THEMES[th] ? th : '',
+  const light = decodeColors(q.get('tc'));
+  const customTheme = th === 'custom' && light ? { light, dark: decodeColors(q.get('td')) || { ...light } } : null;
+  return { theme: customTheme ? 'custom' : THEMES[th] ? th : '', customTheme,
            hop: /^[0-9a-f]{1,16}$/.test(q.get('h') || '') ? [...q.get('h')].map(ch => parseInt(ch, 16)) : [],
            introHop: /^[0-9a-f]{1,16}$/.test(q.get('ih') || '') ? [...q.get('ih')].map(ch => parseInt(ch, 16)) : [],
            emoji: splitEmoji(q.get('e') || '').join(''),
@@ -521,14 +528,62 @@ function extrasFrom(str) {                       // a saved '&th=…&h=…' stri
   const sel = $('themeSel');
   Object.entries(THEMES).forEach(([k, t]) => {
     const o = document.createElement('option'); o.value = k; o.textContent = t.label; sel.appendChild(o);
+    $('ccFrom').appendChild(o.cloneNode(true));
   });
+  const custom = document.createElement('option'); custom.value = 'custom'; custom.textContent = 'Custom…';
+  sel.appendChild(custom);
   sel.addEventListener('change', () => {
+    // Custom starts from whatever was showing, so it's a tweak rather than a blank slate
+    if (sel.value === 'custom' && !draft.customTheme) draft.customTheme = themeModes(draft.theme);
     draft.theme = sel.value; saveDraft(); paintTheme(); renderPieces();
+  });
+})();
+// ---- the custom colour editor: Light / Dark tabs, the board's colours, the nine piece colours
+let editDark = document.documentElement.classList.contains('dark');
+const CC_LABELS = { '--well': 'Board', '--zone': 'Target area', '--tile': 'Tiles',
+                    '--tile-line': 'Tile edges', '--ink': 'Letters' };
+// a browser without a colour picker gets a typed hex box and a chip showing the colour
+const COLOR_PICKER = (() => { const t = document.createElement('input'); t.type = 'color'; return t.type === 'color'; })();
+(function buildCustomColors() {
+  const mk = (k, label, box) => {
+    const l = document.createElement('label'); l.className = 'cc-item' + (COLOR_PICKER ? '' : ' typed');
+    const inp = document.createElement('input'); inp.type = 'color'; inp.dataset.k = k;
+    if (!COLOR_PICKER) { inp.maxLength = 7; inp.spellcheck = false; inp.setAttribute('autocapitalize', 'off'); }
+    const chip = document.createElement('span'); chip.className = 'cc-chip';
+    inp.addEventListener('input', () => {
+      const v = inp.value.trim();
+      if (!/^#[0-9a-f]{6}$/i.test(v)) return;            // typing: wait for a whole colour
+      draft.customTheme[editDark ? 'dark' : 'light'][k] = v.toLowerCase();
+      saveDraft(); paintTheme();
+    });
+    l.append(...(COLOR_PICKER ? [inp] : [chip, inp]), document.createTextNode(label));
+    box.appendChild(l);
+  };
+  Object.entries(CC_LABELS).forEach(([k, label]) => mk(k, label, $('ccBoard')));
+  for (let i = 1; i <= 9; i++) mk('--o' + i, String(i), $('ccPieces'));
+  document.querySelectorAll('.mode-tabs button').forEach(b => b.addEventListener('click', () => {
+    editDark = b.dataset.mode === 'dark'; paintTheme();
+  }));
+  $('ccCopy').addEventListener('click', () => {
+    draft.customTheme = themeModes($('ccFrom').value); saveDraft(); paintTheme();
   });
 })();
 function paintTheme() {
   $('themeSel').value = draft.theme || '';
-  ['pieceGrid', 'swatches', 'hopGrid', 'introGrid'].forEach(id => applyBoardTheme($(id), draft.theme));
+  const custom = draft.theme === 'custom' && draft.customTheme;
+  $('customPanel').hidden = !custom;
+  // editing custom colours: the grids show the mode being edited
+  ['pieceGrid', 'swatches', 'hopGrid', 'introGrid'].forEach(id =>
+    applyBoardTheme($(id), draft.theme, draft.customTheme, custom ? editDark : undefined));
+  if (!custom) return;
+  document.querySelectorAll('.mode-tabs button').forEach(b =>
+    b.classList.toggle('on', (b.dataset.mode === 'dark') === editDark));
+  const m = draft.customTheme[editDark ? 'dark' : 'light'];
+  document.querySelectorAll('#customPanel input[data-k]').forEach(inp => {
+    if (document.activeElement !== inp) inp.value = m[inp.dataset.k] || '#000000';
+    const chip = inp.parentElement.querySelector('.cc-chip');
+    if (chip) chip.style.background = m[inp.dataset.k] || '#000000';
+  });
 }
 // Celebration fold-out
 (function buildCelebrate() {
@@ -644,7 +699,7 @@ let arrangeSrc = '';
 function arrangeUrl() {
   const c = paintParam(), st = startParam();
   return '../?p=' + shareCode() + (c ? '&c=' + c : '') + (st ? '&s=' + st : '') +
-    (draft.theme ? '&th=' + draft.theme : '') + '&arrange=1';
+    themeParam() + '&arrange=1';
 }
 function renderStart() {
   const frame = $('startFrame'), url = arrangeUrl();

@@ -41,10 +41,51 @@ const THEMES = {
     '--o6': '#D5DAEC', '--o7': '#B7C9F7', '--o8': '#A9B2D6', '--o9': '#D9C9F7' },
     confetti: ['#F3E19A', '#9FB3F5', '#FFFFFF', '#C4A8F0', '#6E7FCC'] },
 };
-// apply (or clear, with no key) a theme's colours on an element and everything in it
-function applyBoardTheme(el, key) {
-  const all = new Set(Object.values(THEMES).flatMap(t => Object.keys(t.vars)));
+// ---- custom colours: the creator picks every board colour, separately for light and
+// dark mode. In a link: th=custom, tc= (light) and td= (dark), each the 14 colours
+// of THEME_KEYS as 6 hex digits, run together (84 characters).
+const THEME_KEYS = ['--well', '--zone', '--tile', '--tile-line', '--ink',
+                    '--o1', '--o2', '--o3', '--o4', '--o5', '--o6', '--o7', '--o8', '--o9'];
+const CLASSIC = {                               // the game's own colours (styles.css)
+  light: { '--well': '#D8E0E7', '--zone': '#E6ECF1', '--tile': '#FCFDFC', '--tile-line': '#B9C6D0',
+           '--ink': '#22303F', '--o1': '#F5C48C', '--o2': '#A9D9BE', '--o3': '#B5C7F0', '--o4': '#DDBEE8',
+           '--o5': '#EFDE9C', '--o6': '#E8B3A6', '--o7': '#F2B8C8', '--o8': '#CBD3DA', '--o9': '#C9E39E' },
+  dark:  { '--well': '#1E262E', '--zone': '#232C35', '--tile': '#2A343E', '--tile-line': '#3B4854',
+           '--ink': '#E4E9EE', '--o1': '#7C5A35', '--o2': '#335E49', '--o3': '#3A4B7A', '--o4': '#5E4470',
+           '--o5': '#6E6230', '--o6': '#74443B', '--o7': '#7A3E55', '--o8': '#4A545E', '--o9': '#4E6A2C' },
+};
+const encodeColors = mode => THEME_KEYS.map(k => (mode[k] || '#000000').slice(1).toLowerCase()).join('');
+function decodeColors(str) {
+  if (!/^[0-9a-f]{84}$/i.test(str || '')) return null;
+  const out = {};
+  THEME_KEYS.forEach((k, i) => { out[k] = '#' + str.slice(i * 6, i * 6 + 6).toLowerCase(); });
+  return out;
+}
+// a theme's colours for both modes (presets look the same in both)
+function themeModes(key) {
+  if (THEMES[key]) {
+    const m = {}; THEME_KEYS.forEach(k => { m[k] = THEMES[key].vars[k]; });
+    return { light: { ...m }, dark: { ...m } };
+  }
+  return { light: { ...CLASSIC.light }, dark: { ...CLASSIC.dark } };
+}
+function shade(hex, f) {                        // f < 0 darker, f > 0 lighter
+  const n = parseInt(hex.slice(1), 16), ch = [n >> 16, (n >> 8) & 255, n & 255]
+    .map(c => Math.round(f < 0 ? c * (1 + f) : c + (255 - c) * f));
+  return '#' + ch.map(c => c.toString(16).padStart(2, '0')).join('');
+}
+// apply (or clear, with no key) a theme's colours on an element and everything in it.
+// custom: {light, dark} for key 'custom'; dark: which mode (default: the page's)
+function applyBoardTheme(el, key, custom, dark) {
+  const all = new Set([...Object.values(THEMES).flatMap(t => Object.keys(t.vars)), ...THEME_KEYS, '--well-outer']);
   all.forEach(v => el.style.removeProperty(v));
+  if (key === 'custom' && custom) {
+    if (dark === undefined) dark = document.documentElement.classList.contains('dark');
+    const m = custom[dark ? 'dark' : 'light'] || custom.light;
+    THEME_KEYS.forEach(k => { if (m[k]) el.style.setProperty(k, m[k]); });
+    if (m['--well']) el.style.setProperty('--well-outer', shade(m['--well'], -0.07));
+    return;
+  }
   const t = THEMES[key];
   if (t) Object.entries(t.vars).forEach(([v, c]) => el.style.setProperty(v, c));
 }
