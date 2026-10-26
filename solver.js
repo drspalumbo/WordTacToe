@@ -266,11 +266,24 @@ const Solver = (() => {
     const search = pSol > 0 ? -Math.log10(pSol) : 12;
     const clamp = x => Math.max(0, Math.min(1, x));
     const searchNorm = clamp((search - 1.5) / 7), wordNorm = clamp((branching - 2.5) / 8.5);
-    const score = Math.round(100 * (0.6 * searchNorm + 0.4 * wordNorm));
-    return { score, stars: 1 + Math.min(4, Math.floor(score / 20)), search, branching,
+    const spatial = Math.round(100 * (0.6 * searchNorm + 0.4 * wordNorm));
+    // + word points: less familiar answer words (data/word_points.js, tools/wordpoints.py)
+    const wordList = [...new Set(wordsOf(rows))]
+      .map(w => [w, (typeof WORD_POINTS !== 'undefined' && WORD_POINTS[w]) || 0]).filter(x => x[1]);
+    const wordPoints = wordList.reduce((t, x) => t + x[1], 0);
+    const score = spatial + wordPoints;
+    return { score, stars: starsFor(score), spatial, wordPoints, wordList, search, branching,
              // the working, for the Create page's explanation
              searchNorm, wordNorm, perLine, pSol, space, tilings: tilings.length, exact,
              ominos: ominos.length, singles: singles.length, solutions: numSolutions };
+  }
+
+  // Stars (Oct 2026): 16-30 1, 31-50 2, 51-70 3, 71-85 4, 86-100 5. Under 16 is 0 (too
+  // easy); over 100 is 6, a special challenge. The same bands as tools/wordpoints.py.
+  function starsFor(score) {
+    if (score > 100) return 6;
+    if (score < 16) return 0;
+    return score <= 30 ? 1 : score <= 50 ? 2 : score <= 70 ? 3 : score <= 85 ? 4 : 5;
   }
 
   function wordsOf(rows) {
@@ -297,5 +310,5 @@ const Solver = (() => {
     return { letters, pieceOf };
   }
 
-  return { LINES, allowWords, lineStatus, fill, piecesFrom, solutions, difficulty, wordsOf, encode, decode };
+  return { LINES, allowWords, starsFor, lineStatus, fill, piecesFrom, solutions, difficulty, wordsOf, encode, decode };
 })();

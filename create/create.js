@@ -396,7 +396,9 @@ function renderPieceInfo(groups) {
   lastDiff = difficultyOf(groups, n);
   $('pieceInfo').innerHTML =
     `${multi} piece${multi === 1 ? '' : 's'} + ${singles} single tile${singles === 1 ? '' : 's'}<br>${verdict}` +
-    `<br><span class="diff">Difficulty ${starRow(lastDiff.stars)} <small>${lastDiff.score}/100</small></span>`;
+    `<br><span class="diff">Difficulty ${starRow(lastDiff.stars)} <small>${lastDiff.score}</small></span>` +
+    (lastDiff.stars === 6 ? '<br><span class="warn">⚠ Over 100: a special challenge, harder than any regular day.</span>'
+     : lastDiff.stars === 0 ? '<br><span class="warn">⚠ Under 16: easier than any regular day.</span>' : '');
   renderDiffDetail(lastDiff);
 }
 // The fold-out: the same two measures the daily puzzles are scored with, with the
@@ -413,8 +415,10 @@ function renderDiffDetail(d) {
   const lineName = k => k < 4 ? `Row ${k + 1}` : `Col ${k - 3}`;
   const oneIn = d.pSol > 0 ? fmtBig(1 / d.pSol) : 'a huge number';
   $('diffBody').innerHTML = `
-    <p class="dd-sum"><b>${d.score}</b> = 60% × search <b>${pct(d.searchNorm)}</b>
-       + 40% × word choice <b>${pct(d.wordNorm)}</b>. Every 20 points is a star.</p>
+    <p class="dd-sum"><b>${d.score}</b> = the board <b>${d.spatial}</b> + the words <b>${d.wordPoints}</b>.
+       Stars: 16–30 ★, 31–50 ★★, 51–70 ★★★, 71–85 ★★★★, 86–100 ★★★★★; over 100 is a special challenge.</p>
+    <h4>The board: ${d.spatial}</h4>
+    <p class="dd-sum">60% × search <b>${pct(d.searchNorm)}</b> + 40% × word choice <b>${pct(d.wordNorm)}</b>.</p>
     <h4>Search: ${pct(d.searchNorm)}/100</h4>
     <p>How unlikely a random arrangement is to be a solution. With
        ${d.ominos} piece${d.ominos === 1 ? '' : 's'} and ${d.singles} single tile${d.singles === 1 ? '' : 's'}
@@ -430,15 +434,21 @@ function renderDiffDetail(d) {
     <div class="dd-lines">${d.perLine.map((n, k) =>
       `<span>${lineName(k)}</span><b>${n.toLocaleString()}</b>`).join('')}</div>
     <p>Multiplied together, that’s about 10<sup>${d.branching.toFixed(1)}</sup>, scored on a
-       scale where 10<sup>2.5</sup> is 0 and 10<sup>11</sup> is 100.</p>`;
+       scale where 10<sup>2.5</sup> is 0 and 10<sup>11</sup> is 100.</p>
+    <h4>The words: +${d.wordPoints}</h4>
+    <p>Less familiar answer words make a puzzle harder, scored by the share of Americans
+       who know each word: under 60% +16, 60–75% +8, 75–90% +4.</p>
+    ${d.wordList.length ? `<div class="dd-lines">${d.wordList.sort((a, b) => b[1] - a[1]).map(([w, p]) =>
+      `<span>${w.toUpperCase()}</span><b>+${p}</b>`).join('')}</div>` : '<p>Every answer word is familiar: no points.</p>'}`;
 }
-// same scale as the daily puzzles (tools/score.py): 1–5 stars, 0–100
+// the same scoring as the daily puzzles (tools/score.py + tools/wordpoints.py)
 let lastDiff = null;
 function difficultyOf(groups, nSolutions) {
   const rows = [0, 1, 2, 3].map(r => draft.letters.slice(r * 4, r * 4 + 4).join(''));
   return Solver.difficulty(rows, puzzlePieces(groups), Math.max(1, nSolutions));
 }
-const starRow = n => `<span class="stars" aria-label="${n} of 5 stars">${'★'.repeat(n)}<span class="off">${'★'.repeat(5 - n)}</span></span>`;
+const starRow = n => n >= 6 ? '<span class="stars special" aria-label="special challenge">★★★★★+</span>'
+  : `<span class="stars" aria-label="${n} of 5 stars">${'★'.repeat(n)}<span class="off">${'★'.repeat(5 - n)}</span></span>`;
 $('backToLetters').addEventListener('click', () => showStep('letters'));
 $('toStart').addEventListener('click', () => showStep('start'));
 

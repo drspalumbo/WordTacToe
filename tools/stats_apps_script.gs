@@ -16,7 +16,11 @@
 const SHEET = 'plays';
 const COLS = ['play', 'started', 'updated', 'status', 'test', 'puzzle', 'day', 'yesterday',
               'seconds', 'moves', 'shuffles', 'words', 'crossings', 'grid_checks',
-              'home_screen_app', 'dark_mode', 'version', 'updates'];
+              'home_screen_app', 'dark_mode', 'version', 'updates',
+              // added Oct 2026: the player's difficulty rating (1-5) after a solve, and
+              // Danagram's own score and stars for that puzzle, for calibration
+              'rating', 'calc_score', 'calc_stars'];
+const RATING_COL = COLS.indexOf('rating') + 1;
 
 function doPost(e) {
   try {
@@ -45,6 +49,8 @@ function doPost(e) {
       d.dark === true,
       text(d.version, /^[\w.]+$/, 12),
     ];
+    const rating = [num(d.rating, 5), num(d.calc_score, 200), num(d.calc_stars, 6)];
+    const rated = rating[0] !== '' && rating[0] >= 1;
 
     const lock = LockService.getScriptLock();
     lock.waitLock(10000);
@@ -56,13 +62,16 @@ function doPost(e) {
         sh.appendRow(COLS);
         sh.setFrozenRows(1);
       }
+      if (sh.getRange(1, RATING_COL).getValue() !== 'rating')      // an older sheet: add the headers
+        sh.getRange(1, RATING_COL, 1, 3).setValues([COLS.slice(RATING_COL - 1)]);
       const hit = sh.getRange('A:A').createTextFinder(play).matchEntireCell(true).findNext();
       if (!hit) {
-        sh.appendRow([play, now, now].concat(fields, [1]));
+        sh.appendRow([play, now, now].concat(fields, [1], rated ? rating : ['', '', '']));
       } else {
         const row = hit.getRow();
         const status = sh.getRange(row, 4).getValue();
         if (status === 'finished' && d.status !== 'finished') return reply('kept');  // never un-finish
+        if (rated) sh.getRange(row, RATING_COL, 1, 3).setValues([rating]);
         sh.getRange(row, 3, 1, 1 + fields.length).setValues([[now].concat(fields)]);
         const updates = sh.getRange(row, COLS.length);
         updates.setValue((Number(updates.getValue()) || 0) + 1);

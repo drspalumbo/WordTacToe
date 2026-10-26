@@ -222,3 +222,4 @@ html.dark .sboard .sq.zone{background:rgba(255,255,255,.09);}
 .cal-list li{display:grid; grid-template-columns:7.5em 3em 1fr; gap:6px; padding:3px 4px; border-radius:6px;}
 .cal-list li.pick{background:var(--accent-soft);}
 .cal-list b{color:var(--ink);}
+.stars.special{color:var(--accent); font-weight:900;}

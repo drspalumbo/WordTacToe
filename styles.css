@@ -153,6 +153,19 @@
 #feedbackOverlay p{margin:0 0 10px; font-size:15px; line-height:1.5; color:var(--ink); text-align:left;}
 #feedbackOverlay .btn{text-decoration:none; text-align:center;}
 
+/* win card: rate the difficulty, then see Danagram's score */
+.rate{margin:12px 0 2px; text-align:center;}
+.rate[hidden], .rate-reveal[hidden], .rate-stars[hidden]{display:none;}
+.rate-q{font-size:13.5px; font-weight:800; color:var(--ink-soft);}
+.rate-stars{display:flex; justify-content:center; gap:2px; margin-top:4px;}
+.rate-stars button{border:0; background:transparent; padding:2px 5px; font-size:28px; line-height:1;
+  color:var(--track-2); cursor:pointer; touch-action:manipulation;}
+.rate-stars button.on{color:var(--accent);}
+.rate-reveal{font-size:14px; font-weight:700; color:var(--ink); line-height:1.5;}
+.rate-reveal .st{color:var(--accent); letter-spacing:1px;}
+.rate-reveal .st .off{color:var(--track-2);}
+.rate-reveal small{display:block; font-size:12px; font-weight:600; color:var(--ink-soft);}
+
 /* → the Create page (Tools & Tips, and the win card) */
 .make-link{display:block; margin:12px auto 0; text-align:center; font-size:13.5px; font-weight:800;
   color:var(--accent); text-decoration:none; touch-action:manipulation;}

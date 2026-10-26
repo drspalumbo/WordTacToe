@@ -23,13 +23,16 @@ EPOCH = datetime.date(2026, 10, 8)              # Danagram #1 (game.js EPOCH)
 WINDOW, WINDOW_MAX = 30, 2                      # an answer word: at most twice in any 30 days
 # and at most MAX_USES times in the whole season (--max-uses K to change; 8 fills 300 days)
 MAX_USES = int(sys.argv[sys.argv.index('--max-uses') + 1]) if '--max-uses' in sys.argv else 8
-# weekday (Mon=0) -> difficulty band. Stars are 20-point bands (1* 0-19 ... 5* 80-100).
+# weekday (Mon=0) -> score band. A score is spatial + word points (wordpoints.py);
+# stars (Oct 25 2026): 16-30 1*, 31-50 2*, 51-70 3*, 71-85 4*, 86-100 5*; under 16 is
+# too easy and over 100 is for special challenges, so regular days stay in 16-100.
 # Dave's week (Oct 15 2026): Mon 1*, Tue 3*, Wed 2*, Thu 4*, Fri 3*, Sat 4*, Sun 5*.
-# Monday aims at the top half of 1*: the lowest scores are close to trivial.
-BANDS = {0: (10, 19), 1: (40, 59), 2: (20, 39), 3: (60, 79), 4: (40, 59), 5: (60, 79), 6: (80, 100)}
+BANDS = {0: (16, 30), 1: (51, 70), 2: (31, 50), 3: (71, 85), 4: (51, 70), 5: (71, 85), 6: (86, 100)}
+SCORE_MIN, SCORE_MAX = 16, 100
 FROM = int(sys.argv[sys.argv.index('--from') + 1]) if '--from' in sys.argv else None
 
 import generate                                 # word lists, blocklist, emit_site_data
+import wordpoints                                # familiarity: word points and stars
 
 words_of = lambda g: set(g) | {''.join(g[r][c] for r in range(4)) for c in range(4)}
 multiset = lambda g: ''.join(sorted(''.join(g)))
@@ -66,6 +69,7 @@ for path in sorted(glob.glob('pool*.pkl')):
         seen.add(g)
         pool.append(p)
 print(f'pool: {len(pool)} usable puzzles (from {len(glob.glob("pool*.pkl"))} pool files)')
+pool = [wordpoints.rescore(p) for p in pool]     # difficulty = spatial + word points
 
 # word history so far (the season's existing days count toward spacing and uses)
 days_used, uses = {}, Counter()                # word -> the days it's an answer
@@ -88,7 +92,8 @@ for day in range(start, start + N):
         return True
     best = None
     for slack in (0, 4, 8, 14, 24, 100):        # widen the band only if nothing fits
-        cands = [p for p in pool if lo - slack <= p['difficulty'] <= hi + slack and ok(p)]
+        a, b = max(SCORE_MIN, lo - slack), min(SCORE_MAX, hi + slack)   # never too easy or special
+        cands = [p for p in pool if a <= p['difficulty'] <= b and ok(p)]
         if wd == 6 and slack < 100:             # Sunday: the showcase, lots of single tiles
             cands = [p for p in cands if singles(p) >= 8] or cands
         if cands:
@@ -121,6 +126,14 @@ for wd in range(7):
         print(f'  {names[wd]}: {len(ds):3d} puzzles, difficulty {min(ds)}-{max(ds)} '
               f'(band {BANDS[wd][0]}-{BANDS[wd][1]}), median {sorted(ds)[len(ds) // 2]}')
 stars = Counter(p['stars'] for p in added)
+wp = Counter(p['difficulty_raw']['word_points'] for p in added)
+print('  word points per day: ' + ', '.join(f'{k}: {wp[k]}' for k in sorted(wp)))
+for wd in range(7):                              # where the unfamiliar (<60% known) words land
+    un = Counter(sum(1 for w in words_of(p['solution']) if wordpoints.known(w) < .6)
+                 for i, p in enumerate(added) if (EPOCH + datetime.timedelta(days=start + i)).weekday() == wd)
+    print(f'  {names[wd]} words under 60% known: ' + ', '.join(f'{k}: {un[k]} days' for k in sorted(un)))
+print(f"  days a star higher than their board alone: "
+      f"{sum(1 for p in added if wordpoints.stars(p['difficulty_raw']['spatial']) < p['stars'])}")
 print('  stars:', ', '.join(f'{s}★ {stars[s]}' for s in sorted(stars)))
 total = season + added
 words_all = Counter(w for p in total for w in words_of(p['solution']))

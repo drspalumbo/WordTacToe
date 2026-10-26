@@ -2145,8 +2145,11 @@ function sendPlay(finished = false, idx = state.idx) {
   h.statsLast = body;
   if (finished) h.statsDone = true;
   saveProgress(idx);
-  // text/plain keeps it a "simple" request (no CORS preflight); sendBeacon still
-  // goes through when the page is being hidden or closed
+  postStats(body);
+}
+// text/plain keeps it a "simple" request (no CORS preflight); sendBeacon still goes
+// through when the page is being hidden or closed
+function postStats(body) {
   try {
     if (navigator.sendBeacon && navigator.sendBeacon(STATS_URL, new Blob([body], { type: 'text/plain' }))) return;
   } catch (e) {}
@@ -2155,6 +2158,75 @@ function sendPlay(finished = false, idx = state.idx) {
                        headers: { 'Content-Type': 'text/plain' }, body });
   } catch (e) {}
 }
+
+// ------------------------------------------------- rate the difficulty
+// After a solve the win card asks "How hard was it?" (1-5 stars), then shows
+// Danagram's own score beside the player's. The rating is kept with the puzzle's
+// progress and added to its stats row (same play id), to calibrate the scoring.
+function calcDifficulty(idx) {
+  const P = PUZZLES[idx];
+  if (!P._calc) {
+    const raw = P.difficulty_raw || {};
+    P._calc = 'word_points' in raw          // scored by the current model (spatial + words)
+      ? { score: P.difficulty, stars: Solver.starsFor(P.difficulty), board: raw.spatial, words: raw.word_points }
+      : (d => ({ score: d.score, stars: d.stars, board: d.spatial, words: d.wordPoints }))(
+          Solver.difficulty(P.solution, P.pieces, P.numSolutions || 1));
+  }
+  return P._calc;
+}
+const starText = n => n >= 6 ? '<span class="st">★★★★★+</span>'
+  : `<span class="st">${'★'.repeat(n)}<span class="off">${'★'.repeat(Math.max(0, 5 - n))}</span></span>`;
+function renderRating() {
+  const box = document.getElementById('rateBlock');
+  box.hidden = !isSolved();
+  if (box.hidden) return;
+  const h = state.hints[state.idx], rated = h.rating != null;
+  document.getElementById('rateQ').hidden = rated;
+  document.getElementById('rateStars').hidden = rated;
+  const rev = document.getElementById('rateReveal');
+  rev.hidden = !rated;
+  if (!rated) {
+    document.querySelectorAll('#rateStars button').forEach(b => b.classList.remove('on'));
+    return;
+  }
+  const c = calcDifficulty(state.idx);
+  rev.innerHTML = `<div>You ${starText(h.rating)}</div>` +
+    `<div>Danagram ${starText(c.stars)} ${c.score}</div>` +
+    `<small>board ${c.board} + words ${c.words}</small>`;
+}
+function sendRating(idx) {
+  if (ARRANGE || !STATS_URL || store.get(NOTRACK_KEY)) return;
+  const h = state.hints[idx], t = timerOf(idx), c = calcDifficulty(idx);
+  if (!h.play) { h.play = randomHex(8); h.playDay = localDay(); }
+  postStats(JSON.stringify({
+    play: h.play, status: 'finished',
+    test: isCustom(idx) ? 0 : dayNumber(idx), puzzle: puzzleHash(idx), day: h.playDay,
+    yesterday: dayIndex() > 0 && idx === puzzleForDay(dayIndex() - 1),
+    seconds: Math.round(t.ms / 1000),
+    moves: h.moves || 0, shuffles: h.shuffles || 0,
+    words: h.seen.length, crossings: h.crossings.length,
+    grid_checks: h.history.filter(e => e.mode === 'super').length,
+    app: !!((window.matchMedia && matchMedia('(display-mode: standalone)').matches) || navigator.standalone),
+    dark: document.documentElement.classList.contains('dark'),
+    version: APP_VERSION,
+    rating: h.rating, calc_score: c.score, calc_stars: c.stars,
+  }));
+}
+// hovering/pressing previews the stars up to that one; a tap rates
+const rateBtns = [...document.querySelectorAll('#rateStars button')];
+const previewRate = n => rateBtns.forEach(b => b.classList.toggle('on', +b.dataset.r <= n));
+rateBtns.forEach(b => {
+  b.addEventListener('mouseenter', () => previewRate(+b.dataset.r));
+  b.addEventListener('click', () => {
+    const h = state.hints[state.idx];
+    if (h.rating != null || !isSolved()) return;
+    h.rating = +b.dataset.r;
+    saveProgress();
+    sendRating(state.idx);
+    renderRating();
+  });
+});
+document.getElementById('rateStars').addEventListener('mouseleave', () => previewRate(0));
 // leaving the page is the moment a give-up happens, so record progress then
 document.addEventListener('visibilitychange', () => { if (document.hidden) sendPlay(); });
 window.addEventListener('pagehide', () => sendPlay());
@@ -2243,6 +2315,7 @@ function openWinCard() {
   fb.classList.remove('show'); fb.value = '';
   document.getElementById('shareNote').classList.remove('show');
   renderShare();
+  renderRating();
   startCountdown();
   document.getElementById('overlay').classList.add('show');
 }
