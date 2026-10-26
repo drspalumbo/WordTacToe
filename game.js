@@ -90,7 +90,27 @@ function puzzleFromLink(q) {
   const clean = (v, n) => (v || '').replace(/\s+/g, ' ').trim().slice(0, n);
   return { solution: rows, pieces, numSolutions: sols.grids.length || 1, solutionWords: [...words],
            difficulty: diff.score, stars: diff.stars, start,
-           title: clean(q.get('t'), 40), note: (q.get('n') || '').trim().slice(0, 240) };
+           title: clean(q.get('t'), 40), note: (q.get('n') || '').trim().slice(0, 240),
+           ...celebrationFromLink(q) };
+}
+// The creator's extras: a board theme (th), letters that hop in a wave after the
+// solve (h: one hex digit per cell, 0-f, in order), emoji in the confetti (e, up to
+// 5) and confetti colours (k: up to 6 hex colours, dash-separated)
+function celebrationFromLink(q) {
+  const th = (q.get('th') || '').toLowerCase();
+  const hop = /^[0-9a-f]{1,16}$/.test((q.get('h') || '').toLowerCase())
+    ? [...q.get('h').toLowerCase()].map(ch => parseInt(ch, 16)) : null;
+  const emoji = splitEmoji(q.get('e') || '');
+  const confetti = (q.get('k') || '').toLowerCase().split('-').filter(c => /^[0-9a-f]{6}$/.test(c)).slice(0, 6);
+  return { theme: typeof THEMES !== 'undefined' && THEMES[th] ? th : null, hop,
+           emoji: emoji.length ? emoji : null, confetti: confetti.length ? confetti.map(c => '#' + c) : null };
+}
+// up to 5 emoji (or other symbols), never plain letters or digits
+function splitEmoji(s) {
+  const parts = typeof Intl !== 'undefined' && Intl.Segmenter
+    ? [...new Intl.Segmenter(undefined, { granularity: 'grapheme' }).segment(s)].map(x => x.segment)
+    : Array.from(s);
+  return parts.filter(g => g.trim() && !/^[\w\s.,;:!?'"()-]+$/.test(g)).slice(0, 5);
 }
 const CUSTOM_IDX = (() => {
   if (!CUSTOM_CODE || typeof URLSearchParams === 'undefined') return -1;
@@ -155,6 +175,10 @@ const isCustom = idx => idx === CUSTOM_IDX;
 // random start and reshuffles itself now and then; the first real move stops
 // that. Every change is posted to the Create page.
 const ARRANGE = CUSTOM_IDX >= 0 && /[?&]arrange=1/.test(location.search || '');
+// Previewing a celebration (?celebrate=1, from the Create page): the solved board and
+// its celebration, with nothing saved or sent, like arranging
+const PREVIEW = CUSTOM_IDX >= 0 && /[?&]celebrate=1/.test(location.search || '');
+const NOSAVE = ARRANGE || PREVIEW;
 let arrangeTouched = ARRANGE && !!PUZZLES[CUSTOM_IDX].start;   // a valid &s= start: already arranged
 if (ARRANGE) document.documentElement.classList.add('arrange');
 // a shared puzzle isn't the daily: say so in the heading (and the tab)
@@ -1071,7 +1095,7 @@ function cellSpot(r, c, off) {
 
 function scoreBoard() {
   scoreTimer = null;
-  if (ARRANGE) return;
+  if (NOSAVE) return;
   if (state.quietSolve) { state.quietSolve = false; return; }   // Show solution
   const h = state.hints[state.idx];
   const off = innerOff();
@@ -1778,6 +1802,12 @@ function sharedTime() {
   const t = timerOf(state.idx);
   return t.done && store.get(SHARE_TIME_KEY) ? '⏱ ' + fmtTime(t.ms) : '';
 }
+// a custom puzzle's theme and celebration, passed through to links shared from it
+function extrasParam() {
+  const q = typeof URLSearchParams !== 'undefined' ? new URLSearchParams(location.search || '') : null;
+  if (!q) return '';
+  return ['th', 'h', 'e', 'k'].filter(k => q.get(k)).map(k => '&' + k + '=' + encodeURIComponent(q.get(k))).join('');
+}
 function shareTitle() {
   if (!isCustom(state.idx)) return `${LABEL} #${dayNumber(state.idx)}`;
   return CUSTOM_TEXT.title ? `Danagram: “${CUSTOM_TEXT.title}”` : 'Custom Danagram';
@@ -1787,6 +1817,7 @@ function shareLink() {                           // https:// makes every app lin
   return 'https://danagram.fun/?p=' + CUSTOM_CODE +
     (PUZZLES[CUSTOM_IDX].start ? '&s=' + CUSTOM_TEXT.start : '') +
     (PUZZLES[CUSTOM_IDX].pieces.some(p => p.paint) ? '&c=' + CUSTOM_TEXT.colors : '') +
+    extrasParam() +
     (CUSTOM_TEXT.title ? '&t=' + encodeURIComponent(CUSTOM_TEXT.title) : '') +
     (CUSTOM_TEXT.note ? '&n=' + encodeURIComponent(CUSTOM_TEXT.note) : '');
 }
@@ -1917,21 +1948,29 @@ document.getElementById('shareBtn').addEventListener('click', () => {
 });
 
 // a burst of confetti on a genuine solve
-function confetti() {
+function confetti(P = PUZZLES[state.idx]) {
   if (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
-  const COLORS = ['var(--gold)', 'var(--accent)', 'var(--good)',
-                  'var(--o1)', 'var(--o2)', 'var(--o4)', 'var(--o6)'];
+  const theme = P && P.theme && typeof THEMES !== 'undefined' ? THEMES[P.theme] : null;
+  const COLORS = (P && P.confetti) || (theme && theme.confetti) ||
+                 ['var(--gold)', 'var(--accent)', 'var(--good)', 'var(--o1)', 'var(--o2)', 'var(--o4)', 'var(--o6)'];
+  const EMOJI = (P && P.emoji) || [];
   const N = 70;
   const originX = window.innerWidth / 2;
   const originY = window.innerHeight * 0.38;
   for (let i = 0; i < N; i++) {
     const el = document.createElement('div');
     el.className = 'confetti';
-    el.style.background = COLORS[i % COLORS.length];
-    const w = (6 + Math.random() * 6) * 0.8;             // 80% of original size
-    el.style.width = w.toFixed(1) + 'px';
-    el.style.height = ((w * 0.45 + Math.random() * 7) * 0.8).toFixed(1) + 'px';
-    if (Math.random() < 0.28) el.style.borderRadius = '50%';
+    if (EMOJI.length && i % 3 === 0) {                   // every third piece: one of the creator's emoji
+      el.textContent = EMOJI[(i / 3 | 0) % EMOJI.length];
+      el.style.fontSize = (18 + Math.random() * 10).toFixed(0) + 'px';
+      el.style.lineHeight = '1';
+    } else {
+      el.style.background = COLORS[i % COLORS.length];
+      const w = (6 + Math.random() * 6) * 0.8;           // 80% of original size
+      el.style.width = w.toFixed(1) + 'px';
+      el.style.height = ((w * 0.45 + Math.random() * 7) * 0.8).toFixed(1) + 'px';
+      if (Math.random() < 0.28) el.style.borderRadius = '50%';
+    }
     el.style.left = (originX + (Math.random() - 0.5) * 90) + 'px';
     el.style.top = originY + 'px';
     document.body.appendChild(el);
@@ -1986,8 +2025,51 @@ function onWin(g) {
   updateMeta();
   updateSuper();                       // Grid Check → Show solution
   saveProgress();
+  const P = PUZZLES[state.idx];
+  if (celebrate && P.hop && P.hop.length) {
+    confetti(P);
+    hopWave(P.hop).then(openWinCard);  // the creator's letters hop, then the card
+    return;
+  }
   openWinCard();
-  if (celebrate) confetti();
+  if (celebrate) confetti(P);
+}
+// The creator's chosen letters hop one after another, a real parabola each
+// (y = -4h·t(1-t), sampled), with a little squash on landing. Cells are 0-15 of the
+// target 4×4. Resolves when the last one lands (at once under reduced motion).
+function hopWave(cells) {
+  const reduce = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
+  if (reduce) return Promise.resolve();
+  const off = innerOff(), occ = occupancy(), STEP = 150, DUR = 560, H = Math.round(S * 0.42);
+  const frames = [];
+  for (let k = 0; k <= 10; k++) {
+    const t = k / 10;
+    frames.push({ transform: `translateY(${(-4 * H * t * (1 - t)).toFixed(1)}px)`, offset: t * 0.85 });
+  }
+  frames.push({ transform: 'translateY(0) scale(1.12, .86)', offset: 0.93 });
+  frames.push({ transform: 'translateY(0) scale(1, 1)', offset: 1 });
+  let last = 0;
+  cells.forEach((cell, n) => {
+    const hit = occ.get(key(Math.floor(cell / 4) + off, cell % 4 + off));
+    const tile = hit && state.pieces[hit.pi].tiles[hit.ci];
+    const letter = tile && tile.querySelector('.letter');
+    if (!letter || !letter.animate) return;
+    letter.animate(frames, { duration: DUR, delay: n * STEP, easing: 'linear' });
+    last = n * STEP + DUR;
+  });
+  return new Promise(res => setTimeout(res, last + 250));
+}
+// ?celebrate=1: show the puzzle solved and play its celebration; tap the board to replay
+function setupPreview() {
+  const P = PUZZLES[state.idx], off = innerOff();
+  P.pieces.forEach((p, i) => { state.pieces[i].cells = p.cells.map(([r, c]) => [r + off, c + off]); });
+  positionTiles();
+  document.getElementById('helpOverlay').classList.remove('show');
+  document.getElementById('introOverlay').classList.remove('show');
+  const play = () => { confetti(P); if (P.hop && P.hop.length) hopWave(P.hop); };
+  setMsg('Celebration preview. Tap the board to play it again.');
+  setTimeout(play, 500);
+  document.getElementById('board').addEventListener('click', play);
 }
 
 // -------------------------------------------------------------- storage
@@ -2014,7 +2096,7 @@ const dirtyPuzzles = new Set();
 let progressTimer = null;
 
 function saveProgress(idx = state.idx) {
-  if (ARRANGE) return;
+  if (NOSAVE) return;
   dirtyPuzzles.add(idx);
   clearTimeout(progressTimer);
   progressTimer = setTimeout(flushProgress, 250);
@@ -2123,7 +2205,7 @@ function localDay(d = new Date()) {
 }
 // Send (or update) this puzzle's row. finished=true once, at the first real solve.
 function sendPlay(finished = false, idx = state.idx) {
-  if (ARRANGE) return;
+  if (NOSAVE) return;
   if (!STATS_URL || store.get(NOTRACK_KEY)) return;
   const h = state.hints[idx], t = timerOf(idx);
   if (!t.started || h.statsDone) return;       // nothing played yet / final row already sent
@@ -2195,7 +2277,7 @@ function renderRating() {
     `<small>board ${c.board} + words ${c.words}</small>`;
 }
 function sendRating(idx) {
-  if (ARRANGE || !STATS_URL || store.get(NOTRACK_KEY)) return;
+  if (NOSAVE || !STATS_URL || store.get(NOTRACK_KEY)) return;
   const h = state.hints[idx], t = timerOf(idx), c = calcDifficulty(idx);
   if (!h.play) { h.play = randomHex(8); h.playDay = localDay(); }
   postStats(JSON.stringify({
@@ -2255,7 +2337,7 @@ function timerResume() {
   if (t.started && !t.done && !document.hidden && timerFrom === null) timerFrom = performance.now();
 }
 function timerOnMove() {
-  if (ARRANGE) return;
+  if (NOSAVE) return;
   const t = timerOf(state.idx);
   if (t.done || isSolved()) return;
   const h = state.hints[state.idx];
@@ -2352,6 +2434,7 @@ function loadPuzzle(idx) {
   state.idx = (idx + PUZZLES.length) % PUZZLES.length;
   state.mode = 'free';
   const P = PUZZLES[state.idx];
+  if (typeof applyBoardTheme === 'function') applyBoardTheme(document.getElementById('boardWrap'), P.theme);
   state.pieces = P.pieces.map((p, i) => ({
     letters: p.letters,
     paint: p.paint,
@@ -2752,7 +2835,7 @@ if (!DEV) {
   const meta = document.querySelector('.meta');
   if (meta) meta.style.display = 'none';
 }
-if (!ARRANGE) restoreProgress();
+if (!NOSAVE) restoreProgress();
 // a scheduled daily with a title or note: show it once, on the first visit
 const introFirst = (() => {
   const P = PUZZLES[dailyIdx()];
@@ -2778,6 +2861,7 @@ document.getElementById('introPlay').addEventListener('click', () => {
   if (!store.get(HELP_SEEN)) showHelp();
 });
 if (ARRANGE) setupArrange();
+else if (PREVIEW) setupPreview();
 else if (isCustom(state.idx) && (CUSTOM_TEXT.title || CUSTOM_TEXT.note)) showIntro();
 else if (introFirst) showIntro();
 else if (!store.get(HELP_SEEN)) showHelp();

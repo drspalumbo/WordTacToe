@@ -60,7 +60,8 @@ function showStep(step) {
   if (step === 'letters') renderLetters();
   if (step === 'pieces') renderPieces();
   if (step === 'start') renderStart();
-  if (step === 'share') renderShare();
+  if (step === 'share') { renderShare(); renderCelebrate(); }
+  if (step === 'pieces') paintTheme();
   if (step === 'mine') renderMine();
   window.scrollTo(0, 0);
 }
@@ -487,6 +488,92 @@ function paintsFrom(groups, c) {
   return out;
 }
 
+// ---- Theme and Celebration: a board theme (themes.js), letters that hop after the
+// solve, emoji in the confetti and confetti colours. In links as &th= &h= &e= &k=.
+const CONFETTI_CHOICES = ['#F59B42', '#8E5CC2', '#6BBF59', '#F2D06B', '#E63B5E', '#F59AB1',
+                          '#3E6FD8', '#1C9AA8', '#B07A4F', '#FFFFFF', '#C9D6E3', '#2A1B3A'];
+function splitEmoji(s) {                         // up to 5 emoji, never letters or digits
+  const parts = typeof Intl !== 'undefined' && Intl.Segmenter
+    ? [...new Intl.Segmenter(undefined, { granularity: 'grapheme' }).segment(s)].map(x => x.segment)
+    : Array.from(s);
+  return parts.filter(g => g.trim() && !/^[\w\s.,;:!?'"()-]+$/.test(g)).slice(0, 5);
+}
+function extrasParam(d = draft) {
+  const hop = (d.hop || []).map(i => i.toString(16)).join('');
+  const emoji = splitEmoji(d.emoji || '').join('');
+  const conf = (d.confetti || []).map(c => c.slice(1).toLowerCase()).join('-');
+  return (d.theme && THEMES[d.theme] ? '&th=' + d.theme : '') + (hop ? '&h=' + hop : '') +
+         (emoji ? '&e=' + encodeURIComponent(emoji) : '') + (conf ? '&k=' + conf : '');
+}
+function extrasFrom(str) {                       // a saved '&th=…&h=…' string back into draft fields
+  const q = new URLSearchParams(String(str || '').replace(/^&/, ''));
+  const th = q.get('th') || '';
+  return { theme: THEMES[th] ? th : '',
+           hop: /^[0-9a-f]{1,16}$/.test(q.get('h') || '') ? [...q.get('h')].map(ch => parseInt(ch, 16)) : [],
+           emoji: splitEmoji(q.get('e') || '').join(''),
+           confetti: (q.get('k') || '').split('-').filter(c => /^[0-9a-f]{6}$/.test(c)).map(c => '#' + c).slice(0, 6) };
+}
+// Theme menu (in Colors): recolours the piece grid and the swatches
+(function buildThemes() {
+  const sel = $('themeSel');
+  Object.entries(THEMES).forEach(([k, t]) => {
+    const o = document.createElement('option'); o.value = k; o.textContent = t.label; sel.appendChild(o);
+  });
+  sel.addEventListener('change', () => {
+    draft.theme = sel.value; saveDraft(); paintTheme(); renderPieces();
+  });
+})();
+function paintTheme() {
+  $('themeSel').value = draft.theme || '';
+  ['pieceGrid', 'swatches', 'hopGrid'].forEach(id => applyBoardTheme($(id), draft.theme));
+}
+// Celebration fold-out
+(function buildCelebrate() {
+  const grid = $('hopGrid');
+  for (let i = 0; i < 16; i++) {
+    const b = document.createElement('button');
+    b.className = 'hop-cell'; b.dataset.i = i;
+    b.addEventListener('click', () => {
+      const hop = (draft.hop || []).slice(), at = hop.indexOf(i);
+      if (at > -1) hop.splice(at, 1); else if (hop.length < 16) hop.push(i);
+      draft.hop = hop; saveDraft(); renderCelebrate(); updateLink();
+    });
+    grid.appendChild(b);
+  }
+  CONFETTI_CHOICES.forEach(c => {
+    const b = document.createElement('button');
+    b.className = 'swatch'; b.style.background = c; b.dataset.c = c; b.setAttribute('aria-label', 'Confetti ' + c);
+    b.addEventListener('click', () => {
+      const on = (draft.confetti || []).slice(), at = on.indexOf(c);
+      if (at > -1) on.splice(at, 1); else if (on.length < 6) on.push(c);
+      draft.confetti = on; saveDraft(); renderCelebrate(); updateLink();
+    });
+    $('confettiChips').appendChild(b);
+  });
+  $('hopClear').addEventListener('click', () => { draft.hop = []; saveDraft(); renderCelebrate(); updateLink(); });
+  $('emojiIn').addEventListener('input', () => {
+    draft.emoji = splitEmoji($('emojiIn').value).join(''); saveDraft(); updateLink();
+  });
+  $('emojiIn').addEventListener('blur', () => { $('emojiIn').value = splitEmoji($('emojiIn').value).join(''); });
+  $('previewCelebrate').addEventListener('click', () => {
+    window.open($('shareUrl').value + '&celebrate=1', '_blank', 'noopener');
+  });
+})();
+function renderCelebrate() {
+  const hop = draft.hop || [];
+  document.querySelectorAll('.hop-cell').forEach(b => {
+    const i = +b.dataset.i, n = hop.indexOf(i);
+    b.textContent = (draft.letters[i] || '').toUpperCase();
+    b.classList.toggle('on', n > -1);
+    b.dataset.n = n > -1 ? n + 1 : '';
+  });
+  $('hopClear').hidden = !hop.length;
+  if (document.activeElement !== $('emojiIn')) $('emojiIn').value = draft.emoji || '';
+  document.querySelectorAll('#confettiChips .swatch').forEach(b =>
+    b.classList.toggle('on', (draft.confetti || []).includes(b.dataset.c)));
+  paintTheme();
+}
+
 // -------------------------------------------------------------- 3. start
 // Where the pieces sit when a player opens the puzzle, on the game's 6×6 board
 // (the answer goes in the middle 4×4). draft.start: per piece (in piecesFrom
@@ -546,7 +633,8 @@ function setStart(start) {
 let arrangeSrc = '';
 function arrangeUrl() {
   const c = paintParam(), st = startParam();
-  return '../?p=' + shareCode() + (c ? '&c=' + c : '') + (st ? '&s=' + st : '') + '&arrange=1';
+  return '../?p=' + shareCode() + (c ? '&c=' + c : '') + (st ? '&s=' + st : '') +
+    (draft.theme ? '&th=' + draft.theme : '') + '&arrange=1';
 }
 function renderStart() {
   const frame = $('startFrame'), url = arrangeUrl();
@@ -641,8 +729,9 @@ function shareCode() {
   return Solver.encode(draft.letters, pieceOf);
 }
 // the game link: the puzzle, plus the title and note when there are any
-function linkFor(code, title, note, start, colors) {
+function linkFor(code, title, note, start, colors, extras) {
   return new URL('../?p=' + code + (start ? '&s=' + start : '') + (colors ? '&c=' + colors : '') +
+    (extras || '') +
     (title ? '&t=' + encodeURIComponent(title) : '') +
     (note ? '&n=' + encodeURIComponent(note) : ''), location.href).href;
 }
@@ -652,7 +741,7 @@ const shareMsg = title => 'I made a Danagram!' + (title ? '\n' + title : '');
 const shareFull = (title, url) => shareMsg(title) + '\n' + url;
 let shareMeta = null;
 function updateLink() {
-  const url = linkFor(shareCode(), draft.title, draft.note, startParam(), paintParam());
+  const url = linkFor(shareCode(), draft.title, draft.note, startParam(), paintParam(), extrasParam());
   $('shareUrl').value = url;
   $('playLink').href = url;
   if (shareMeta) remember(...shareMeta);
@@ -771,7 +860,8 @@ $('shareBtn').addEventListener('click', async () => {
 $('backToPieces').addEventListener('click', () => showStep('start'));
 function newPuzzle() {
   Object.assign(draft, { id: newId(), letters: Array(16).fill(''), typed: Array(16).fill(false), joins: [],
-                         title: '', note: '', start: null, startFor: null, colors: {} });
+                         title: '', note: '', start: null, startFor: null, colors: {},
+                         theme: '', hop: [], emoji: '', confetti: [] });
   shareMeta = null;
   cursor = 0; across = true; showStep('letters');
 }
@@ -791,10 +881,10 @@ function remember(nSolutions, more, pieces, diff) {
   const list = loadMine(), code = shareCode(), now = Date.now();
   const old = list.find(e => e.id === draft.id);
   const title = draft.title || '', note = draft.note || '';
-  const start = startParam(), colors = paintParam();
+  const start = startParam(), colors = paintParam(), extras = extrasParam();
   if (old && old.code === code && (old.title || '') === title && (old.note || '') === note &&
-      (old.start || '') === start && (old.colors || '') === colors) return;
-  const entry = { id: draft.id, code, title, note, start, colors, letters: draft.letters.slice(), typed: draft.typed.slice(),
+      (old.start || '') === start && (old.colors || '') === colors && (old.extras || '') === extras) return;
+  const entry = { id: draft.id, code, title, note, start, colors, extras, letters: draft.letters.slice(), typed: draft.typed.slice(),
                   joins: draft.joins.slice(), solutions: nSolutions, more, pieces, stars: diff.stars, score: diff.score,
                   created: old ? old.created : now, updated: now };
   saveMine([entry, ...list.filter(e => e.id !== draft.id)]);
@@ -832,7 +922,7 @@ function renderMine() {
       `${fmtDate(e.updated)}${e.id === draft.id ? ' · <b>editing</b>' : ''}</div>` +
       `<div class="mine-sub">${e.stars ? starRow(e.stars) + ' · ' : ''}${e.pieces} piece${e.pieces === 1 ? '' : 's'} · ${sol}</div>` +
       `<div class="mine-acts">` +
-      `<a class="mlink" href="${escHtml(linkFor(e.code, e.title, e.note, e.start, e.colors))}">Play</a>` +
+      `<a class="mlink" href="${escHtml(linkFor(e.code, e.title, e.note, e.start, e.colors, e.extras))}">Play</a>` +
       `<button class="mlink" data-act="share">Share</button>` +
       `<button class="mlink" data-act="edit">Edit</button>` +
       `<button class="mlink del" data-act="delete">Delete</button>` +
@@ -845,8 +935,8 @@ function exportLink() {
   const parts = loadMine().map(e => e.code +
     parseInt(e.typed.map(t => t ? 1 : 0).join(''), 2).toString(16).padStart(4, '0') +
     Math.floor(e.created / 1000).toString(36) +
-    (e.title || e.note || e.start || e.colors
-      ? '~' + b64url(JSON.stringify([e.title || '', e.note || '', e.start || '', e.colors || ''])) : ''));
+    (e.title || e.note || e.start || e.colors || e.extras
+      ? '~' + b64url(JSON.stringify([e.title || '', e.note || '', e.start || '', e.colors || '', e.extras || ''])) : ''));
   return location.origin + location.pathname + '#import=' + parts.join('.');
 }
 const b64url = s => btoa(unescape(encodeURIComponent(s))).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
@@ -857,8 +947,8 @@ function parseImport(hash) {
   return m[1].split('.').map(whole => {
     const [part, text] = whole.split('~');
     let title = '', note = '';
-    let start = '', colors = '';
-    if (text) try { [title, note, start = '', colors = ''] = JSON.parse(unb64url(text)).map(String); } catch (e) {}
+    let start = '', colors = '', extras = '';
+    if (text) try { [title, note, start = '', colors = '', extras = ''] = JSON.parse(unb64url(text)).map(String); } catch (e) {}
     const d = Solver.decode(part.slice(0, 33));
     if (!d || !/^[0-9a-f]{4}[0-9a-z]+$/.test(part.slice(33))) return null;
     const bits = parseInt(part.slice(33, 37), 16).toString(2).padStart(16, '0');
@@ -883,7 +973,8 @@ function parseImport(hash) {
              stars: diff.stars, score: diff.score, created, updated: created,
              title: title.slice(0, 40), note: note.slice(0, 240),
              start: /^[0-9a-z]+$/.test(start) && start.length === groups.length ? start : '',
-             colors: /^[0-9a]+$/.test(colors) && colors.length === groups.length ? colors : '' };
+             colors: /^[0-9a]+$/.test(colors) && colors.length === groups.length ? colors : '',
+             extras: extrasParam(extrasFrom(extras)) };
   }).filter(Boolean);
 }
 let pendingImport = parseImport(location.hash).filter(e => !loadMine().some(x => x.code === e.code));
@@ -948,13 +1039,14 @@ $('mineList').addEventListener('click', async ev => {
                            title: e.title || '', note: e.note || '',
                            start: e.start ? [...e.start].map(ch => parseInt(ch, 36)) : null,
                            startFor: e.start ? e.code : null,
-                           colors: paintsFrom(Solver.piecesFrom(new Set(e.joins)), e.colors) });
+                           colors: paintsFrom(Solver.piecesFrom(new Set(e.joins)), e.colors),
+                           ...extrasFrom(e.extras) });
     shareMeta = null;
     cursor = 0; across = true; lastSolve = null; lastDiff = null;
     showStep('pieces');
   }
   if (act === 'share') {
-    const url = linkFor(e.code, e.title, e.note, e.start, e.colors);
+    const url = linkFor(e.code, e.title, e.note, e.start, e.colors, e.extras);
     if (navigator.share) {
       try { await navigator.share({ title: 'Danagram', text: shareMsg(e.title), url }); return; }
       catch (err) { if (err && err.name === 'AbortError') return; }

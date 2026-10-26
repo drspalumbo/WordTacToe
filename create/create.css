@@ -223,3 +223,27 @@ html.dark .sboard .sq.zone{background:rgba(255,255,255,.09);}
 .cal-list li.pick{background:var(--accent-soft);}
 .cal-list b{color:var(--ink);}
 .stars.special{color:var(--accent); font-weight:900;}
+
+/* Theme menu (Colors) and the Celebration fold-out */
+.theme-row{display:flex; align-items:center; justify-content:center; gap:8px; margin-bottom:10px;
+  font-weight:800; color:var(--ink);}
+.theme-row select{font:inherit; font-size:16px; padding:5px 8px; border-radius:8px;
+  border:1px solid var(--tile-line); background:var(--surface); color:var(--ink);}
+.cel-body{text-align:left;}
+.cel-body h4{margin:12px 0 4px; font-size:13px; color:var(--ink);}
+.cel-body h4:first-child{margin-top:0;}
+.cel-body p{margin:0 0 8px;}
+.cel-body input{width:100%; box-sizing:border-box; padding:8px 10px; border-radius:10px; font:inherit; font-size:18px;
+  border:1px solid var(--tile-line); background:var(--surface); color:var(--ink);}
+.hop-grid{display:grid; grid-template-columns:repeat(4, 44px); gap:5px; padding:8px; border-radius:12px;
+  background:var(--well); width:max-content; margin:0 auto 6px;}
+.hop-cell{position:relative; width:44px; height:44px; border:0; border-radius:9px; padding:0; cursor:pointer;
+  background:var(--tile); color:var(--ink); box-shadow:inset 0 0 0 1.25px var(--tile-line);
+  font:800 20px/1 'Archivo', sans-serif; touch-action:manipulation;}
+.hop-cell.on{box-shadow:inset 0 0 0 3px var(--accent);}
+.hop-cell.on::after{content:attr(data-n); position:absolute; top:-6px; right:-6px; min-width:18px; height:18px;
+  border-radius:9px; background:var(--accent); color:#fff; font-size:11px; line-height:18px; text-align:center;}
+#confettiChips .swatch{box-shadow:inset 0 0 0 1.25px var(--tile-line);}
+#confettiChips .swatch.on{box-shadow:inset 0 0 0 1.25px var(--tile-line), 0 0 0 2.5px var(--surface), 0 0 0 4.5px var(--accent);}
+#previewCelebrate{display:block; margin:14px auto 0;}
+#hopClear[hidden]{display:none;}

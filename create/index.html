@@ -63,6 +63,8 @@
   <details class="diff-detail color-detail" id="colorDetail">
     <summary>Colors</summary>
     <div class="color-body">
+      <label class="theme-row">Theme
+        <select id="themeSel"><option value="">Classic</option></select></label>
       <p>Pick a color, then tap pieces to paint them. Auto puts a piece back.</p>
       <div class="swatches" id="swatches"></div>
       <button class="mlink" id="resetColors">Reset all colors</button>
@@ -111,6 +113,23 @@
   </div>
   <p class="share-note" id="shareNote"></p>
   <!-- Calendar: for Dave only (create/?admin=1 turns it on for this device) -->
+  <!-- Celebration: what happens when a player solves it -->
+  <details class="diff-detail celebrate-detail" id="celebrateDetail">
+    <summary>Celebration</summary>
+    <div class="color-body cel-body">
+      <h4>Letters that hop</h4>
+      <p>Tap letters in the order they should hop after the solve, like spelling a word.
+        Tap one again to take it out.</p>
+      <div class="hop-grid" id="hopGrid"></div>
+      <button class="mlink" id="hopClear">Clear</button>
+      <h4>Emoji in the confetti</h4>
+      <input id="emojiIn" maxlength="40" placeholder="🎃👻🦇" autocomplete="off" aria-label="Up to 5 emoji">
+      <h4>Confetti colors</h4>
+      <p>Pick up to 6, or none to use the theme’s.</p>
+      <div class="swatches" id="confettiChips"></div>
+      <button class="btn ghost small" id="previewCelebrate">Preview celebration</button>
+    </div>
+  </details>
   <details class="diff-detail cal-detail" id="calDetail" hidden>
     <summary>Calendar</summary>
     <div class="cal-body">
@@ -153,6 +172,7 @@
 <script src="../data/puzzles.js"></script>
 <script src="../data/schedule.js"></script>
 <script src="../data/puzzle_words.js"></script>
+<script src="../themes.js"></script>
 <script src="../data/word_points.js"></script>
 <script src="../solver.js"></script>
 <script src="create.js"></script>
