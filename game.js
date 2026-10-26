@@ -185,6 +185,12 @@ const ARRANGE = CUSTOM_IDX >= 0 && /[?&]arrange=1/.test(location.search || '');
 const PREVIEW = CUSTOM_IDX >= 0 && /[?&]celebrate=1/.test(location.search || '');
 const PREVIEW_INTRO = CUSTOM_IDX >= 0 && /[?&]intro=1/.test(location.search || '');   // the intro hops
 const NOSAVE = ARRANGE || PREVIEW || PREVIEW_INTRO;
+// Inside the Create page's Celebration fold-out (&embed=1): just the board, where a tap
+// picks the tiles that hop (by the answer cell each tile belongs to), and the page
+// says when to play. PICK: 'intro' (the start layout) or 'win' (the solved board).
+const EMBED = (PREVIEW || PREVIEW_INTRO) && /[?&]embed=1/.test(location.search || '');
+const PICK = EMBED ? (PREVIEW_INTRO ? 'intro' : 'win') : null;
+if (EMBED) document.documentElement.classList.add('arrange', 'embed');
 let arrangeTouched = ARRANGE && !!PUZZLES[CUSTOM_IDX].start;   // a valid &s= start: already arranged
 if (ARRANGE) document.documentElement.classList.add('arrange');
 // a shared puzzle isn't the daily: say so in the heading (and the tab)
@@ -2088,10 +2094,56 @@ function setupIntroPreview() {
   const P = PUZZLES[state.idx];
   document.getElementById('helpOverlay').classList.remove('show');
   document.getElementById('introOverlay').classList.remove('show');
+  if (EMBED) { setupPick(); return; }
   const play = () => { if (P.introHop) hopWave(P.introHop, true); };
   setMsg('Intro preview. Tap the board to play it again.');
   setTimeout(play, 500);
   document.getElementById('board').addEventListener('click', play);
+}
+// Embedded in the Create page: tap tiles to pick the hop order (numbered badges), and
+// play on request. Moves are switched off: every touch on the board is caught first.
+function setupPick() {
+  const P = PUZZLES[state.idx];
+  let cells = ((PICK === 'intro' ? P.introHop : P.hop) || []).slice();
+  const cellOf = (pi, ci) => { const [r, c] = P.pieces[pi].cells[ci]; return r * 4 + c; };
+  const badges = () => state.pieces.forEach((p, pi) => p.tiles.forEach((t, ci) => {
+    let b = t.querySelector('.hop-badge');
+    const n = cells.indexOf(cellOf(pi, ci));
+    if (n < 0) { if (b) b.remove(); return; }
+    if (!b) { b = document.createElement('span'); b.className = 'hop-badge'; t.appendChild(b); }
+    b.textContent = n + 1;
+  }));
+  const post = msg => { if (window.parent !== window) window.parent.postMessage(msg, '*'); };
+  const size = () => post({ type: 'danagram-embed', height:
+    Math.ceil(document.getElementById('msg').getBoundingClientRect().bottom + window.scrollY + 6) });
+  const wrap = document.getElementById('boardWrap');
+  ['pointerdown', 'pointermove', 'pointerup', 'pointercancel', 'dblclick'].forEach(ev =>
+    wrap.addEventListener(ev, e => { e.stopPropagation(); e.preventDefault(); }, true));
+  wrap.addEventListener('click', e => {
+    e.stopPropagation();
+    const tile = e.target.closest('.tile');
+    if (!tile) return;
+    const pi = state.pieces.findIndex(p => p.tiles.includes(tile));
+    const cell = cellOf(pi, state.pieces[pi].tiles.indexOf(tile));
+    const at = cells.indexOf(cell);
+    if (at > -1) cells.splice(at, 1); else cells.push(cell);
+    badges();
+    post({ type: 'danagram-hops', which: PICK, cells });
+  }, true);
+  window.addEventListener('message', e => {
+    if (e.source !== window.parent || !e.data) return;
+    if (e.data.type === 'danagram-hops-set') { cells = (e.data.cells || []).slice(); badges(); }
+    if (e.data.type === 'danagram-play') {
+      if (e.data.emoji) P.emoji = e.data.emoji.length ? e.data.emoji : null;
+      if (e.data.confetti) P.confetti = e.data.confetti.length ? e.data.confetti : null;
+      if (PICK === 'intro') hopWave(cells, true);
+      else { confetti(P); hopWave(cells); }
+    }
+  });
+  setMsg(PICK === 'intro' ? 'Your start. Tap tiles in the order they should hop.'
+                          : 'Solved. Tap tiles in the order they should hop.');
+  badges(); size();
+  window.addEventListener('resize', size);
 }
 // ?celebrate=1: show the puzzle solved and play its celebration; tap the board to replay
 function setupPreview() {
@@ -2100,6 +2152,7 @@ function setupPreview() {
   positionTiles();
   document.getElementById('helpOverlay').classList.remove('show');
   document.getElementById('introOverlay').classList.remove('show');
+  if (EMBED) { setupPick(); return; }
   const play = () => { confetti(P); if (P.hop && P.hop.length) hopWave(P.hop); };
   setMsg('Celebration preview. Tap the board to play it again.');
   setTimeout(play, 500);

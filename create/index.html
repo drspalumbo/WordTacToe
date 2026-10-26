@@ -128,22 +128,22 @@
   <details class="diff-detail celebrate-detail" id="celebrateDetail">
     <summary>Celebration</summary>
     <div class="color-body cel-body">
-      <h4>Letters that hop at the start</h4>
-      <p>These tiles hop when a player opens the puzzle, wherever they start. Tap them in order;
-        tap one again to take it out.</p>
-      <div class="hop-grid" id="introGrid"></div>
-      <button class="mlink" id="introClear">Clear</button>
-      <button class="btn ghost small" id="previewIntro">Preview intro</button>
-      <h4>Letters that hop after the solve</h4>
-      <p>Tap letters in the order they should hop when it’s solved, like spelling a word.</p>
-      <div class="hop-grid" id="hopGrid"></div>
-      <button class="mlink" id="hopClear">Clear</button>
+      <h4>Letters that hop</h4>
+      <p>Pick tiles in the order they should hop: on your start layout as the puzzle opens,
+        or on the solved board. Tap one again to take it out.</p>
+      <div class="mode-tabs cel-tabs" role="group" aria-label="Hops">
+        <button data-pick="intro">At the start</button><button data-pick="win">After the solve</button>
+      </div>
+      <iframe class="arrange-frame cel-frame" id="celFrame" title="Pick the hopping tiles"></iframe>
+      <div class="cactions cel-actions">
+        <button class="btn primary small" id="celPlay">▶ Play</button>
+        <button class="btn ghost small" id="celClear">Clear hops</button>
+      </div>
       <h4>Emoji in the confetti</h4>
       <input id="emojiIn" maxlength="40" placeholder="🎃👻🦇" autocomplete="off" aria-label="Up to 5 emoji">
       <h4>Confetti colors</h4>
       <p>Pick up to 6, or none to use the theme’s.</p>
       <div class="swatches" id="confettiChips"></div>
-      <button class="btn ghost small" id="previewCelebrate">Preview celebration</button>
     </div>
   </details>
   <details class="diff-detail cal-detail" id="calDetail" hidden>

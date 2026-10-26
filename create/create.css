@@ -246,7 +246,7 @@ html.dark .sboard .sq.zone{background:rgba(255,255,255,.09);}
 #confettiChips .swatch{box-shadow:inset 0 0 0 1.25px var(--tile-line);}
 #confettiChips .swatch.on{box-shadow:inset 0 0 0 1.25px var(--tile-line), 0 0 0 2.5px var(--surface), 0 0 0 4.5px var(--accent);}
 #previewCelebrate{display:block; margin:14px auto 0;}
-#hopClear[hidden], #introClear[hidden], #previewIntro[hidden]{display:none;}
+#celClear[hidden]{display:none;}
 #previewIntro{display:block; margin:8px auto 4px;}
 
 /* custom colours: Light / Dark tabs and native colour pickers */
@@ -273,3 +273,8 @@ html.dark .sboard .sq.zone{background:rgba(255,255,255,.09);}
 .cc-pieces .cc-item.typed{flex-direction:column; align-items:flex-start;}
 .cc-pieces:has(.typed){grid-template-columns:repeat(3, auto);}
 .cc-list:has(.typed){grid-template-columns:1fr;}
+
+/* Celebration: the game's board for picking hops */
+.cel-tabs{margin:4px auto 8px;}
+.cel-frame{width:100%; max-width:none; margin:0; height:360px; border-radius:12px;}
+.cel-actions{margin-top:6px;}

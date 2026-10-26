@@ -60,7 +60,7 @@ function showStep(step) {
   if (step === 'letters') renderLetters();
   if (step === 'pieces') renderPieces();
   if (step === 'start') renderStart();
-  if (step === 'share') { renderShare(); renderCelebrate(); }
+  if (step === 'share') { renderShare(); renderCelebrate(); loadCelFrame(); }
   if (step === 'pieces') paintTheme();
   if (step === 'mine') renderMine();
   window.scrollTo(0, 0);
@@ -573,7 +573,7 @@ function paintTheme() {
   const custom = draft.theme === 'custom' && draft.customTheme;
   $('customPanel').hidden = !custom;
   // editing custom colours: the grids show the mode being edited
-  ['pieceGrid', 'swatches', 'hopGrid', 'introGrid'].forEach(id =>
+  ['pieceGrid', 'swatches'].forEach(id =>
     applyBoardTheme($(id), draft.theme, draft.customTheme, custom ? editDark : undefined));
   if (!custom) return;
   document.querySelectorAll('.mode-tabs button').forEach(b =>
@@ -586,22 +586,45 @@ function paintTheme() {
   });
 }
 // Celebration fold-out
+// The hop picker is the game itself (&embed=1): the real board, colours and start
+// layout. Tapping its tiles picks the order; ▶ Play runs the intro or the celebration.
+let celPick = 'intro', celSrc = '';
+const celField = () => celPick === 'intro' ? 'introHop' : 'hop';
+function celUrl(withHops) {
+  const hops = (draft[celField()] || []).map(i => i.toString(16)).join('');
+  return '../?p=' + shareCode() + (paintParam() ? '&c=' + paintParam() : '') +
+    (startParam() ? '&s=' + startParam() : '') + themeParam() +
+    (celPick === 'intro' ? '&intro=1' : '&celebrate=1') + '&embed=1' +
+    (withHops && hops ? (celPick === 'intro' ? '&ih=' : '&h=') + hops : '');
+}
+function loadCelFrame() {                        // reload only when the board itself changed
+  if (!$('celebrateDetail').open) return;
+  if (celUrl(false) === celSrc) return;
+  celSrc = celUrl(false);
+  $('celFrame').src = celUrl(true);
+}
 (function buildCelebrate() {
-  [['hopGrid', 'hop', 'hopClear'], ['introGrid', 'introHop', 'introClear']].forEach(([id, field, clear]) => {
-    for (let i = 0; i < 16; i++) {
-      const b = document.createElement('button');
-      b.className = 'hop-cell'; b.dataset.i = i;
-      b.addEventListener('click', () => {
-        const hop = (draft[field] || []).slice(), at = hop.indexOf(i);
-        if (at > -1) hop.splice(at, 1); else if (hop.length < 16) hop.push(i);
-        draft[field] = hop; saveDraft(); renderCelebrate(); updateLink();
-      });
-      $(id).appendChild(b);
-    }
-    $(clear).addEventListener('click', () => { draft[field] = []; saveDraft(); renderCelebrate(); updateLink(); });
+  document.querySelectorAll('.cel-tabs button').forEach(b => b.addEventListener('click', () => {
+    if (celPick === b.dataset.pick) return;
+    celPick = b.dataset.pick; renderCelebrate(); loadCelFrame();
+  }));
+  $('celebrateDetail').addEventListener('toggle', () => { renderCelebrate(); loadCelFrame(); });
+  $('celPlay').addEventListener('click', () => {
+    const f = $('celFrame').contentWindow;
+    if (f) f.postMessage({ type: 'danagram-play', emoji: splitEmoji(draft.emoji || ''),
+                           confetti: draft.confetti || [] }, '*');
   });
-  $('previewIntro').addEventListener('click', () => {
-    window.open($('shareUrl').value + '&intro=1', '_blank', 'noopener');
+  $('celClear').addEventListener('click', () => {
+    draft[celField()] = []; saveDraft(); updateLink(); renderCelebrate();
+    const f = $('celFrame').contentWindow;
+    if (f) f.postMessage({ type: 'danagram-hops-set', cells: [] }, '*');
+  });
+  window.addEventListener('message', e => {
+    if (!e.data || e.source !== $('celFrame').contentWindow) return;
+    if (e.data.type === 'danagram-embed' && e.data.height) $('celFrame').style.height = e.data.height + 'px';
+    if (e.data.type === 'danagram-hops' && e.data.which === celPick) {
+      draft[celField()] = (e.data.cells || []).slice(0, 16); saveDraft(); updateLink(); renderCelebrate();
+    }
   });
   CONFETTI_CHOICES.forEach(c => {
     const b = document.createElement('button');
@@ -617,22 +640,10 @@ function paintTheme() {
     draft.emoji = splitEmoji($('emojiIn').value).join(''); saveDraft(); updateLink();
   });
   $('emojiIn').addEventListener('blur', () => { $('emojiIn').value = splitEmoji($('emojiIn').value).join(''); });
-  $('previewCelebrate').addEventListener('click', () => {
-    window.open($('shareUrl').value + '&celebrate=1', '_blank', 'noopener');
-  });
 })();
 function renderCelebrate() {
-  [['hopGrid', 'hop', 'hopClear'], ['introGrid', 'introHop', 'introClear']].forEach(([id, field, clear]) => {
-    const hop = draft[field] || [];
-    $(id).querySelectorAll('.hop-cell').forEach(b => {
-      const i = +b.dataset.i, n = hop.indexOf(i);
-      b.textContent = (draft.letters[i] || '').toUpperCase();
-      b.classList.toggle('on', n > -1);
-      b.dataset.n = n > -1 ? n + 1 : '';
-    });
-    $(clear).hidden = !hop.length;
-  });
-  $('previewIntro').hidden = !(draft.introHop || []).length;
+  document.querySelectorAll('.cel-tabs button').forEach(b => b.classList.toggle('on', b.dataset.pick === celPick));
+  $('celClear').hidden = !(draft[celField()] || []).length;
   if (document.activeElement !== $('emojiIn')) $('emojiIn').value = draft.emoji || '';
   document.querySelectorAll('#confettiChips .swatch').forEach(b =>
     b.classList.toggle('on', (draft.confetti || []).includes(b.dataset.c)));
