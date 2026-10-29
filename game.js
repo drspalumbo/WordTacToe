@@ -1300,7 +1300,7 @@ function renderWordLists(justAdded, newestFirst) {
     ? (found || `<div class="wl-sortline">${bankSortHtml()}</div>`) +
       mk('in', 'In the solution', h.inList, 'wlIn') + mk('out', 'Not in the solution', h.outList, 'wlOut')
     : '<p class="wl-empty">Find new words to charge up a Grid Check. Use it to see ' +
-      'if any of the words on your board are in the solution, and if you’re on the right track.</p>';
+      'if any of the words on your board are in today’s solution, and if you’re on the right track.</p>';
   const fresh = el.querySelector('[data-new]');
   if (fresh && fresh.animate) {
     if (fresh.closest('.found')) {
