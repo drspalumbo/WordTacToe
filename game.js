@@ -1298,9 +1298,9 @@ function renderWordLists(justAdded, newestFirst) {
     : '';
   el.innerHTML = total || h.found.length
     ? (found || `<div class="wl-sortline">${bankSortHtml()}</div>`) +
-      mk('in', 'In the puzzle', h.inList, 'wlIn') + mk('out', 'Not in the puzzle', h.outList, 'wlOut')
+      mk('in', 'In the solution', h.inList, 'wlIn') + mk('out', 'Not in the solution', h.outList, 'wlOut')
     : '<p class="wl-empty">Find new words to charge up a Grid Check. Use it to see ' +
-      'if any of the words on your board are in today’s puzzle, and if you’re on the right track.</p>';
+      'if any of the words on your board are in the solution, and if you’re on the right track.</p>';
   const fresh = el.querySelector('[data-new]');
   if (fresh && fresh.animate) {
     if (fresh.closest('.found')) {
@@ -1330,7 +1330,7 @@ function renderWordLists(justAdded, newestFirst) {
   // puzzle, struck = not in it. Zeros are left out.
   const ni = h.inList.length, no = h.outList.length, nf = h.found.length + ni + no;
   document.getElementById('drawerTabLabel').innerHTML = 'Word bank' + (nf + ni + no
-    ? `<span class="tab-counts" aria-label="${nf} found, ${ni} in the puzzle, ${no} not">` +
+    ? `<span class="tab-counts" aria-label="${nf} found, ${ni} in the solution, ${no} not">` +
       (nf ? `<span class="tc-found">${nf}</span>` : '') +
       (ni ? `<span class="tc-in">${ni}</span>` : '') +
       (no ? `<span class="tc-out">${no}</span>` : '') + '</span>'
@@ -1726,7 +1726,7 @@ async function runCheck(superMode) {
 
     showBadge(i, superMode ? (inSol ? 'star' : (ok ? 'good' : 'bad')) : (ok ? 'good' : 'bad'), off, false);
     setMsg((i < 4 ? 'Row ' + (i + 1) : 'Column ' + (i - 3)) + ': ' + word.toUpperCase() +
-           (superMode ? (inSol ? ' ★ in the puzzle' : (ok ? ' ✓ not in the puzzle' : ' — not a word'))
+           (superMode ? (inSol ? ' ★ in the solution' : (ok ? ' ✓ not in the solution' : ' — not a word'))
                       : (ok ? ' ✓' : '')), '');
 
     if (superMode) {
@@ -1772,7 +1772,7 @@ async function runCheck(superMode) {
     d.classList.add('open');                     // settle into the full list
     document.getElementById('drawerTab').setAttribute('aria-expanded', 'true');
     document.getElementById('drawerPanel').scrollTop = 0;
-    setMsg('Grid checked — ★ words appear in a solution.', '');
+    setMsg('Grid checked — ★ words are in the solution.', '');
   } else {
     updateSuper();
     if (good === 8) onWin(g);
