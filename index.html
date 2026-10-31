@@ -148,47 +148,6 @@
   <div class="help-page active" id="helpPage1">
     <h2>How to play</h2>
     <div class="help-body">
-      <ul class="help-list">
-        <li>
-          <span class="move-demo" aria-hidden="true">
-            <span class="move-icon">
-              <span class="move-cell" style="left:6px"></span>
-              <span class="move-cell" style="left:40px"></span>
-              <span class="move-cell" style="left:74px"></span>
-              <span class="move-cell" style="left:108px"></span>
-              <span class="move-piece piece-w"><span class="mp-body"><span class="mp-l">W</span></span></span>
-              <span class="move-piece piece-o"><span class="mp-body"><span class="mp-l">O</span></span></span>
-              <span class="move-piece piece-rd"><span class="mp-body">
-                <span class="mp-l mp-a">R</span>
-                <span class="mp-seam"></span>
-                <span class="mp-l mp-b">D</span>
-              </span></span>
-              <svg class="word-circle" viewBox="0 0 144 48">
-                <path class="wc-path" d="M 133.2 10.1 C 142.9 15.4, 145.9 22.3, 139.5 28.7 C 133.2 35.2, 118.8 41.1, 100.5 44.4 C 82.2 47.8, 60.6 48.4, 42.5 46.4 C 24.5 44.4, 11.1 39.5, 5.3 33.6 C -0.6 27.7, 2.8 20.7, 12.6 14.9 C 22.4 9.0, 39.7 4.5, 58.4 2.5 C 77.2 0.5, 97.5 1.1, 112.9 4.2 C 128.3 7.4, 139.3 12.8, 141.2 19.1"/>
-              </svg>
-            </span>
-            <span class="vbadge vb-check">✓</span>
-          </span>
-          <span class="help-text"><b class="help-h">Unscramble tiles to make words</b>Drag a piece, or tap it and tell it where to go!</span>
-        </li>
-        <li>
-          <span class="bank-demo" aria-hidden="true">
-            <span class="bd-label">Word bank</span>
-            <span class="bd-bar"><i></i></span>
-          </span>
-          <span class="help-text"><b class="help-h">New words charge up your word bank</b>Every new word you make, and every new spot where two words cross, fills the bar on your word bank.</span>
-        </li>
-        <li>
-          <span class="gc-row" aria-hidden="true">
-            <span class="gc-demo"><i class="gc-fill"></i><span class="gc-label">Grid Check</span></span>
-            <span class="mini-word">
-              <span class="mw-text">WORD</span>
-              <svg class="mw-circle" viewBox="0 0 48 22"><path class="mwc-path" d="M 42.3 6.1 C 45.3 8.0, 46.2 10.6, 44.3 13.0 C 42.4 15.3, 38.1 17.5, 32.6 18.6 C 27.1 19.8, 20.6 20.0, 15.2 19.2 C 9.8 18.4, 5.8 16.5, 4.0 14.3 C 2.2 12.1, 3.2 9.6, 6.1 7.4 C 9.1 5.3, 14.2 3.7, 19.9 3.0 C 25.5 2.3, 31.6 2.6, 36.2 3.8 C 40.8 5.0, 44.2 7.1, 44.7 9.4"/></svg>
-            </span>
-          </span>
-          <span class="help-text"><b class="help-h">Grid Check to sort your words</b>When the bar is full, open the word bank and tap Grid Check to see which words on your board are in today’s solution…and which aren’t!</span>
-        </li>
-      </ul>
       <div class="win-note">
         <span class="win-demo" aria-hidden="true">
             <svg class="win-grid" viewBox="0 0 56 56">
@@ -226,8 +185,50 @@
             <span class="conf" style="--ax:23px; --ay:-23px; background:var(--gold); animation-delay:126ms"></span>
             <span class="conf" style="--ax:35px; --ay:-20px; background:var(--accent); animation-delay:144ms"></span>
         </span>
-        <span class="win-line">Fill the grid with words, and win!</span>
+        <span class="win-line">To win, make a crossword:<br>every row and column a real word.</span>
       </div>
+      <ul class="help-list">
+        <li>
+          <span class="move-demo" aria-hidden="true">
+            <span class="move-icon">
+              <span class="move-cell" style="left:6px"></span>
+              <span class="move-cell" style="left:40px"></span>
+              <span class="move-cell" style="left:74px"></span>
+              <span class="move-cell" style="left:108px"></span>
+              <span class="move-piece piece-w"><span class="mp-body"><span class="mp-l">W</span></span></span>
+              <span class="move-piece piece-o"><span class="mp-body"><span class="mp-l">O</span></span></span>
+              <span class="move-piece piece-rd"><span class="mp-body">
+                <span class="mp-l mp-a">R</span>
+                <span class="mp-seam"></span>
+                <span class="mp-l mp-b">D</span>
+              </span></span>
+              <svg class="word-circle" viewBox="0 0 144 48">
+                <path class="wc-path" d="M 133.2 10.1 C 142.9 15.4, 145.9 22.3, 139.5 28.7 C 133.2 35.2, 118.8 41.1, 100.5 44.4 C 82.2 47.8, 60.6 48.4, 42.5 46.4 C 24.5 44.4, 11.1 39.5, 5.3 33.6 C -0.6 27.7, 2.8 20.7, 12.6 14.9 C 22.4 9.0, 39.7 4.5, 58.4 2.5 C 77.2 0.5, 97.5 1.1, 112.9 4.2 C 128.3 7.4, 139.3 12.8, 141.2 19.1"/>
+              </svg>
+            </span>
+            <span class="vbadge vb-check">✓</span>
+          </span>
+          <span class="help-text"><b class="help-h">Unscramble tiles to make words</b>Drag a piece, or tap it and tell it where to go!</span>
+        </li>
+        <li>
+          <span class="bank-demo" aria-hidden="true">
+            <span class="bd-label">Word bank</span>
+            <span class="bd-bar"><i></i></span>
+          </span>
+          <span class="help-text"><b class="help-h">New words fill up your word bank</b>Every new word you make, and every new spot where two words cross, fills the bar on your word bank.</span>
+        </li>
+        <li>
+          <span class="gc-row" aria-hidden="true">
+            <span class="gc-demo"><i class="gc-fill"></i><span class="gc-label">Grid Check</span></span>
+            <span class="mini-word">
+              <span class="mw-text">WORD</span>
+              <svg class="mw-circle" viewBox="0 0 48 22"><path class="mwc-path" d="M 42.3 6.1 C 45.3 8.0, 46.2 10.6, 44.3 13.0 C 42.4 15.3, 38.1 17.5, 32.6 18.6 C 27.1 19.8, 20.6 20.0, 15.2 19.2 C 9.8 18.4, 5.8 16.5, 4.0 14.3 C 2.2 12.1, 3.2 9.6, 6.1 7.4 C 9.1 5.3, 14.2 3.7, 19.9 3.0 C 25.5 2.3, 31.6 2.6, 36.2 3.8 C 40.8 5.0, 44.2 7.1, 44.7 9.4"/></svg>
+            </span>
+          </span>
+          <span class="help-text"><b class="help-h">Grid Check to sort your words</b>Grid Check lets you see which words on your board are in today’s solution…and which aren’t!</span>
+        </li>
+      </ul>
+      <p class="help-outro">Swap tiles and find words until you find today’s one and only solution!</p>
     </div>
     <div class="card-actions">
       <button class="btn primary" id="closeHelp">Got it</button>

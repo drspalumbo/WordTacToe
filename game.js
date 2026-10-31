@@ -195,6 +195,7 @@ let arrangeTouched = ARRANGE && !!PUZZLES[CUSTOM_IDX].start;   // a valid &s= st
 if (ARRANGE) document.documentElement.classList.add('arrange');
 // a shared puzzle isn't the daily: say so in the heading (and the tab)
 if (CUSTOM_IDX >= 0) {
+  document.documentElement.classList.add('custom-puzzle');
   const h1 = document.querySelector('header h1');
   if (h1 && h1.firstChild && h1.firstChild.nodeType === 3) h1.firstChild.textContent = 'Custom ';
   document.title = 'Custom Danagram';

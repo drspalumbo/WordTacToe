@@ -345,7 +345,7 @@
   /* -------- win condition: a solved 4x4 grid saluting row by row, then column by
      column (all eight words), then a confetti burst. Shares the 12s clock. -------- */
   .win-note{
-    padding-top:10px; border-top:1px solid var(--divider);
+    padding:2px 0 10px;
     display:flex; align-items:center; justify-content:center; gap:12px;
   }
   .win-demo{position:relative; flex:none; width:56px; height:56px; pointer-events:none;}
@@ -387,8 +387,24 @@
     60%,100%{opacity:0; transform:translate(var(--ax), calc(var(--ay) + 10px)) scale(.75) rotate(320deg);}
   }
   .win-line{
-    text-align:left; font-size:13.5px; line-height:1.35;
+    text-align:left; font-size:14.5px; line-height:1.35;
     color:var(--ink); font-weight:800;
+  }
+  @media (max-width:380px){ .win-note{gap:9px;} .win-line{font-size:13.5px;} }
+  /* the closing line: a daily has exactly one solution (a custom puzzle may not) */
+  .help-body p.help-outro{
+    margin:0; padding-top:10px; border-top:1px solid var(--divider);
+    text-align:center; font-size:13.5px; line-height:1.38; font-weight:800; color:var(--ink);
+  }
+  html.custom-puzzle .help-outro{display:none;}
+  /* short phones (iPhone SE): tighten How to play so it fits without scrolling */
+  @media (max-height:700px){
+    #helpOverlay .card{padding:16px 18px 12px;}
+    #helpPage1 .help-list li{padding:5px 0; gap:4px;}
+    #helpPage1 .win-note{padding-bottom:6px;}
+    #helpPage1 .help-outro{padding-top:7px;}
+    #helpPage1 .card-actions{margin-top:10px; gap:7px;}
+    #helpPage1 .card-actions .btn{padding-top:9px; padding-bottom:9px;}
   }
   /* -------- row 2: the word's check lands in a little word bank tab and fills
      its bar. Row 3's Grid Check fills on the same beat: they're one meter. -------- */
