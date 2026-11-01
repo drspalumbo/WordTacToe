@@ -31,7 +31,8 @@ try:
     retired = [l.split() for l in open('retired.txt') if l.strip() and not l.startswith('#')]
 except FileNotFoundError:
     pass
-taken = {tuple(p['solution']) for p in S} | {tuple(g) for g in retired}
+SPECIAL = generate.scheduled_days()             # slots a special puzzle took: their puzzle is free again
+taken = {tuple(p['solution']) for d, p in enumerate(S) if d not in SPECIAL} | {tuple(g) for g in retired}
 ms_taken = {multiset(g) for g in taken}
 
 pool, seen = [], set()
@@ -51,7 +52,7 @@ for path in sorted(glob.glob('pool*.pkl')):
 def uses_map(exclude):                           # word -> days it's an answer, leaving some days out
     m = {}
     for d, p in enumerate(S):
-        if d in exclude: continue
+        if d in exclude or d in SPECIAL: continue
         for w in words_of(p['solution']): m.setdefault(w, []).append(d)
     return m
 

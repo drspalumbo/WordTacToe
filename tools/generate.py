@@ -260,6 +260,18 @@ def main():
     emit_site_data(puzzles)
 
 
+def scheduled_days(site='..'):
+    """Day indexes (0 = #1) that ../data/schedule.js fills with a special puzzle.
+    The generated puzzle in that slot is never shown, so it's free to use later:
+    the pickers don't count it as shipped or count its words."""
+    import datetime, re
+    path = os.path.join(site, 'data', 'schedule.js')
+    if not os.path.exists(path):
+        return set()
+    epoch = datetime.date(2026, 10, 8)
+    return {(datetime.date.fromisoformat(d) - epoch).days
+            for d in re.findall(r'"(\d{4}-\d\d-\d\d)"\s*:', open(path, encoding='utf-8').read())}
+
 def emit_site_data(puzzles, site='..'):
     """Write the browser-loadable copies. The site has no build step, so these
     are plain <script> files. Always regenerate both together — never hand-edit.

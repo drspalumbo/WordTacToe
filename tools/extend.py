@@ -46,7 +46,8 @@ try:
     retired = [l.split() for l in open('retired.txt') if l.strip() and not l.startswith('#')]
 except FileNotFoundError:
     pass
-used_grids = {tuple(p['solution']) for p in season} | {tuple(g) for g in retired}
+SPECIAL = generate.scheduled_days()             # slots a special puzzle took: their puzzle is free again
+used_grids = {tuple(p['solution']) for d, p in enumerate(season) if d not in SPECIAL} | {tuple(g) for g in retired}
 used_ms = {multiset(g) for g in used_grids}
 
 # every pool, deduplicated, filtered
@@ -74,6 +75,7 @@ pool = [wordpoints.rescore(p) for p in pool]     # difficulty = spatial + word p
 # word history so far (the season's existing days count toward spacing and uses)
 days_used, uses = {}, Counter()                # word -> the days it's an answer
 for day, p in enumerate(season):
+    if day in SPECIAL: continue
     for w in words_of(p['solution']):
         days_used.setdefault(w, []).append(day); uses[w] += 1
 

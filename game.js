@@ -129,7 +129,9 @@ const CUSTOM_IDX = (() => {
 // ------------------------------------------------------------- the calendar
 // data/schedule.js: SCHEDULE = { 'YYYY-MM-DD': '<a share link from the Create
 // page>' }. On a scheduled date that puzzle is the daily (its #N is the date's);
-// the generated puzzles move back a day each, so none are skipped.
+// it replaces that day's generated puzzle, and every other day stays put (so
+// the weekly difficulty pattern holds). The replaced puzzle is free for the
+// pickers to use later (tools/generate.py scheduled_days).
 const SCHEDULED_DAYS = (() => {                  // day index → the link's parameters
   const out = new Map();
   if (typeof SCHEDULE === 'undefined' || typeof URL === 'undefined' || typeof Solver === 'undefined') return out;
@@ -143,12 +145,8 @@ const SCHEDULED_DAYS = (() => {                  // day index → the link's par
   });
   return out;
 })();
-// the generated puzzle for a day: days before it that were scheduled push it back
-function genIndexForDay(d) {
-  let n = 0;
-  SCHEDULED_DAYS.forEach((q, day) => { if (day < d) n++; });
-  return d - n;
-}
+// the generated puzzle for a day: always that day's own slot
+function genIndexForDay(d) { return d; }
 const DAY_PUZZLE = new Map();                    // day index → PUZZLES index (scheduled days)
 const PUZZLE_DAY = new Map();                    // PUZZLES index → day index (today, yesterday)
 function puzzleForDay(d) {
