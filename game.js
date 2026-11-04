@@ -2074,17 +2074,18 @@ function hopWave(cells, byTile = false) {
   });
   return new Promise(res => setTimeout(res, last + 250));
 }
-// The intro: the creator's chosen tiles hop when an unsolved puzzle opens, once any
-// card over the board (how to play, the creator's note) is closed
-function introHops() {
-  const P = PUZZLES[state.idx];
-  if (!P.introHop || !P.introHop.length || isSolved() || NOSAVE) return;
+// When a puzzle is on screen with no card over the board (how to play, the creator's
+// note), its intro hops play (on opening only) and then the clock starts.
+function boardReady(withHops) {
+  const idx = state.idx, P = PUZZLES[idx];
+  if (isSolved() || NOSAVE) return;
   const covered = () => ['helpOverlay', 'introOverlay', 'overlay', 'feedbackOverlay']
     .some(id => { const el = document.getElementById(id); return el && el.classList.contains('show'); });
-  let waited = 0;
   const go = () => {
-    if (covered() && waited < 120000) { waited += 300; setTimeout(go, 300); return; }
-    setTimeout(() => hopWave(P.introHop, true), 450);
+    if (state.idx !== idx) return;                       // moved on to another puzzle
+    if (covered()) { setTimeout(go, 300); return; }
+    if (!withHops || !P.introHop || !P.introHop.length) { timerStart(); return; }
+    setTimeout(() => hopWave(P.introHop, true).then(() => { if (state.idx === idx) timerStart(); }), 450);
   };
   go();
 }
@@ -2404,7 +2405,7 @@ document.addEventListener('visibilitychange', () => { if (document.hidden) sendP
 window.addEventListener('pagehide', () => sendPlay());
 
 // ------------------------------------------------------------- solve timer
-// Active play time: starts with the first move, pauses while the page is hidden
+// Active play time: starts once the board is uncovered (boardReady), pauses while the page is hidden
 // or another puzzle is on screen, and stops at the move that places the last
 // piece. Kept per puzzle in hints.time, so it's saved with the rest of progress.
 let timerFrom = null;                  // performance.now() when the current stretch began
@@ -2432,11 +2433,15 @@ function timerOnMove() {
   if (t.done || isSolved()) return;
   const h = state.hints[state.idx];
   h.moves = (h.moves || 0) + 1;                // every board change until it's solved
-  if (!t.started) {
-    t.started = true; timerResume(); renderTimer();   // the pill starts ticking
-    sendPlay();                                 // the play's row starts here
-  }
+  timerStart();                                 // a move before the board was ready
   state.lastMoveMs = timerNow();
+}
+function timerStart() {
+  if (NOSAVE) return;
+  const t = timerOf(state.idx);
+  if (t.started || t.done || isSolved()) return;
+  t.started = true; timerResume(); renderTimer();   // the pill starts ticking
+  sendPlay();                                   // the play's row starts here
 }
 function timerStop(atMs) {
   const t = timerOf(state.idx);
@@ -2516,7 +2521,7 @@ function saveSession() {
   };
 }
 
-function loadPuzzle(idx) {
+function loadPuzzle(idx, withHops = false) {
   if (state.pieces.length) sendPlay();           // update the row of the puzzle we're leaving
   saveSession();                                 // preserve the puzzle we're leaving
   cancelScore();                                 // a pending score belongs to that puzzle
@@ -2554,6 +2559,7 @@ function loadPuzzle(idx) {
   timerResume();
   renderTimer();
   setMsg('Drag a piece, or tap it then tap a destination. Double-tap empty space to undo.');
+  setTimeout(() => boardReady(withHops), 0);    // after any card the caller puts up
 }
 
 document.getElementById('prevBtn').addEventListener('click', () => !state.busy && loadPuzzle(state.idx - 1));
@@ -2933,7 +2939,7 @@ const introFirst = (() => {
 })();
 if (CUSTOM_IDX >= 0) state.idx = CUSTOM_IDX;     // so renderDaily shows the custom line
 renderDaily();
-loadPuzzle(CUSTOM_IDX >= 0 ? CUSTOM_IDX : DEV ? 0 : dailyIdx());
+loadPuzzle(CUSTOM_IDX >= 0 ? CUSTOM_IDX : DEV ? 0 : dailyIdx(), true);
 // a custom puzzle with a title or note opens with the creator's card (then help, if new)
 function showIntro(P = PUZZLES[state.idx]) {
   const scheduled = !!(P && P.scheduled);
@@ -2956,7 +2962,6 @@ else if (PREVIEW_INTRO) setupIntroPreview();
 else if (isCustom(state.idx) && (CUSTOM_TEXT.title || CUSTOM_TEXT.note)) showIntro();
 else if (introFirst) showIntro();
 else if (!store.get(HELP_SEEN)) showHelp();
-introHops();                                     // after any card that will cover the board
 
 function setupArrange() {
   const say = () => setMsg(arrangeTouched
