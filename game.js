@@ -354,8 +354,10 @@ function tryMove(pi, anchor, tr, tc, mode) {
 }
 
 // -------------------------------------------------------------- scramble
-// rand: Math.random for a shuffle; a seeded one for a puzzle's starting position
-function scramble(rand = Math.random) {
+// rand: Math.random for a shuffle; a seeded one for a puzzle's starting position.
+// clean: keep going until no row or column of the 4×4 spells a word (a straight
+// 4-tile piece filling a line is let off: it spells its word wherever it goes)
+function scramble(rand = Math.random, clean = false) {
   const P = PUZZLES[state.idx];
   state.pieces.forEach((p, i) => {
     p.cells = P.pieces[i].cells.map(c => c.slice());
@@ -380,8 +382,20 @@ function scramble(rand = Math.random) {
     }
     return true;
   };
+  const wordAt0 = () => {
+    const occ = occupancy();
+    const word = cells => {
+      const hs = cells.map(([r, c]) => occ.get(key(r, c)));
+      if (hs.some(h => !h) || hs.every(h => h.pi === hs[0].pi)) return false;
+      return WORDSET.has(hs.map(h => state.pieces[h.pi].letters[h.ci]).join(''));
+    };
+    for (let i = 0; i < 4; i++) {
+      if (word([0, 1, 2, 3].map(j => [i, j])) || word([0, 1, 2, 3].map(j => [j, i]))) return true;
+    }
+    return false;
+  };
   let applied = 0, guard = 0;
-  while ((applied < 45 || solvedAt0()) && guard < 6000) {
+  while ((applied < 45 || solvedAt0() || (clean && wordAt0())) && guard < 6000) {
     guard++;
     const pi = Math.floor(rand() * state.pieces.length);
     const anchor = Math.floor(rand() * state.pieces[pi].cells.length);
@@ -2569,6 +2583,9 @@ function seededRand(seed) {                      // mulberry32
     return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
   };
 }
+// From #34 (Nov 10 2026) a seeded start shows no words; earlier days keep the
+// starts players already have.
+const CLEAN_START_FROM = 33;
 function startPosition() {
   const P = PUZZLES[state.idx];
   if (Array.isArray(P.start) && P.start.length === state.pieces.length) {
@@ -2576,7 +2593,7 @@ function startPosition() {
     state.revealed = false;
     return;
   }
-  scramble(seededRand(parseInt(puzzleHash(state.idx), 16)));
+  scramble(seededRand(parseInt(puzzleHash(state.idx), 16)), state.idx >= CLEAN_START_FROM);
 }
 
 // Shuffle the current arrangement with random legal moves — one undo reverts it.
