@@ -1007,12 +1007,7 @@ function bumpMeter(points, idx = state.idx) {
 function celebrateCharge(fromFrac) {
   const d = document.getElementById('drawer');
   const btn = document.getElementById('bankCheckBtn');
-  if (!d.classList.contains('open')) {
-    clearTimeout(peekTimer);
-    d.classList.add('peek');
-    document.getElementById('drawerPanel').scrollTop = 0;     // the button is at the top
-    peekTimer = setTimeout(() => { if (!state.busy) d.classList.remove('peek'); }, 2400);
-  }
+  peekDrawer(2400);
   btn.classList.add('no-anim');
   btn.style.setProperty('--fill', (fromFrac * 100).toFixed(0) + '%');
   void btn.offsetWidth;
@@ -1029,22 +1024,30 @@ function celebrateCharge(fromFrac) {
 }
 
 function pulseSuper() {
-  const btn = document.getElementById('bankBar');
+  const btn = document.getElementById('bankCheckBtn');
   if (btn && btn.animate) btn.animate(
-    [{ transform: 'scale(1)' }, { transform: 'scale(1.22)' }, { transform: 'scale(1)' }],
+    [{ transform: 'scale(1)' }, { transform: 'scale(1.06)' }, { transform: 'scale(1)' }],
     { duration: 300, easing: 'cubic-bezier(.3,1.7,.5,1)' });
 }
 
-// a dot flies from where it was earned to the word bank's charge meter (1 per point)
+// a dot flies from where it was earned to the edge of the Grid Check's blue (1 per point)
 function flyDot(fromEl, delay) {
   if (!fromEl) return;
   const idx = state.idx;             // the point belongs to this puzzle even if you switch mid-flight
   setTimeout(() => {
-    const target = document.getElementById('bankBar');
-    if (!target) return;
+    // the button until it's full, then the line charging the next one
+    const line = document.getElementById('nextCharge');
+    const toLine = line.classList.contains('show');
+    const target = toLine ? line : document.getElementById('bankCheckBtn');
     const f = fromEl.getBoundingClientRect(), t = target.getBoundingClientRect();
+    const fill = toLine ? parseFloat(document.getElementById('nextChargeFill').style.width) || 0
+                        : parseFloat(target.style.getPropertyValue('--fill')) || 0;
     const cx = f.left + f.width / 2, cy = f.top + f.height / 2;
-    const tx = t.left + t.width / 2, ty = t.top + t.height / 2;
+    const tx = t.left + t.width * Math.min(0.92, Math.max(0.08, fill / 100));
+    // the button may still be rising with a peek: aim for where it will settle
+    const panelTop = document.getElementById('drawerPanel').getBoundingClientRect().top;
+    const ty = t.top + t.height / 2 + (document.getElementById('drawer').classList.contains('peek')
+      ? innerHeight - peekHeight() - panelTop : 0);
     const el = document.createElement('div');
     el.className = 'fly-dot';
     // start at the size of the badge it came from, then shrink as it travels
@@ -1104,14 +1107,10 @@ function cellSpot(r, c, off) {
   return { getBoundingClientRect: () => ({ left: x - 12, top: y - 12, width: 24, height: 24 }) };
 }
 
-function scoreBoard() {
-  scoreTimer = null;
-  if (NOSAVE) return;
-  if (state.quietSolve) { state.quietSolve = false; return; }   // Show solution
-  const h = state.hints[state.idx];
-  const off = innerOff();
-  const occ = occupancy();
-  const lineCells = i => [0, 1, 2, 3].map(j => i < 4 ? [i, j] : [j, i - 4]);
+const lineCells = i => [0, 1, 2, 3].map(j => i < 4 ? [i, j] : [j, i - 4]);
+// the 8 lines of the target 4×4; null where a line isn't filled or runs on
+function targetLines() {
+  const off = innerOff(), occ = occupancy();
   // A line is broken if the piece at either end carries on past the grid edge in
   // the same direction: SOLE whose E is fused to a Y below really reads SOLEY.
   // Pieces sticking out sideways, and loose tiles beyond the edge, don't matter.
@@ -1120,7 +1119,6 @@ function scoreBoard() {
     const b = occ.get(key(beyond[0] + off, beyond[1] + off));
     return !!(a && b && a.pi === b.pi);
   };
-  // the 8 lines of the target 4×4; null where a line isn't filled or runs on
   const words = [];
   for (let i = 0; i < 8; i++) {
     const cells = lineCells(i);
@@ -1136,6 +1134,20 @@ function scoreBoard() {
               runsOn(last, [last[0] + dr, last[1] + dc]))) w = null;
     words.push(w);
   }
+  return words;
+}
+let lastLines = [];                     // the lines as of the last score, to spot what just formed
+
+function scoreBoard() {
+  scoreTimer = null;
+  if (NOSAVE) return;
+  const before = lastLines;
+  lastLines = targetLines();
+  if (state.quietSolve) { state.quietSolve = false; return; }   // Show solution
+  const h = state.hints[state.idx];
+  const off = innerOff();
+  const occ = occupancy();
+  const words = lastLines;
   const valid = words.map(w => !!w && WORDSET.has(w));
 
   // each point is a beat: the new word nods (or the crossing tile pops) as its dot
@@ -1144,12 +1156,16 @@ function scoreBoard() {
     const hit = occ.get(key(r + off, c + off));
     return state.pieces[hit.pi].tiles[hit.ci].querySelector('.letter');
   };
-  const sources = [], newWords = [];
+  const sources = [], newWords = [], repeats = [];
   words.forEach((w, i) => {
-    if (!valid[i] || h.seen.indexOf(w) !== -1) return;
+    if (!valid[i]) return;
+    const cells = lineCells(i);
+    if (h.seen.indexOf(w) !== -1) {              // made before: it still nods if it just
+      if (before[i] !== w) repeats.push(cells);  // formed here, but earns no dot
+      return;
+    }
     h.seen.push(w);
     newWords.push(w);
-    const cells = lineCells(i);
     // launch from the middle of the word
     const a = cellSpot(...cells[1], off).getBoundingClientRect();
     const b = cellSpot(...cells[2], off).getBoundingClientRect();
@@ -1157,7 +1173,8 @@ function scoreBoard() {
       left: (a.left + b.left) / 2, top: (a.top + b.top) / 2, width: 24, height: 24 }) },
       show: () => playVerdict(cells.map(([r, c]) => letterAt(r, c)), true) });
   });
-
+  repeats.forEach((cells, k) => setTimeout(() =>
+    playVerdict(cells.map(([r, c]) => letterAt(r, c)), true), k * SCORE_TICK));
   let newCrossings = 0;
   for (let r = 0; r < 4; r++) {
     for (let c = 0; c < 4; c++) {
@@ -1177,7 +1194,7 @@ function scoreBoard() {
   if (newWords.length) {
     // new words go in the bank quietly (gray, unsorted); the drawer peeks so you see them land
     newWords.forEach(w => h.found.unshift(w));
-    peekDrawer();
+    peekDrawer(Math.max(1600, sources.length * SCORE_TICK + 1500));   // until the dots are in
     renderWordLists(newWords[newWords.length - 1], true);
   }
   if (sources.length) {
@@ -1301,6 +1318,13 @@ function renderWordLists(justAdded, newestFirst) {
     : '<p class="wl-empty">Find new words to charge up a Grid Check. Use it to see ' +
       'if any of the words on your board are in today’s solution, and if you’re on the right track.</p>';
   const fresh = el.querySelector('[data-new]');
+  // while peeking, the window beneath the Grid Check scrolls to where the word landed
+  if (fresh && document.getElementById('drawer').classList.contains('peek')) {
+    const panel = document.getElementById('drawerPanel');
+    const bar = document.querySelector('.bank-actions').getBoundingClientRect();
+    const f = fresh.getBoundingClientRect();
+    panel.scrollTop += f.top - bar.bottom - Math.max(2, peekHeight() - bar.height - f.height - 2);
+  }
   if (fresh && fresh.animate) {
     if (fresh.closest('.found')) {
       // a word you just made: slips in quietly
@@ -1316,10 +1340,6 @@ function renderWordLists(justAdded, newestFirst) {
         { transform: 'translateY(0)', opacity: 1, backgroundColor: 'transparent' },
       ], { duration: 950, easing: 'cubic-bezier(.3,1.2,.5,1)' });
     }
-    // while peeking, the window scrolls to wherever the word landed
-    const panel = document.getElementById('drawerPanel');
-    if (document.getElementById('drawer').classList.contains('peek'))
-      panel.scrollTop += fresh.getBoundingClientRect().top - panel.getBoundingClientRect().top - 24;
   }
 
   // the drawer is always there; empty, it explains how to fill it
@@ -1442,14 +1462,16 @@ function updateSuper() {
   const solved = isSolved();
   const stacks = Math.floor(v / HINT_THRESHOLD);
   const ready = stacks >= 1;
-  // solved: the bar and button turn purple and the button becomes Show solution
+  // solved: the button turns purple and becomes Show solution
   const pct = ((ready || solved ? 1 : (v % HINT_THRESHOLD) / HINT_THRESHOLD) * 100).toFixed(0) + '%';
-  document.getElementById('bankBarFill').style.width = pct;
   document.getElementById('drawerTab').classList.toggle('charged', ready && !solved);
   document.getElementById('drawerTab').classList.toggle('solved', solved);
   const badge = document.getElementById('bankCheckBadge');   // ×N lives on the button only
   badge.textContent = '×' + stacks;
   badge.classList.toggle('show', stacks >= 2 && !solved);
+  document.getElementById('nextCharge').classList.toggle('show', ready && !solved);
+  document.getElementById('nextChargeFill').style.width =
+    (ready ? (v % HINT_THRESHOLD) / HINT_THRESHOLD * 100 : 0).toFixed(0) + '%';
   const btn = document.getElementById('bankCheckBtn');
   btn.classList.toggle('solution', solved);
   // uncharged still takes a tap (it shakes and explains); only a running check blocks it
@@ -1460,8 +1482,12 @@ function updateSuper() {
   if (ready || solved) setBankHint('');        // a hint about charging is stale now
   renderWordLists();
 }
-// The line under Grid Check stays empty until a tap needs explaining.
-function setBankHint(t) { document.getElementById('bankHint').textContent = t; }
+// The line under Grid Check stays empty until a tap needs explaining; at rest it's
+// below the strip, so the drawer peeks up for a moment to show it.
+function setBankHint(t) {
+  document.getElementById('bankHint').textContent = t;
+  if (t) peekDrawer(3200, true);
+}
 
 // Grid Check (was Super Check). Its feedback goes in the drawer, since
 // the open drawer covers the message line.
@@ -1503,7 +1529,7 @@ function shakeButton(el) {
 // Lower the drawer so the board shows, then blink the empty squares of the 4×4.
 function flashEmptySquares() {
   const d = document.getElementById('drawer');
-  d.classList.remove('open', 'peek');
+  d.classList.remove('open');                    // a peek showing the hint can stay
   document.getElementById('drawerTab').setAttribute('aria-expanded', 'false');
   const off = innerOff(), occ = occupancy();
   const size = S - 2 * GAP;
@@ -1554,64 +1580,31 @@ function showSolution() {
 document.getElementById('drawerTab').addEventListener('click', () => {
   const d = document.getElementById('drawer');
   clearTimeout(peekTimer);
-  const wasPeeking = d.classList.contains('peek');
-  const barRect = document.getElementById('bankBar').getBoundingClientRect();
   d.classList.remove('peek');
   const open = d.classList.toggle('open');
-  if (open) {
-    document.getElementById('drawerPanel').scrollTop = 0;     // start at the Grid Check
-    setBankHint('');
-    if (!wasPeeking) morphBarIntoButton(barRect);
-  }
+  document.getElementById('drawerPanel').scrollTop = 0;       // the Grid Check on top
+  if (open) setBankHint('');
   document.getElementById('drawerTab').setAttribute('aria-expanded', open ? 'true' : 'false');
 });
 
-// Opening the drawer: the tab's charge bar grows into the Grid Check button.
-// A stand-in flies from the bar's spot to where the button will settle once the
-// drawer has finished opening, and the real button appears as it arrives.
-function morphBarIntoButton(from) {
-  if (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
-  const panel = document.getElementById('drawerPanel');
-  const btn = document.getElementById('bankCheckBtn');
-  if (!btn.animate || !from.width) return;
-  // measure the button's final spot with the drawer fully open, then let it open
-  panel.style.transition = 'none';
-  const to = btn.getBoundingClientRect();
-  panel.style.maxHeight = '0px';
-  void panel.offsetHeight;
-  panel.style.transition = ''; panel.style.maxHeight = '';
-
-  const ghost = document.createElement('div');
-  ghost.className = 'bar-morph';
-  const fill = document.createElement('i');
-  const barFill = document.getElementById('bankBarFill');
-  fill.style.width = barFill.style.width || '0%';
-  fill.style.background = getComputedStyle(barFill).backgroundColor;
-  ghost.appendChild(fill);
-  document.body.appendChild(ghost);
-  const box = r => ({ left: r.left + 'px', top: r.top + 'px', width: r.width + 'px', height: r.height + 'px' });
-  btn.style.opacity = '0';
-  const a = ghost.animate([Object.assign(box(from), { borderRadius: '2px' }),
-                           Object.assign(box(to), { borderRadius: '12px' })],
-                          { duration: 380, easing: 'cubic-bezier(.3,.9,.4,1)', fill: 'forwards' });
-  // show the real button underneath first, then fade the stand-in off it, so
-  // nothing shows through in between
-  const done = () => {
-    btn.style.opacity = '';
-    const out = ghost.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 120, fill: 'forwards' });
-    out.onfinish = out.oncancel = () => ghost.remove();
-  };
-  a.onfinish = done; a.oncancel = done;
-}
-
 // Crack the closed drawer open for a moment so a newly found word can be seen landing.
 let peekTimer = null;
-function peekDrawer() {
+function peekDrawer(ms = 1600, forHint = false) {
   const d = document.getElementById('drawer');
   if (d.classList.contains('open')) return;
+  if (!forHint) setBankHint('');                 // a stale hint would crowd the words out
+  d.classList.toggle('short', forHint);
   d.classList.add('peek');
   clearTimeout(peekTimer);
-  peekTimer = setTimeout(() => { if (!state.busy) d.classList.remove('peek'); }, 1600);
+  peekTimer = setTimeout(() => {
+    if (state.busy) return;
+    d.classList.remove('peek', 'short');
+    setBankHint('');
+    document.getElementById('drawerPanel').scrollTop = 0;     // back to the resting strip
+  }, ms);
+}
+function peekHeight() {
+  return parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--peek-h'));
 }
 
 // ---------------------------------------------------------------- submit
@@ -1741,11 +1734,11 @@ async function runCheck(superMode) {
         (inSol ? h.inList : h.outList).push(word);
         const f = h.found.indexOf(word);
         if (f !== -1) h.found.splice(f, 1);      // sorted now, so it leaves Found
-        renderWordLists(word, true);             // newest on top, ticker-style
         const d = document.getElementById('drawer');
-        d.classList.remove('open');
+        d.classList.remove('open', 'short');
         clearTimeout(peekTimer);
         d.classList.add('peek');                 // crack it open just enough to see it land
+        renderWordLists(word, true);             // newest on top, ticker-style
         await sleep(BANK_BEAT);
       }
       if (!ok) await sleep(PAUSE);
@@ -2264,7 +2257,7 @@ applyTheme();
 // One row per play in a Google Sheet, via an Apps Script web app
 // (tools/stats_apps_script.gs). Each play gets a random id, fresh for every
 // puzzle, so plays can't be linked to each other or to anyone. The row is made on
-// the first move and updated whenever the player leaves the page, switches puzzle,
+// the timer's start and updated whenever the player leaves the page, switches puzzle,
 // or finishes — so a give-up still records how far it got. The puzzle is named by
 // a short hash, never its answer. Off if STATS_URL is empty, or for a browser
 // that switched it off on the Tools & Tips page or opened the page with ?notrack=1.
@@ -2559,6 +2552,7 @@ function loadPuzzle(idx, withHops = false) {
   timerResume();
   renderTimer();
   setMsg('Drag a piece, or tap it then tap a destination. Double-tap empty space to undo.');
+  lastLines = targetLines();
   setTimeout(() => boardReady(withHops), 0);    // after any card the caller puts up
 }
 
