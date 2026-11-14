@@ -10,7 +10,11 @@ Prints counts only — never answers (Dave plays blind).
 Each replacement fits its weekday's band (extend.py's BANDS), is single-solution
 with today's word lists, blocklist-clean, not shipped/retired/already in the
 season, no repeated letter set, and keeps every answer word within the repeat
-rules counting the days on BOTH sides (no more than 2 in any 30 days, 8 a season).
+rules counting the days on BOTH sides (no more than 2 in any 30 days, 8 a season, and
+a minimum gap that grows with how odd the word is: 14 days for an everyday word, up
+to 120 for the oddest; GAP below). A word coming back in the same spot (same row or
+same column) is avoided too, more so the odder the word (SAME_SPOT). Among the puzzles that fit, words used in the 60 days
+either side are avoided, the closer the more (Nov 2026: UPDO twice in a few days).
 With --pieces, scores come from piecescore.py, and only Sundays may have 8+ single
 tiles (8 singles is the Sunday shape; on Nov 5 it made a Thursday play like one),
 and fewer dominoes are preferred: each domino past the first counts like two more
@@ -28,6 +32,9 @@ src = open('extend.py', encoding='utf-8').read()
 EPOCH = datetime.date(2026, 10, 8)
 BANDS = eval(re.search(r'^BANDS = (\{.*\})$', src, re.M).group(1))      # the same bands as extend.py
 WINDOW, WINDOW_MAX, MAX_USES = 30, 2, 8
+GAP = {0: 14, 4: 30, 8: 60, 16: 120}             # word points -> fewest days between uses
+NEAR = 60                                        # and a softer preference beyond that
+SAME_SPOT = {0: 1, 4: 2, 8: 4, 16: 8}            # word points -> cost of reusing a word's spot
 
 import generate, wordpoints, piecescore
 words_of = wordpoints.words_of
@@ -59,6 +66,13 @@ for path in sorted(glob.glob('pool*.pkl')):
             continue
         seen.add(g); pool.append(wordpoints.rescore(p))
 
+def spots_map(exclude):                          # word -> every spot it's been an answer in
+    m = {}
+    for d, p in enumerate(S):
+        if d in exclude or d in SPECIAL: continue
+        for w, sp in wordpoints.spots(p['solution']).items(): m.setdefault(w, set()).update(sp)
+    return m
+
 def uses_map(exclude):                           # word -> days it's an answer, leaving some days out
     m = {}
     for d, p in enumerate(S):
@@ -67,8 +81,10 @@ def uses_map(exclude):                           # word -> days it's an answer, 
     return m
 
 targets = [n - 1 for n in DAYS]
-for d in targets:
-    used = uses_map(set(targets) - {d} | {d})
+for k, d in enumerate(targets):
+    todo = set(targets[k:])                      # days already replaced count; the rest don't yet
+    used = uses_map(todo)
+    spot = spots_map(todo)
     wd = (EPOCH + datetime.timedelta(days=d)).weekday()
     lo, hi = BANDS[wd]
     def ok(p):
@@ -76,28 +92,38 @@ for d in targets:
         for w in words_of(p['solution']):
             ds = used.get(w, [])
             if len(ds) + 1 > MAX_USES: return False
+            if any(abs(e - d) < GAP[wordpoints.points(w)] for e in ds): return False
             for s in range(d - WINDOW + 1, d + 1):          # every 30-day window holding day d
                 if sum(1 for e in ds if s <= e < s + WINDOW) + 1 > WINDOW_MAX: return False
         return True
     if PIECES:                                  # the piece score is slow: only near the band
-        cands = []
+        near_band = []
         for i, p in enumerate(pool):
             if lo - 25 <= p['difficulty'] <= hi + 25 and (wd == 6 or singles(p) < 8) and ok(p):
                 if 'piece_log' not in p['difficulty_raw']:
                     pool[i] = p = piecescore.rescore(p)
-                if lo <= p['difficulty'] <= hi:
-                    cands.append(p)
+                near_band.append(p)
     else:
-        cands = [p for p in pool if lo <= p['difficulty'] <= hi and ok(p)]
+        near_band = [p for p in pool if ok(p)]
+    for slack in (0, 4, 8, 14):                 # widen the band only if nothing fits (as extend.py)
+        a, b = max(16, lo - slack), min(100, hi + slack)
+        cands = [p for p in near_band if a <= p['difficulty'] <= b]
+        if cands: break
     if wd == 6: cands = [p for p in cands if singles(p) >= 8] or cands
     mid = (lo + hi) / 2
     reuse = lambda p: sum(len(used.get(w, [])) for w in words_of(p['solution']))
     extra = lambda p: 2 * max(0, dominoes(p) - 1) if PIECES else 0
-    best = min(cands, key=lambda p: (reuse(p) + extra(p), abs(p['difficulty'] - mid)))
+    # a use 1 day away counts nearly 2 more repeats; 59 days away, next to nothing
+    near = lambda p: sum(2 * (NEAR - abs(e - d)) / NEAR for w in words_of(p['solution'])
+                         for e in used.get(w, []) if abs(e - d) < NEAR)
+    same = lambda p: sum(SAME_SPOT[wordpoints.points(w)] for w, sp in wordpoints.spots(p['solution']).items()
+                         if sp & spot.get(w, set()))
+    best = min(cands, key=lambda p: (reuse(p) + extra(p) + near(p) + same(p), abs(p['difficulty'] - mid)))
     pool.remove(best); ms_taken.add(multiset(best['solution']))
     S[d] = best
     print(f"#{d + 1} ({EPOCH + datetime.timedelta(days=d):%a %b %d}): replaced; score {best['difficulty']} ({best['stars']} star)"
-          f", {dominoes(best)} dominoes, {singles(best)} singles, {len(cands)} fitted")
+          f", {dominoes(best)} dominoes, {singles(best)} singles, {len(cands)} fitted"
+          + (f" (band widened by {slack})" if slack else ''))
 for n in RESCORE:                                # kept puzzles, restamped with the piece score
     S[n - 1] = piecescore.rescore(S[n - 1])
     print(f"#{n} ({EPOCH + datetime.timedelta(days=n - 1):%a %b %d}): kept; score {S[n - 1]['difficulty']} ({S[n - 1]['stars']} star)")

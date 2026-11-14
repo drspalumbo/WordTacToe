@@ -20,7 +20,11 @@ from collections import Counter
 N = int(sys.argv[1]) if len(sys.argv) > 1 and sys.argv[1].isdigit() else 300
 DRY = '--dry-run' in sys.argv
 EPOCH = datetime.date(2026, 10, 8)              # Danagram #1 (game.js EPOCH)
-WINDOW, WINDOW_MAX = 30, 2                      # an answer word: at most twice in any 30 days
+WINDOW, WINDOW_MAX = 30, 2                      # an answer word: at most twice in any 30 days,
+# a word comes back no sooner than GAP days, by how odd it is (word points: an everyday
+# word 0, the oddest 16), and is avoided within NEAR days
+GAP, NEAR = {0: 14, 4: 30, 8: 60, 16: 120}, 60
+SAME_SPOT = {0: 1, 4: 2, 8: 4, 16: 8}           # and kept out of its old spots (row/column), oddest most
 # and at most MAX_USES times in the whole season (--max-uses K to change; 8 fills 300 days)
 MAX_USES = int(sys.argv[sys.argv.index('--max-uses') + 1]) if '--max-uses' in sys.argv else 8
 # weekday (Mon=0) -> score band. A score is spatial + word points (wordpoints.py);
@@ -73,11 +77,12 @@ print(f'pool: {len(pool)} usable puzzles (from {len(glob.glob("pool*.pkl"))} poo
 pool = [wordpoints.rescore(p) for p in pool]     # difficulty = spatial + word points
 
 # word history so far (the season's existing days count toward spacing and uses)
-days_used, uses = {}, Counter()                # word -> the days it's an answer
+days_used, uses, spot = {}, Counter(), {}      # word -> the days it's an answer, its spots
 for day, p in enumerate(season):
     if day in SPECIAL: continue
     for w in words_of(p['solution']):
         days_used.setdefault(w, []).append(day); uses[w] += 1
+    for w, sp in wordpoints.spots(p['solution']).items(): spot.setdefault(w, set()).update(sp)
 
 added, widened, ms_taken = [], 0, set(used_ms)
 start = len(season)
@@ -91,6 +96,8 @@ for day in range(start, start + N):
             recent = sum(1 for d in days_used.get(w, ()) if day - d < WINDOW)
             if recent + 1 > WINDOW_MAX or uses[w] + 1 > MAX_USES:
                 return False
+            if any(day - d < GAP[wordpoints.points(w)] for d in days_used.get(w, ())):
+                return False
         return True
     best = None
     for slack in (0, 4, 8, 14, 24, 100):        # widen the band only if nothing fits
@@ -102,7 +109,12 @@ for day in range(start, start + N):
             mid = (lo + hi) / 2
             # within the band, fresh words matter more than hitting the exact middle:
             # fewest earlier uses of its 8 words first, then nearest the middle
-            best = min(cands, key=lambda p: (sum(uses[w] for w in words_of(p['solution'])),
+            # (a use in the last 60 days adds up to 2 more, the more recent the more)
+            near = lambda p: sum(2 * (NEAR - (day - d)) / NEAR for w in words_of(p['solution'])
+                                 for d in days_used.get(w, ()) if day - d < NEAR)
+            same = lambda p: sum(SAME_SPOT[wordpoints.points(w)] for w, sp in wordpoints.spots(p['solution']).items()
+                                 if sp & spot.get(w, set()))
+            best = min(cands, key=lambda p: (sum(uses[w] for w in words_of(p['solution'])) + near(p) + same(p),
                                              abs(p['difficulty'] - mid)))
             widened += slack > 0
             break
@@ -114,6 +126,7 @@ for day in range(start, start + N):
     ms_taken.add(multiset(best['solution']))
     for w in words_of(best['solution']):
         days_used.setdefault(w, []).append(day); uses[w] += 1
+    for w, sp in wordpoints.spots(best['solution']).items(): spot.setdefault(w, set()).update(sp)
 
 # report: counts only
 first = EPOCH + datetime.timedelta(days=start)

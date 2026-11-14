@@ -61,6 +61,12 @@ def stars(score):
     return 0
 
 words_of = lambda g: set(g) | {''.join(g[r][c] for r in range(4)) for c in range(4)}
+def spots(g):                                   # word -> where it sits: 'a0' top row .. 'd3' right column
+    out = {}
+    for i in range(4):
+        out.setdefault(g[i], set()).add(f'a{i}')
+        out.setdefault(''.join(g[r][i] for r in range(4)), set()).add(f'd{i}')
+    return out
 
 def rescore(p):
     """A puzzle (pool or season entry) with difficulty = spatial + word points."""
