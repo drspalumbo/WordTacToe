@@ -2347,7 +2347,9 @@ function calcDifficulty(idx) {
   const P = PUZZLES[idx];
   if (!P._calc) {
     const raw = P.difficulty_raw || {};
-    P._calc = 'word_points' in raw          // scored by the current model (spatial + words)
+    P._calc = raw.score === 'solve-2026-11'  // a predicted solve time (tools/solvescore.py)
+      ? { score: P.difficulty, stars: Solver.starsFor(P.difficulty), minutes: raw.minutes }
+      : 'word_points' in raw                   // the Oct 2026 model (spatial + words)
       ? { score: P.difficulty, stars: Solver.starsFor(P.difficulty), board: raw.spatial, words: raw.word_points }
       : (d => ({ score: d.score, stars: d.stars, board: d.spatial, words: d.wordPoints }))(
           Solver.difficulty(P.solution, P.pieces, P.numSolutions || 1));
@@ -2372,7 +2374,7 @@ function renderRating() {
   const c = calcDifficulty(state.idx);
   rev.innerHTML = `<div>You ${starText(h.rating)}</div>` +
     `<div>Danagram ${starText(c.stars)} ${c.score}</div>` +
-    `<small>board ${c.board} + words ${c.words}</small>`;
+    (c.minutes != null ? '' : `<small>board ${c.board} + words ${c.words}</small>`);
 }
 function sendRating(idx) {
   if (NOSAVE || !STATS_URL || store.get(NOTRACK_KEY)) return;

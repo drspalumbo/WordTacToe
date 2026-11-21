@@ -7,6 +7,7 @@ tools/pool_*.pkl
 # the puzzle pipeline's plain-text answers stay on this computer (the site only
 # gets the scrambled data/puzzles.js)
 tools/puzzles.json
+tools/solve_cache.json
 tools/hold.txt
 tools/retired.txt
 tools/puzzles_*.json
