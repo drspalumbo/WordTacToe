@@ -61,7 +61,7 @@ function showStep(step) {
   if (step === 'pieces') renderPieces();
   if (step === 'start') renderStart();
   if (step === 'share') { renderShare(); renderCelebrate(); loadCelFrame(); }
-  if (step === 'pieces') paintTheme();
+  if (step === 'start') paintTheme();
   if (step === 'mine') renderMine();
   window.scrollTo(0, 0);
 }
@@ -301,13 +301,6 @@ function toggleJoin(a, b) {
   draft.joins = [...j]; saveDraft(); renderPieces();
 }
 function tapTile(i) {
-  if (painting()) {                              // Colors open: tapping paints the whole piece
-    const g = Solver.piecesFrom(joins()).find(g => g.includes(i));
-    draft.colors = Object.assign({}, draft.colors);
-    if (brush === '0') delete draft.colors[g[0]]; else draft.colors[g[0]] = brush;
-    saveDraft(); renderPieces();
-    return;
-  }
   if (selected === -1) selected = i;
   else if (selected === i) selected = -1;
   else if (adjacent(selected, i)) { toggleJoin(selected, i); selected = -1; }
@@ -323,7 +316,6 @@ function renderPieces() {
   const pieceOf = Array(16);
   const colours = pieceColours(groups, draft.colors);
   groups.forEach((g, p) => g.forEach(i => { pieceOf[i] = p; }));
-  grid.classList.toggle('painting', painting());
 
   const R = 12;
   pcells.forEach((d, i) => {
@@ -453,9 +445,10 @@ const starRow = n => n >= 6 ? '<span class="stars special" aria-label="special c
 $('backToLetters').addEventListener('click', () => showStep('letters'));
 $('toStart').addEventListener('click', () => showStep('start'));
 
-// ---- Colors fold-out: while it's open, tapping a piece paints it with the brush
-let brush = '1';
-const painting = () => $('colorDetail').open;
+// ---- Colors fold-out (on the Start step): pick a colour and the start board's taps
+// paint pieces instead of moving them; tap the colour again to go back to moving
+let brush = null;
+const painting = () => brush !== null && $('colorDetail').open;
 (function buildSwatches() {
   const box = $('swatches');
   [['0', null, 'Auto'], ...Object.entries(PALETTE).map(([k, v]) => [k, v, null])].forEach(([code, css, label]) => {
@@ -465,15 +458,32 @@ const painting = () => $('colorDetail').open;
     b.setAttribute('aria-label', label || (code === 'a' ? 'Plain' : 'Colour ' + code));
     if (css) b.style.background = css;
     if (label) b.textContent = label;
-    b.addEventListener('click', () => { brush = code; renderSwatches(); });
+    b.addEventListener('click', () => { brush = brush === code ? null : code; renderSwatches(); pushColours(); });
     box.appendChild(b);
   });
 })();
 function renderSwatches() {
-  document.querySelectorAll('.swatch').forEach(b => b.classList.toggle('on', b.dataset.code === brush));
+  document.querySelectorAll('#swatches .swatch').forEach(b => b.classList.toggle('on', b.dataset.code === brush));
+  $('paintHint').textContent = brush === null
+    ? 'Tap a color, then tap pieces on the board to paint them. Auto puts a piece back.'
+    : 'Painting: tap pieces on the board. Tap the color again to move pieces instead.';
 }
-$('colorDetail').addEventListener('toggle', () => { selected = -1; renderSwatches(); renderPieces(); });
-$('resetColors').addEventListener('click', () => { draft.colors = {}; saveDraft(); renderPieces(); });
+$('colorDetail').addEventListener('toggle', () => {
+  if (!$('colorDetail').open) openPicker(null);
+  // while colouring, the start board stays in view: smaller, pinned to the top
+  document.body.classList.toggle('colouring', $('colorDetail').open);
+  paintTheme();
+});
+$('resetColors').addEventListener('click', () => { draft.colors = {}; saveDraft(); renderPieces(); pushColours(); });
+// a tap on the start board while painting: piece p (in piecesFrom order) takes the brush
+window.addEventListener('message', e => {
+  if (!e.data || e.data.type !== 'danagram-paint' || e.source !== $('startFrame').contentWindow || !painting()) return;
+  const g = Solver.piecesFrom(joins())[e.data.piece];
+  if (!g) return;
+  draft.colors = Object.assign({}, draft.colors);
+  if (brush === '0') delete draft.colors[g[0]]; else draft.colors[g[0]] = brush;
+  saveDraft(); pushColours();
+});
 // for the link: one code per piece, or nothing if every piece is automatic
 function paintParam(groups = Solver.piecesFrom(joins()), paints = draft.colors || {}) {
   const c = groups.map(g => PALETTE[paints[g[0]]] ? paints[g[0]] : '0').join('');
@@ -538,52 +548,183 @@ function extrasFrom(str) {                       // a saved '&th=…&h=…' stri
     draft.theme = sel.value; saveDraft(); paintTheme(); renderPieces();
   });
 })();
-// ---- the custom colour editor: Light / Dark tabs, the board's colours, the nine piece colours
+// ---- the custom colour editor: Light / Dark tabs, a palette from one guide colour,
+// the board's colours, the nine piece colours, and our own HSV picker (the phone's
+// built-in one is RGB sliders, which don't help anyone pick a nice colour)
 let editDark = document.documentElement.classList.contains('dark');
 const CC_LABELS = { '--well': 'Board', '--zone': 'Target area', '--tile': 'Tiles',
                     '--tile-line': 'Tile edges', '--ink': 'Letters' };
-// a browser without a colour picker gets a typed hex box and a chip showing the colour
-const COLOR_PICKER = (() => { const t = document.createElement('input'); t.type = 'color'; return t.type === 'color'; })();
+// hsv: h 0–360, s and v 0–1
+function hsvToHex(h, s, v) {
+  const f = n => { const k = (n + h / 60) % 6; return v - v * s * Math.max(0, Math.min(k, 4 - k, 1)); };
+  return '#' + [5, 3, 1].map(n => Math.round(f(n) * 255).toString(16).padStart(2, '0')).join('');
+}
+function hexToHsv(hex) {
+  const n = parseInt(hex.slice(1), 16), r = (n >> 16) / 255, g = ((n >> 8) & 255) / 255, b = (n & 255) / 255;
+  const mx = Math.max(r, g, b), d = mx - Math.min(r, g, b);
+  let h = 0;
+  if (d) h = mx === r ? ((g - b) / d) % 6 : mx === g ? (b - r) / d + 2 : (r - g) / d + 4;
+  return [(h * 60 + 360) % 360, mx ? d / mx : 0, mx];
+}
+// Both modes from one colour. Pieces take hues around the guide's (by style), light
+// enough for dark letters in light mode and deep enough for light letters in dark
+// mode; the board is the guide's hue, quiet. The guide's saturation sets how vivid.
+const STYLES = {
+  analogous:     [0, 28, -28, 56, -56, 14, -14, 42, -42],
+  complementary: [0, 180, 30, 210, -30, 150, 15, 195, 60],
+  triadic:       [0, 120, 240, 30, 150, 270, -30, 90, 210],
+  rainbow:       [0, 40, 80, 120, 160, 200, 240, 280, 320],
+};
+function makePalette(hex, style) {
+  const [h, gs] = hexToHsv(hex), at = d => (h + d + 360) % 360;
+  const light = { '--well': hsvToHex(h, .14 + .16 * gs, .90), '--zone': hsvToHex(h, .08 + .08 * gs, .95),
+                  '--tile': hsvToHex(h, .05, .995), '--tile-line': hsvToHex(h, .28, .72),
+                  '--ink': hsvToHex(h, .55, .22) };
+  const dark = { '--well': hsvToHex(h, .35, .20), '--zone': hsvToHex(h, .32, .27),
+                 '--tile': hsvToHex(h, .25, .27), '--tile-line': hsvToHex(h, .30, .44),
+                 '--ink': hsvToHex(h, .08, .96) };
+  (STYLES[style] || STYLES.analogous).forEach((d, i) => {
+    light['--o' + (i + 1)] = hsvToHex(at(d), .25 + .45 * gs, i % 2 ? .92 : .97);
+    dark['--o' + (i + 1)] = hsvToHex(at(d), .40 + .35 * gs, i % 2 ? .46 : .54);
+  });
+  return { light, dark };
+}
+// the picker edits one colour at a time: a board/piece key, or 'guide'
+let pick = null, pickHsv = [0, 0, 0], pickView = 'grid';
+const editing = () => draft.customTheme[editDark ? 'dark' : 'light'];
+const colourOf = k => k === 'guide' ? (draft.guide || '#e08a3c') : editing()[k] || '#000000';
+function setColour(k, hex) {
+  if (k === 'guide') {
+    draft.guide = hex;
+    draft.customTheme = makePalette(hex, draft.guideStyle);
+  } else editing()[k] = hex;
+  saveDraft(); paintTheme();
+}
 (function buildCustomColors() {
   const mk = (k, label, box) => {
-    const l = document.createElement('label'); l.className = 'cc-item' + (COLOR_PICKER ? '' : ' typed');
-    const inp = document.createElement('input'); inp.type = 'color'; inp.dataset.k = k;
-    if (!COLOR_PICKER) { inp.maxLength = 7; inp.spellcheck = false; inp.setAttribute('autocapitalize', 'off'); }
-    const chip = document.createElement('span'); chip.className = 'cc-chip';
-    inp.addEventListener('input', () => {
-      const v = inp.value.trim();
-      if (!/^#[0-9a-f]{6}$/i.test(v)) return;            // typing: wait for a whole colour
-      draft.customTheme[editDark ? 'dark' : 'light'][k] = v.toLowerCase();
-      saveDraft(); paintTheme();
-    });
-    l.append(...(COLOR_PICKER ? [inp] : [chip, inp]), document.createTextNode(label));
-    box.appendChild(l);
+    const b = document.createElement('button'); b.className = 'cc-item'; b.dataset.k = k;
+    b.innerHTML = '<span class="cc-chip"></span>'; b.append(label);
+    box.appendChild(b);
   };
   Object.entries(CC_LABELS).forEach(([k, label]) => mk(k, label, $('ccBoard')));
   for (let i = 1; i <= 9; i++) mk('--o' + i, String(i), $('ccPieces'));
-  document.querySelectorAll('.mode-tabs button').forEach(b => b.addEventListener('click', () => {
-    editDark = b.dataset.mode === 'dark'; paintTheme();
+  $('customPanel').addEventListener('click', e => {
+    const b = e.target.closest('.cc-item');
+    if (b) openPicker(b.dataset.k === pick ? null : b.dataset.k, b);
+  });
+  $('modeTabs').querySelectorAll('button').forEach(b => b.addEventListener('click', () => {
+    editDark = b.dataset.mode === 'dark'; if (pick) pickHsv = hexToHsv(colourOf(pick)); paintTheme();
   }));
+  $('guideStyle').addEventListener('change', () => {
+    draft.guideStyle = $('guideStyle').value; setColour('guide', colourOf('guide'));
+  });
   $('ccCopy').addEventListener('click', () => {
     draft.customTheme = themeModes($('ccFrom').value); saveDraft(); paintTheme();
   });
+  // the picker
+  $('pkTabs').querySelectorAll('button').forEach(b => b.addEventListener('click', () => {
+    pickView = b.dataset.view; renderPicker();
+  }));
+  $('pkDone').addEventListener('click', () => openPicker(null));
+  $('pkHex').addEventListener('input', () => {
+    let v = $('pkHex').value.trim().toLowerCase(); if (!v.startsWith('#')) v = '#' + v;
+    if (!/^#[0-9a-f]{6}$/.test(v)) return;           // typing: wait for a whole colour
+    pickHsv = hexToHsv(v); setColour(pick, v);
+  });
+  const fromSliders = () => {
+    pickHsv = [+$('pkH').value, $('pkS').value / 100, $('pkV').value / 100];
+    setColour(pick, hsvToHex(...pickHsv));
+  };
+  ['pkH', 'pkS', 'pkV'].forEach(id => $(id).addEventListener('input', fromSliders));
+  $('pkGrid').addEventListener('click', e => {
+    const c = e.target.closest('button'); if (!c) return;
+    pickHsv = [+c.dataset.h, c.dataset.s === undefined ? pickHsv[1] : +c.dataset.s, +c.dataset.v];
+    setColour(pick, hsvToHex(...pickHsv));
+  });
+  // spectrum: hue across, brightness down, at the saturation slider's value
+  const spec = $('pkSpec');
+  const at = e => {
+    const r = spec.getBoundingClientRect();
+    const x = Math.min(1, Math.max(0, (e.clientX - r.left) / r.width));
+    const y = Math.min(1, Math.max(0, (e.clientY - r.top) / r.height));
+    pickHsv = [Math.round(x * 359), pickHsv[1], 1 - y * .9];
+    setColour(pick, hsvToHex(...pickHsv));
+  };
+  spec.addEventListener('pointerdown', e => { e.preventDefault(); spec.setPointerCapture(e.pointerId); at(e); });
+  spec.addEventListener('pointermove', e => { if (spec.hasPointerCapture(e.pointerId)) at(e); });
 })();
+function openPicker(k, under) {
+  pick = k;
+  $('picker').hidden = !k;
+  if (k) {
+    (under.closest('.cc-list, .cc-pieces, .cc-guide') || under).after($('picker'));
+    pickHsv = hexToHsv(colourOf(k));
+    $('pkLabel').textContent = k === 'guide' ? 'Guide color' : CC_LABELS[k] || 'Piece color ' + k.slice(3);
+  }
+  paintTheme();
+}
+function renderPicker() {
+  if (!pick) return;
+  const [h, s, v] = pickHsv, hex = colourOf(pick);
+  $('pkChip').style.background = hex;
+  if (document.activeElement !== $('pkHex')) $('pkHex').value = hex;
+  $('pkTabs').querySelectorAll('button').forEach(b => b.classList.toggle('on', b.dataset.view === pickView));
+  $('picker').querySelectorAll('[data-view]:not(button)').forEach(el => { el.hidden = el.dataset.view !== pickView; });
+  $('pkH').value = Math.round(h); $('pkS').value = Math.round(s * 100); $('pkV').value = Math.round(v * 100);
+  // each slider's track shows what moving it would do
+  $('pkH').style.background = `linear-gradient(to right, ${[0, 60, 120, 180, 240, 300, 359].map(x => hsvToHex(x, Math.max(s, .5), Math.max(v, .6))).join(',')})`;
+  $('pkS').style.background = `linear-gradient(to right, ${hsvToHex(h, 0, v)}, ${hsvToHex(h, 1, v)})`;
+  $('pkV').style.background = `linear-gradient(to right, #000, ${hsvToHex(h, s, 1)})`;
+  if (pickView === 'grid') {                       // 12 hues × 6 brightnesses at this saturation, and greys
+    const g = $('pkGrid'); g.innerHTML = '';
+    const cell = (hh, ss, vv) => {
+      const b = document.createElement('button'), c = hsvToHex(hh, ss, vv);
+      b.style.background = c; b.dataset.h = hh; b.dataset.v = vv; if (ss === 0) b.dataset.s = 0;
+      b.setAttribute('aria-label', c); if (c === hex) b.className = 'on';
+      g.appendChild(b);
+    };
+    [1, .9, .78, .64, .5, .36].forEach(vv => { for (let i = 0; i < 12; i++) cell(i * 30, s, vv); });
+    for (let i = 0; i < 12; i++) cell(h, 0, Math.round((1 - i / 11) * 100) / 100);
+  }
+  if (pickView === 'spectrum') {
+    const c = $('pkSpec'), ctx = c.getContext('2d'), W = c.width, H = c.height, img = ctx.createImageData(W, H);
+    for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
+      const n = parseInt(hsvToHex(x / W * 359, s, 1 - y / H * .9).slice(1), 16), o = (y * W + x) * 4;
+      img.data[o] = n >> 16; img.data[o + 1] = (n >> 8) & 255; img.data[o + 2] = n & 255; img.data[o + 3] = 255;
+    }
+    ctx.putImageData(img, 0, 0);
+    const mx = h / 359 * W, my = Math.min(H - 2, Math.max(2, (1 - v) / .9 * H));
+    ctx.lineWidth = 2; ctx.strokeStyle = v > .55 ? '#000' : '#fff';
+    ctx.beginPath(); ctx.arc(mx, my, 7, 0, 7); ctx.stroke();
+  }
+}
 function paintTheme() {
   $('themeSel').value = draft.theme || '';
   const custom = draft.theme === 'custom' && draft.customTheme;
   $('customPanel').hidden = !custom;
-  // editing custom colours: the grids show the mode being edited
-  ['pieceGrid', 'swatches'].forEach(id =>
-    applyBoardTheme($(id), draft.theme, draft.customTheme, custom ? editDark : undefined));
+  applyBoardTheme($('pieceGrid'), draft.theme, draft.customTheme);
+  applyBoardTheme($('swatches'), draft.theme, draft.customTheme, custom ? editDark : undefined);
+  renderSwatches();
+  pushColours();
   if (!custom) return;
-  document.querySelectorAll('.mode-tabs button').forEach(b =>
+  $('modeTabs').querySelectorAll('button').forEach(b =>
     b.classList.toggle('on', (b.dataset.mode === 'dark') === editDark));
-  const m = draft.customTheme[editDark ? 'dark' : 'light'];
-  document.querySelectorAll('#customPanel input[data-k]').forEach(inp => {
-    if (document.activeElement !== inp) inp.value = m[inp.dataset.k] || '#000000';
-    const chip = inp.parentElement.querySelector('.cc-chip');
-    if (chip) chip.style.background = m[inp.dataset.k] || '#000000';
+  $('guideStyle').value = draft.guideStyle || 'analogous';
+  $('customPanel').querySelectorAll('.cc-item').forEach(b => {
+    b.querySelector('.cc-chip').style.background = colourOf(b.dataset.k);
+    b.classList.toggle('on', b.dataset.k === pick);
   });
+  renderPicker();
+}
+// the start board (the game, in an iframe) takes colour changes live, without
+// reloading, and shows the mode being edited: the whole game, not just the board
+function pushColours() {
+  const f = $('startFrame');
+  if (!f || !f.contentWindow || draft.step !== 'start') return;
+  const custom = draft.theme === 'custom' && draft.customTheme;
+  f.contentWindow.postMessage({ type: 'danagram-colours', theme: draft.theme || null,
+    customTheme: custom ? draft.customTheme : null, paints: paintParam(),
+    dark: custom ? editDark : null, brush: painting() }, '*');
 }
 // Celebration fold-out
 // The hop picker is the game itself (&embed=1): the real board, colours and start
@@ -707,14 +848,17 @@ function setStart(start) {
 // and reshuffles itself; the first real move makes the layout the creator's start.
 // It posts every layout here; the warnings (and the "already solved" block) are ours.
 let arrangeSrc = '';
+// colours aren't part of it: they go to the frame live (pushColours), not by reloading
+const arrangeKey = () => '../?p=' + shareCode() + (startParam() ? '&s=' + startParam() : '') + '&arrange=1';
+$('startFrame').addEventListener('load', pushColours);
 function arrangeUrl() {
   const c = paintParam(), st = startParam();
   return '../?p=' + shareCode() + (c ? '&c=' + c : '') + (st ? '&s=' + st : '') +
     themeParam() + '&arrange=1';
 }
 function renderStart() {
-  const frame = $('startFrame'), url = arrangeUrl();
-  if (url !== arrangeSrc) { arrangeSrc = url; frame.src = url; }
+  const frame = $('startFrame');
+  if (arrangeKey() !== arrangeSrc) { arrangeSrc = arrangeKey(); frame.src = arrangeUrl(); }
   renderStartInfo();
 }
 function renderStartInfo() {
@@ -771,7 +915,7 @@ function answerWords() {
 window.addEventListener('message', e => {
   const frame = $('startFrame');
   if (!frame || e.source !== frame.contentWindow || !e.data || e.data.type !== 'danagram-arrange') return;
-  if (e.data.height) frame.style.height = e.data.height + 'px';
+  if (e.data.height) { frame.style.height = e.data.height + 'px'; frame.style.setProperty('--fh', e.data.height + 'px'); }
   if (draft.step !== 'start') return;
   const ps = startGroups();
   const start = e.data.start;
@@ -789,7 +933,7 @@ $('startRandom').addEventListener('click', () => {
   setStart(null);
   const frame = $('startFrame');
   if (frame.contentWindow) frame.contentWindow.postMessage({ type: 'danagram-arrange-reset' }, '*');
-  arrangeSrc = arrangeUrl();                     // the frame's own state matches; no reload
+  arrangeSrc = arrangeKey();                     // the frame's own state matches; no reload
   renderStartInfo();
 });
 $('backToPieces2').addEventListener('click', () => showStep('pieces'));

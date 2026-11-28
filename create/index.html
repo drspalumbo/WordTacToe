@@ -60,27 +60,6 @@
   <p class="step-hint">Tap two neighbouring tiles (or the dot between them) to join them into one piece. Tap again to split. Unjoined tiles are single tiles.</p>
   <div class="cgrid pieces" id="pieceGrid"></div>
   <p class="piece-info" id="pieceInfo"></p>
-  <details class="diff-detail color-detail" id="colorDetail">
-    <summary>Colors</summary>
-    <div class="color-body">
-      <label class="theme-row">Theme
-        <select id="themeSel"><option value="">Classic</option></select></label>
-      <!-- Custom: every board colour, for light and dark mode separately -->
-      <div class="custom-colors" id="customPanel" hidden>
-        <div class="mode-tabs" role="group" aria-label="Colors for">
-          <button data-mode="light">Light mode</button><button data-mode="dark">Dark mode</button>
-        </div>
-        <div class="cc-list" id="ccBoard"></div>
-        <div class="cc-sub">Piece colors</div>
-        <div class="cc-pieces" id="ccPieces"></div>
-        <div class="cc-copy">Copy from <select id="ccFrom"><option value="">Classic</option></select>
-          <button class="mlink" id="ccCopy">Copy</button></div>
-      </div>
-      <p>Pick a color, then tap pieces to paint them. Auto puts a piece back.</p>
-      <div class="swatches" id="swatches"></div>
-      <button class="mlink" id="resetColors">Reset all colors</button>
-    </div>
-  </details>
   <details class="diff-detail" id="diffDetail">
     <summary>How is difficulty worked out?</summary>
     <div id="diffBody"></div>
@@ -93,11 +72,58 @@
 
 <!-- 3. start: where the pieces sit when a player opens the puzzle -->
 <section class="step" id="stepStart" hidden>
+  <div class="start-pin">
   <iframe class="arrange-frame" id="startFrame" title="Arrange where players start"></iframe>
+  </div>
   <p class="piece-info" id="startInfo" aria-live="polite"></p>
   <div class="cactions">
     <button class="btn ghost small" id="startRandom" hidden>Back to a random start</button>
   </div>
+  <!-- Colors: on the start board, so you colour what players will see -->
+  <details class="diff-detail color-detail" id="colorDetail">
+    <summary>Colors</summary>
+    <div class="color-body">
+      <label class="theme-row">Theme
+        <select id="themeSel"><option value="">Classic</option></select></label>
+      <!-- Custom: every board colour, for light and dark mode separately -->
+      <div class="custom-colors" id="customPanel" hidden>
+        <div class="mode-tabs" id="modeTabs" role="group" aria-label="Colors for">
+          <button data-mode="light">Light mode</button><button data-mode="dark">Dark mode</button>
+        </div>
+        <div class="cc-sub">Palette from one color</div>
+        <div class="cc-guide" id="ccGuide">
+          <button class="cc-item" data-k="guide"><span class="cc-chip"></span>Guide color</button>
+          <select id="guideStyle" aria-label="Palette style">
+            <option value="analogous">Neighbors</option><option value="complementary">Opposites</option>
+            <option value="triadic">Triad</option><option value="rainbow">Rainbow</option></select>
+        </div>
+        <p class="cc-hint">Makes light and dark mode together. Change any color after.</p>
+        <div class="cc-sub">Board</div>
+        <div class="cc-list" id="ccBoard"></div>
+        <div class="cc-sub">Piece colors</div>
+        <div class="cc-pieces" id="ccPieces"></div>
+        <!-- the colour picker: one, opened under whichever colour you tapped -->
+        <div class="picker" id="picker" hidden>
+          <div class="pk-head"><span class="cc-chip" id="pkChip"></span><b id="pkLabel"></b>
+            <input id="pkHex" maxlength="7" spellcheck="false" autocapitalize="off" autocomplete="off" aria-label="Hex color">
+            <button class="mlink" id="pkDone">Done</button></div>
+          <div class="mode-tabs pk-tabs" id="pkTabs" role="group" aria-label="Picker">
+            <button data-view="grid">Grid</button><button data-view="spectrum">Spectrum</button><button data-view="sliders">Sliders</button>
+          </div>
+          <div class="pk-grid" id="pkGrid" data-view="grid"></div>
+          <canvas class="pk-spec" id="pkSpec" data-view="spectrum" width="300" height="140"></canvas>
+          <label class="pk-row" data-view="sliders"><span>Hue</span><input type="range" id="pkH" min="0" max="359"></label>
+          <label class="pk-row"><span>Saturation</span><input type="range" id="pkS" min="0" max="100"></label>
+          <label class="pk-row" data-view="sliders"><span>Brightness</span><input type="range" id="pkV" min="0" max="100"></label>
+        </div>
+        <div class="cc-copy">Copy from <select id="ccFrom"><option value="">Classic</option></select>
+          <button class="mlink" id="ccCopy">Copy</button></div>
+      </div>
+      <p id="paintHint"></p>
+      <div class="swatches" id="swatches"></div>
+      <button class="mlink" id="resetColors">Reset all colors</button>
+    </div>
+  </details>
   <div class="cactions">
     <button class="btn ghost" id="backToPieces2">‹ Pieces</button>
     <button class="btn primary" id="toShare">Next: share →</button>

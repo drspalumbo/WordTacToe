@@ -2241,9 +2241,10 @@ window.addEventListener('pagehide', flushProgress);
 // sun/moon button; their pick is remembered. (index.html applies it pre-paint.)
 const THEME_KEY = 'danagram_theme';
 const darkQuery = window.matchMedia ? matchMedia('(prefers-color-scheme: dark)') : null;
+let forceDark = null;                            // arranging: the Create page shows the mode it's editing
 function applyTheme() {
   const pick = store.get(THEME_KEY);
-  const dark = pick ? pick === 'dark' : !!(darkQuery && darkQuery.matches);
+  const dark = forceDark !== null ? forceDark : pick ? pick === 'dark' : !!(darkQuery && darkQuery.matches);
   document.documentElement.classList.toggle('dark', dark);
   document.getElementById('themeColor').setAttribute('content', dark ? '#12171D' : '#EDF1F4');
   const b = document.getElementById('themeBtn');
@@ -2999,5 +3000,31 @@ function setupArrange() {
     setTimeout(() => { if (arrangeTouched && !said) { said = true; say(); } postArrange(); }, 50);
   });
   window.addEventListener('resize', postArrange);
+  // the Create page's Colors, live: the theme, each piece's paint, which mode to
+  // show, and whether a tap paints (the page says which piece) rather than moves
+  let brush = false;
+  window.addEventListener('message', e => {
+    if (e.source !== window.parent || !e.data || e.data.type !== 'danagram-colours') return;
+    const P = PUZZLES[state.idx], code = e.data.paints || '';
+    P.theme = e.data.theme; P.customTheme = e.data.customTheme;
+    state.pieces.forEach((p, i) => { p.paint = PAINT[code[i]] || undefined; P.pieces[i].paint = p.paint; styleTiles(p); });
+    forceDark = typeof e.data.dark === 'boolean' ? e.data.dark : null;
+    applyTheme();
+    if (typeof applyBoardTheme === 'function') applyBoardTheme(document.getElementById('boardWrap'), P.theme, P.customTheme);
+    if (!!e.data.brush !== brush) {
+      brush = !!e.data.brush;
+      if (brush) { setSelected(null); clearGhost(); }
+      if (brush) setMsg('Tap pieces to paint them.'); else say();
+    }
+  });
+  const wrap = document.getElementById('boardWrap');
+  ['pointerdown', 'pointermove', 'pointerup', 'pointercancel', 'dblclick'].forEach(ev =>
+    wrap.addEventListener(ev, e => { if (brush) { e.stopPropagation(); e.preventDefault(); } }, true));
+  wrap.addEventListener('click', e => {
+    if (!brush) return;
+    e.stopPropagation();
+    const tile = e.target.closest('.tile');
+    if (tile) window.parent.postMessage({ type: 'danagram-paint', piece: +tile.dataset.pi }, '*');
+  }, true);
   postArrange();
 }
